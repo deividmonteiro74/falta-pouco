@@ -4,10 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Falta Pouco: dívidas e metas</title>
-<link rel="manifest" href="manifest.webmanifest">
-<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
-<link rel="icon" type="image/png" sizes="64x64" href="icons/favicon-64.png">
-<link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon.png">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32.png">
+<link rel="icon" type="image/png" sizes="64x64" href="/icons/favicon-64.png">
+<link rel="apple-touch-icon" sizes="180x180" href="/icons/apple-touch-icon.png">
 <meta name="theme-color" content="#6C4DFF">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -308,7 +308,7 @@ dialog{background:var(--surface);color:var(--ink);animation:abre .25s cubic-bezi
 <!-- App -->
 <div id="viewApp" hidden>
   <header class="top">
-    <div class="brand">Falta Pouco <small style="font-family:var(--body);font-weight:500;font-size:.7rem;color:var(--muted)">V4</small></div>
+    <div class="brand">Falta Pouco <small style="font-family:var(--body);font-weight:500;font-size:.7rem;color:var(--muted)">V6</small></div>
     <nav class="tabs" id="navAdmin" hidden aria-label="Áreas do app">
       <button class="tab" data-vista="meu" aria-pressed="true">Meu painel</button>
       <button class="tab" data-vista="cartoes" aria-pressed="false">Cartão de crédito</button>
@@ -1314,6 +1314,8 @@ $('#chips').addEventListener('click', e => {
 });
 let temaSalvo; try { temaSalvo = localStorage.getItem('tema'); } catch (e) {}
 aplicaTema(temaSalvo || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'));
+
+if ('serviceWorker' in navigator) addEventListener('load', () => navigator.serviceWorker.register('/sw.js').catch(() => {}));
 
 /* ---------- início ---------- */
 (function iniciar() {
