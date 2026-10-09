@@ -1,0 +1,729 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Falta Pouco: dívidas e metas</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Figtree:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#EEF1F5; --surface:#FFFFFF; --ink:#15202B; --muted:#5A6B7B; --line:#D8DFE7;
+  --meta:#0E7C7B; --meta-soft:#D5EEED;
+  --divida:#8A2D5E; --divida-soft:#F2DCE8;
+  --gold:#F0A53A; --danger:#B3261E;
+  --display:'Bricolage Grotesque','Segoe UI',system-ui,sans-serif;
+  --body:'Figtree','Segoe UI',system-ui,sans-serif;
+}
+*{box-sizing:border-box}
+html{scroll-padding-top:16px}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.5;-webkit-font-smoothing:antialiased}
+[hidden]{display:none!important}
+button,input{font:inherit;color:inherit}
+:focus-visible{outline:3px solid #2B6CB0;outline-offset:2px}
+h1,h2,h3{font-family:var(--display);margin:0;line-height:1.15}
+
+/* botões */
+.btn{border:1px solid var(--line);background:var(--surface);padding:10px 16px;border-radius:10px;cursor:pointer;font-weight:600;min-height:42px}
+.btn:hover{border-color:#aab5c1}
+.btn.primary{background:var(--ink);border-color:var(--ink);color:#fff}
+.btn.primary:hover{background:#26384a}
+.btn.ghost{background:transparent}
+.btn.danger{color:var(--danger);border-color:#e6c3c0;background:transparent}
+.btn.small{padding:7px 12px;min-height:36px;font-size:.92rem}
+.btn:disabled{opacity:.55;cursor:default}
+
+/* autenticação */
+#viewAuth{min-height:100vh;display:grid;place-items:center;padding:24px}
+.auth{width:100%;max-width:400px}
+.auth h1{font-size:2.6rem;font-weight:800;letter-spacing:-.02em;margin-bottom:6px}
+.auth p.lead{color:var(--muted);margin:0 0 28px}
+.field{display:block;margin-bottom:16px}
+.field span{display:block;font-weight:600;font-size:.92rem;margin-bottom:6px}
+.field input{width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:10px;background:#fff;min-height:44px}
+.auth .btn.primary{width:100%;margin-top:4px}
+.auth .links{display:flex;justify-content:space-between;gap:12px;margin-top:16px;flex-wrap:wrap}
+.linkbtn{background:none;border:0;padding:4px 0;color:#1d4f86;cursor:pointer;text-decoration:underline;font-weight:500}
+.msg{min-height:1.5em;margin:12px 0 0;font-size:.95rem;color:var(--danger)}
+.msg.ok{color:var(--meta)}
+
+/* app */
+.top{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;max-width:980px;margin:0 auto;padding:20px 20px 8px}
+.brand{font-family:var(--display);font-weight:800;font-size:1.4rem;letter-spacing:-.01em}
+.user{display:flex;align-items:center;gap:12px;color:var(--muted);font-size:.9rem;min-width:0}
+.user span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+main{max-width:980px;margin:0 auto;padding:12px 20px 80px}
+
+.hero{display:grid;grid-template-columns:1fr 1fr;background:var(--surface);border:1px solid var(--line);border-radius:16px;overflow:hidden}
+.panel{padding:28px 30px}
+.panel+.panel{border-left:1px solid var(--line)}
+.panel h2{font-size:1.05rem;font-weight:600;color:var(--muted);margin-bottom:10px}
+.panel .num{font-family:var(--display);font-weight:800;font-size:clamp(2rem,4.6vw,3rem);letter-spacing:-.025em;line-height:1;margin:0 0 4px}
+.panel .of{color:var(--muted);margin:0 0 18px}
+.panel .foot{display:flex;justify-content:space-between;gap:12px;margin-top:10px;font-size:.95rem;color:var(--muted)}
+.panel .foot b{color:var(--ink)}
+.panel.meta .bar i{background:var(--meta)}
+.panel.divida .bar i{background:var(--divida)}
+.panel .empty{color:var(--muted);margin:6px 0 0}
+
+.bar{height:14px;background:#E6EBF0;border-radius:99px;overflow:hidden}
+.bar i{display:block;height:100%;border-radius:99px;transition:width .7s cubic-bezier(.2,.8,.2,1)}
+.bar.big{height:20px}
+
+.toolbar{display:flex;justify-content:space-between;align-items:center;gap:12px;margin:30px 0 8px;flex-wrap:wrap}
+.tabs{display:flex;gap:6px;flex-wrap:wrap}
+.tab{border:1px solid transparent;background:transparent;padding:8px 14px;border-radius:99px;cursor:pointer;font-weight:600;color:var(--muted)}
+.tab[aria-pressed="true"]{background:var(--ink);color:#fff}
+
+.row{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1.4fr) auto;gap:20px;align-items:center;padding:20px 4px;border-bottom:1px solid var(--line);cursor:pointer}
+.row .nome{display:block;background:none;border:0;padding:0;font-family:var(--display);font-weight:600;font-size:1.15rem;text-align:left;cursor:pointer;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.row .meta-line{display:flex;align-items:center;gap:10px;margin-top:4px;color:var(--muted);font-size:.9rem;flex-wrap:wrap}
+.row.meta .bar i{background:var(--meta)}
+.row.divida .bar i{background:var(--divida)}
+.row.feito .bar i{background:var(--gold)}
+.row .amts{display:flex;justify-content:space-between;gap:10px;margin-top:8px;font-size:.92rem;color:var(--muted)}
+.row .amts strong{color:var(--ink)}
+.row .ok{font-weight:600;color:#8a5a00;white-space:nowrap}
+.tag{display:inline-block;padding:2px 10px;border-radius:99px;font-size:.82rem;font-weight:600}
+.tag.meta{background:var(--meta-soft);color:#0a5a59}
+.tag.divida{background:var(--divida-soft);color:#6d2149}
+.warn{color:var(--danger);font-weight:600}
+.vazio{padding:44px 8px;text-align:center;color:var(--muted)}
+.vazio .btn{margin-top:14px}
+
+/* janelas */
+dialog{border:0;border-radius:16px;padding:0;width:min(560px,calc(100vw - 24px));max-height:calc(100vh - 32px);background:var(--surface);color:var(--ink);box-shadow:0 20px 60px rgba(10,20,35,.28)}
+dialog::backdrop{background:rgba(15,25,40,.45)}
+.dlg{padding:24px 26px 26px}
+.dlg-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:18px}
+.dlg-head h2{font-size:1.5rem;font-weight:800;margin-top:6px;word-break:break-word}
+.x{border:0;background:transparent;font-size:1.7rem;line-height:1;cursor:pointer;padding:4px 10px;border-radius:8px;color:var(--muted)}
+.x:hover{background:#eef1f5}
+.big-num{font-family:var(--display);font-weight:800;font-size:2.1rem;letter-spacing:-.02em;margin:0 0 10px}
+.big-num span{font-family:var(--body);font-weight:400;font-size:1rem;color:var(--muted);letter-spacing:0}
+.facts{display:flex;gap:26px;flex-wrap:wrap;margin:14px 0 4px;color:var(--muted);font-size:.95rem}
+.facts b{display:block;color:var(--ink);font-family:var(--display);font-size:1.15rem}
+.inline-form{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:22px 0 6px;padding-top:20px;border-top:1px solid var(--line)}
+.inline-form .field{margin:0}
+.inline-form .wide{grid-column:1/-1}
+.inline-form .btn{grid-column:1/-1}
+.dlg h3{font-size:1.05rem;margin:22px 0 4px}
+.hist{list-style:none;margin:0;padding:0;max-height:220px;overflow:auto}
+.hist li{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line);font-size:.95rem}
+.hist .desc{min-width:0}
+.hist .desc small{display:block;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hist .val{font-weight:600;white-space:nowrap}
+.hist .del{border:0;background:transparent;color:var(--muted);cursor:pointer;padding:4px 8px;border-radius:6px;text-decoration:underline}
+.hist-vazio{color:var(--muted);padding:12px 0}
+.dlg-foot{display:flex;gap:10px;margin-top:22px;flex-wrap:wrap}
+.dlg-foot .btn{flex:1}
+.radios{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
+.radios label{display:block;cursor:pointer}
+.radios input{position:absolute;opacity:0}
+.radios span{display:block;text-align:center;padding:11px;border:1px solid var(--line);border-radius:10px;font-weight:600}
+.radios input:checked+span{border-width:2px;padding:10px}
+.radios .r-meta input:checked+span{border-color:var(--meta);background:var(--meta-soft)}
+.radios .r-divida input:checked+span{border-color:var(--divida);background:var(--divida-soft)}
+.radios input:focus-visible+span{outline:3px solid #2B6CB0;outline-offset:2px}
+.help{font-size:.88rem;color:var(--muted);margin:-8px 0 16px}
+
+#toast{position:fixed;left:50%;bottom:24px;transform:translate(-50%,20px);background:var(--ink);color:#fff;padding:12px 18px;border-radius:12px;opacity:0;pointer-events:none;transition:.25s;z-index:120;max-width:calc(100vw - 32px);font-weight:500}
+#toast.show{opacity:1;transform:translate(-50%,0)}
+#toast.erro{background:var(--danger)}
+.conf{position:fixed;top:-16px;width:8px;height:14px;border-radius:2px;z-index:130;pointer-events:none;animation:cair 2.2s ease-in forwards}
+@keyframes cair{to{transform:translate(var(--dx),108vh) rotate(560deg)}}
+
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.hero.tres{grid-template-columns:repeat(3,1fr)}
+.hero.tres .panel+.panel{border-left:1px solid var(--line)}
+.busca input{padding:9px 12px;border:1px solid var(--line);border-radius:10px;background:#fff;min-height:42px;min-width:min(300px,100%)}
+.urow{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr) auto;gap:18px;align-items:center;padding:18px 4px;border-bottom:1px solid var(--line)}
+.uemail{word-break:break-all}
+.urow small{display:block;color:var(--muted);font-size:.86rem}
+.umini{display:grid;gap:6px;font-size:.92rem}
+.uacoes{display:flex;gap:8px;flex-wrap:wrap}
+.tag.admin{background:#E3E9FF;color:#2a3f8f}
+.tag.voce{background:#EEF1F5;color:var(--muted)}
+.uitem{padding:14px 0;border-bottom:1px solid var(--line)}
+.uitem.meta .bar i{background:var(--meta)}
+.uitem.divida .bar i{background:var(--divida)}
+.uitem-top{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:8px}
+.uitem .amts{display:flex;justify-content:space-between;gap:10px;margin-top:6px;font-size:.92rem;color:var(--muted)}
+.uitem .amts strong{color:var(--ink)}
+@media (max-width:720px){
+  .hero.tres{grid-template-columns:1fr}
+  .hero.tres .panel+.panel{border-left:0;border-top:1px solid var(--line)}
+  .urow{grid-template-columns:1fr}
+}
+@media (max-width:720px){
+  .hero{grid-template-columns:1fr}
+  .panel+.panel{border-left:0;border-top:1px solid var(--line)}
+  .row{grid-template-columns:1fr;gap:12px}
+  .row .acao{justify-self:start}
+  .inline-form{grid-template-columns:1fr}
+}
+@media (prefers-reduced-motion:reduce){
+  .bar i,#toast{transition:none}
+}
+</style>
+</head>
+<body>
+
+<!-- Entrar / criar conta -->
+<div id="viewAuth" hidden>
+  <div class="auth">
+    <h1>Falta Pouco</h1>
+    <p class="lead">Cadastre suas dívidas e metas, registre cada valor e acompanhe quanto já avançou.</p>
+    <form id="authForm" novalidate>
+      <label class="field"><span>E-mail</span><input id="email" type="email" autocomplete="email" required></label>
+      <label class="field"><span>Senha</span><input id="senha" type="password" autocomplete="current-password" minlength="6" required></label>
+      <button class="btn primary" id="authBtn" type="submit">Entrar</button>
+      <p class="msg" id="authMsg" role="alert"></p>
+      <div class="links">
+        <button class="linkbtn" type="button" id="toggleModo">Criar uma conta</button>
+        <button class="linkbtn" type="button" id="esqueci">Esqueci a senha</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- App -->
+<div id="viewApp" hidden>
+  <header class="top">
+    <div class="brand">Falta Pouco <small style="font-family:var(--body);font-weight:500;font-size:.7rem;color:var(--muted)">V2</small></div>
+    <nav class="tabs" id="navAdmin" hidden aria-label="Áreas do app">
+      <button class="tab" data-vista="meu" aria-pressed="true">Meu painel</button>
+      <button class="tab" data-vista="admin" aria-pressed="false">Administração</button>
+    </nav>
+    <div class="user"><span id="userEmail"></span><button class="btn ghost small" id="btnSair">Sair</button></div>
+  </header>
+  <main>
+    <div id="vistaMeu">
+    <section class="hero" id="hero" aria-label="Resumo geral"></section>
+    <div class="toolbar">
+      <div class="tabs" id="tabs">
+        <button class="tab" data-f="todos" aria-pressed="true">Todos</button>
+        <button class="tab" data-f="meta" aria-pressed="false">Metas</button>
+        <button class="tab" data-f="divida" aria-pressed="false">Dívidas</button>
+        <button class="tab" data-f="feito" aria-pressed="false">Concluídos</button>
+      </div>
+      <button class="btn primary" id="btnNovo">Novo item</button>
+    </div>
+    <section id="lista" aria-label="Seus itens"></section>
+    </div>
+    <section id="vistaAdmin" hidden aria-label="Administração">
+      <div class="hero tres" id="adminKpis"></div>
+      <div class="toolbar">
+        <label class="busca"><span class="sr">Buscar usuário</span><input id="adminBusca" type="search" placeholder="Buscar por e-mail" autocomplete="off"></label>
+        <button class="btn small" id="adminAtualizar" type="button">Atualizar lista</button>
+      </div>
+      <div id="adminLista"></div>
+    </section>
+  </main>
+</div>
+
+<!-- Janela: novo / editar item -->
+<dialog id="dlgItem" aria-labelledby="itemTitulo">
+  <form class="dlg" id="formItem" novalidate>
+    <div class="dlg-head">
+      <h2 id="itemTitulo">Novo item</h2>
+      <button type="button" class="x" data-fechar="dlgItem" aria-label="Fechar">×</button>
+    </div>
+    <div class="radios" role="radiogroup" aria-label="Tipo">
+      <label class="r-meta"><input type="radio" name="tipo" value="meta" checked><span>Meta</span></label>
+      <label class="r-divida"><input type="radio" name="tipo" value="divida"><span>Dívida</span></label>
+    </div>
+    <label class="field"><span>Nome</span><input name="nome" maxlength="80" placeholder="Ex.: Reserva de emergência" required></label>
+    <label class="field"><span>Valor total (R$)</span><input name="valor_total" inputmode="decimal" placeholder="0,00" required></label>
+    <label class="field"><span>Prazo (opcional)</span><input name="data_limite" type="date"></label>
+    <label class="field" id="campoInicial"><span>Valor que você já tem ou já pagou (R$, opcional)</span><input name="inicial" inputmode="decimal" placeholder="0,00"></label>
+    <p class="msg" id="itemMsg" role="alert"></p>
+    <div class="dlg-foot">
+      <button type="button" class="btn ghost" data-fechar="dlgItem">Cancelar</button>
+      <button type="submit" class="btn primary" id="itemSalvar">Salvar item</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- Janela: detalhe do item -->
+<dialog id="dlgDetalhe" aria-labelledby="dNome">
+  <div class="dlg">
+    <div class="dlg-head">
+      <div><span class="tag" id="dTag"></span><h2 id="dNome"></h2></div>
+      <button type="button" class="x" data-fechar="dlgDetalhe" aria-label="Fechar">×</button>
+    </div>
+    <div id="dResumo"></div>
+    <form class="inline-form" id="formValor" novalidate>
+      <label class="field"><span>Valor (R$)</span><input name="valor" inputmode="decimal" placeholder="0,00" required></label>
+      <label class="field"><span>Data</span><input name="data" type="date" required></label>
+      <label class="field wide"><span>Observação (opcional)</span><input name="nota" maxlength="120"></label>
+      <button class="btn primary" type="submit" id="btnValor">Adicionar valor</button>
+    </form>
+    <p class="msg" id="valorMsg" role="alert"></p>
+    <h3>Histórico</h3>
+    <ul class="hist" id="dHist"></ul>
+    <div class="dlg-foot">
+      <button class="btn" id="dEditar" type="button">Editar item</button>
+      <button class="btn danger" id="dExcluir" type="button">Excluir item</button>
+    </div>
+  </div>
+</dialog>
+
+<!-- Janela: itens de um usuário (admin, somente leitura) -->
+<dialog id="dlgUsuario" aria-labelledby="uNome">
+  <div class="dlg">
+    <div class="dlg-head">
+      <div><span class="tag admin">Somente leitura</span><h2 id="uNome"></h2></div>
+      <button type="button" class="x" data-fechar="dlgUsuario" aria-label="Fechar">×</button>
+    </div>
+    <div id="uCorpo"></div>
+  </div>
+</dialog>
+
+<!-- Janela: nova senha (após link de recuperação) -->
+<dialog id="dlgSenha" aria-labelledby="senhaTitulo">
+  <form class="dlg" id="formSenha" novalidate>
+    <div class="dlg-head"><h2 id="senhaTitulo">Criar nova senha</h2></div>
+    <label class="field"><span>Nova senha (mínimo 6 caracteres)</span><input name="nova" type="password" minlength="6" autocomplete="new-password" required></label>
+    <p class="msg" id="senhaMsg" role="alert"></p>
+    <div class="dlg-foot"><button class="btn primary" type="submit">Salvar nova senha</button></div>
+  </form>
+</dialog>
+
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script>
+/* ============ CONFIGURAÇÃO ============
+   Projeto Supabase "falta-pouco". A chave "anon" é pública por natureza e pode
+   ficar no front-end: a proteção dos dados é feita pelas regras (RLS) do banco. */
+const SUPABASE_URL = 'https://egkbuwrosoldaknbuwqy.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVna2J1d3Jvc29sZGFrbmJ1d3F5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE1MDkwMzgsImV4cCI6MjEwNzA4NTAzOH0.CbLuMhfq8vXF4Tnnz4HvgfXjrWjbWBGwDh3bMC-w2_U';
+/* ===================================== */
+
+const $ = (s, el = document) => el.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const brl = n => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(n || 0);
+const hojeISO = () => new Date().toLocaleDateString('sv-SE');
+const fmtData = d => new Date(d + 'T00:00:00').toLocaleDateString('pt-BR');
+const soma = i => i.lancamentos.reduce((t, l) => t + l.valor, 0);
+const feito = i => soma(i) >= i.valor_total;
+
+function parseMoney(txt) {
+  let s = String(txt || '').replace(/R\$|\s/g, '');
+  if (!s) return NaN;
+  if (s.includes(',')) s = s.replace(/\./g, '').replace(',', '.');
+  else if ((s.match(/\./g) || []).length > 1) s = s.replace(/\./g, '');
+  else if (/\.\d{3}$/.test(s)) s = s.replace('.', '');
+  const n = Number(s);
+  return Number.isFinite(n) ? Math.round(n * 100) / 100 : NaN;
+}
+
+let sb = null, itens = [], filtro = 'todos', detalheId = null, editId = null, modoCadastro = false, userId = null;
+let ehAdmin = false, vista = 'meu', usuarios = [];
+
+/* ---------- avisos ---------- */
+let toastTimer;
+function toast(texto, erro = false) {
+  const t = $('#toast');
+  t.textContent = texto;
+  t.className = 'show' + (erro ? ' erro' : '');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.className = '', 3200);
+}
+function confete() {
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const cores = ['#F0A53A', '#0E7C7B', '#8A2D5E', '#2B6CB0', '#15202B'];
+  for (let i = 0; i < 52; i++) {
+    const p = document.createElement('i');
+    p.className = 'conf';
+    p.style.cssText = `left:${Math.random() * 100}vw;background:${cores[i % cores.length]};animation-delay:${Math.random() * .5}s;--dx:${Math.random() * 180 - 90}px`;
+    document.body.appendChild(p);
+    setTimeout(() => p.remove(), 2900);
+  }
+}
+
+/* ---------- autenticação ---------- */
+const traduz = m => {
+  m = String(m || '');
+  if (/Invalid login/i.test(m)) return 'E-mail ou senha incorretos.';
+  if (/already registered/i.test(m)) return 'Esse e-mail já tem conta. Use "Entrar".';
+  if (/at least 6/i.test(m)) return 'A senha precisa ter pelo menos 6 caracteres.';
+  if (/valid email|invalid format/i.test(m)) return 'Digite um e-mail válido.';
+  if (/rate limit|too many/i.test(m)) return 'Muitas tentativas. Aguarde um pouco e tente de novo.';
+  if (/not confirmed/i.test(m)) return 'Confirme seu e-mail pelo link que enviamos antes de entrar.';
+  return 'Não foi possível concluir. Verifique os dados e tente de novo.';
+};
+function authMsg(t, ok = false) { const m = $('#authMsg'); m.textContent = t; m.className = 'msg' + (ok ? ' ok' : ''); }
+function setModo(cad) {
+  modoCadastro = cad;
+  $('#authBtn').textContent = cad ? 'Criar conta' : 'Entrar';
+  $('#toggleModo').textContent = cad ? 'Já tenho conta' : 'Criar uma conta';
+  $('#senha').autocomplete = cad ? 'new-password' : 'current-password';
+  authMsg('');
+}
+function mostrarAuth() { $('#viewApp').hidden = true; $('#viewAuth').hidden = false; userId = null; itens = []; usuarios = []; ehAdmin = false; $('#navAdmin').hidden = true; trocarVista('meu'); }
+
+$('#toggleModo').onclick = () => setModo(!modoCadastro);
+$('#authForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const email = $('#email').value.trim(), senha = $('#senha').value;
+  if (!email || senha.length < 6) return authMsg('Informe o e-mail e uma senha com 6 ou mais caracteres.');
+  const btn = $('#authBtn'); btn.disabled = true; authMsg('');
+  try {
+    if (modoCadastro) {
+      const { data, error } = await sb.auth.signUp({ email, password: senha });
+      if (error) return authMsg(traduz(error.message));
+      if (!data.session) authMsg('Conta criada. Abra o link enviado ao seu e-mail e depois entre.', true);
+    } else {
+      const { error } = await sb.auth.signInWithPassword({ email, password: senha });
+      if (error) authMsg(traduz(error.message));
+    }
+  } finally { btn.disabled = false; }
+});
+$('#esqueci').onclick = async () => {
+  const email = $('#email').value.trim();
+  if (!email) return authMsg('Digite seu e-mail acima e toque em "Esqueci a senha" de novo.');
+  const { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo: location.href.split('#')[0] });
+  error ? authMsg(traduz(error.message)) : authMsg('Enviamos um link para criar uma nova senha. Confira seu e-mail.', true);
+};
+$('#btnSair').onclick = () => sb.auth.signOut();
+$('#formSenha').addEventListener('submit', async e => {
+  e.preventDefault();
+  const nova = e.target.nova.value;
+  if (nova.length < 6) { $('#senhaMsg').textContent = 'A senha precisa ter pelo menos 6 caracteres.'; return; }
+  const { error } = await sb.auth.updateUser({ password: nova });
+  if (error) { $('#senhaMsg').textContent = traduz(error.message); return; }
+  e.target.reset(); $('#dlgSenha').close(); toast('Senha atualizada');
+});
+
+async function entrar(session) {
+  if (userId === session.user.id) return;
+  userId = session.user.id;
+  $('#viewAuth').hidden = true; $('#viewApp').hidden = false;
+  $('#userEmail').textContent = session.user.email;
+  await checarAdmin();
+  await carregar();
+}
+
+/* ---------- dados ---------- */
+async function carregar() {
+  const { data, error } = await sb.from('itens')
+    .select('id,tipo,nome,valor_total,data_limite,criado_em,lancamentos(id,valor,data,nota,criado_em)')
+    .eq('user_id', userId)
+    .order('criado_em', { ascending: false });
+  if (error) { toast('Não foi possível carregar seus dados. Verifique a conexão e tente de novo.', true); return; }
+  itens = data.map(i => ({
+    ...i,
+    valor_total: Number(i.valor_total),
+    lancamentos: (i.lancamentos || []).map(l => ({ ...l, valor: Number(l.valor) }))
+      .sort((a, b) => b.data.localeCompare(a.data) || b.criado_em.localeCompare(a.criado_em))
+  }));
+  render();
+  if (detalheId) { itens.some(i => i.id === detalheId) ? renderDetalhe() : $('#dlgDetalhe').close(); }
+}
+
+/* ---------- tela principal ---------- */
+function totais(tipo) {
+  const l = itens.filter(i => i.tipo === tipo);
+  const total = l.reduce((t, i) => t + i.valor_total, 0);
+  const ok = l.reduce((t, i) => t + Math.min(soma(i), i.valor_total), 0);
+  return { n: l.length, total, ok, falta: total - ok, pct: total ? ok / total * 100 : 0 };
+}
+function painel(tipo) {
+  const t = totais(tipo), meta = tipo === 'meta';
+  const titulo = meta ? 'Metas' : 'Dívidas';
+  const verbo = meta ? 'juntados' : 'pagos';
+  if (!t.n) return `<div class="panel ${tipo}"><h2>${titulo}</h2><p class="num">${brl(0)}</p><p class="empty">${meta ? 'Nenhuma meta cadastrada ainda.' : 'Nenhuma dívida cadastrada ainda.'}</p></div>`;
+  return `<div class="panel ${tipo}">
+    <h2>${titulo}</h2>
+    <p class="num">${brl(t.ok)}</p>
+    <p class="of">${verbo} de ${brl(t.total)}</p>
+    <div class="bar" role="progressbar" aria-label="${titulo}" aria-valuenow="${Math.round(t.pct)}" aria-valuemin="0" aria-valuemax="100"><i style="width:${t.pct}%"></i></div>
+    <div class="foot"><span><b>${Math.floor(t.pct)}%</b> concluído</span><span>Faltam <b>${brl(t.falta)}</b></span></div>
+  </div>`;
+}
+function prazoTxt(i) {
+  if (!i.data_limite) return '';
+  if (feito(i)) return `Prazo: ${fmtData(i.data_limite)}`;
+  const vencido = i.data_limite < hojeISO();
+  return vencido ? `<span class="warn">Prazo vencido em ${fmtData(i.data_limite)}</span>` : `Até ${fmtData(i.data_limite)}`;
+}
+function linha(i) {
+  const s = soma(i), pct = Math.min(100, s / i.valor_total * 100), ok = feito(i);
+  const acao = ok ? `<span class="ok">${i.tipo === 'meta' ? 'Meta concluída' : 'Dívida quitada'}</span>`
+    : `<button class="btn small" data-add="${i.id}">${i.tipo === 'meta' ? 'Guardar valor' : 'Registrar pagamento'}</button>`;
+  return `<article class="row ${i.tipo}${ok ? ' feito' : ''}" data-id="${i.id}">
+    <div>
+      <button class="nome" data-open="${i.id}">${esc(i.nome)}</button>
+      <div class="meta-line"><span class="tag ${i.tipo}">${i.tipo === 'meta' ? 'Meta' : 'Dívida'}</span><span>${prazoTxt(i)}</span></div>
+    </div>
+    <div>
+      <div class="bar" role="progressbar" aria-label="${esc(i.nome)}" aria-valuenow="${Math.round(pct)}" aria-valuemin="0" aria-valuemax="100"><i style="width:${pct}%"></i></div>
+      <div class="amts"><span><strong>${brl(s)}</strong> de ${brl(i.valor_total)}</span><span>${Math.floor(pct)}%</span></div>
+    </div>
+    <div class="acao">${acao}</div>
+  </article>`;
+}
+function render() {
+  $('#hero').innerHTML = painel('meta') + painel('divida');
+  let l = itens.slice();
+  if (filtro === 'meta' || filtro === 'divida') l = l.filter(i => i.tipo === filtro);
+  if (filtro === 'feito') l = l.filter(feito);
+  l.sort((a, b) => feito(a) - feito(b));
+  if (!l.length) {
+    const vazio = filtro === 'todos' ? 'Você ainda não cadastrou nada. Comece com a primeira meta ou dívida.' : 'Nenhum item nesta lista.';
+    $('#lista').innerHTML = `<div class="vazio"><p>${vazio}</p>${filtro === 'todos' ? '<button class="btn primary" data-novo>Cadastrar primeiro item</button>' : ''}</div>`;
+  } else $('#lista').innerHTML = l.map(linha).join('');
+}
+$('#tabs').addEventListener('click', e => {
+  const b = e.target.closest('.tab'); if (!b) return;
+  filtro = b.dataset.f;
+  document.querySelectorAll('#tabs .tab').forEach(t => t.setAttribute('aria-pressed', t === b));
+  render();
+});
+$('#lista').addEventListener('click', e => {
+  if (e.target.closest('[data-novo]')) return abrirItem();
+  const add = e.target.closest('[data-add]');
+  if (add) { e.stopPropagation(); return abrirDetalhe(add.dataset.add, true); }
+  const row = e.target.closest('.row');
+  if (row) abrirDetalhe(row.dataset.id);
+});
+
+/* ---------- janela de item ---------- */
+document.addEventListener('click', e => {
+  const f = e.target.closest('[data-fechar]');
+  if (f) $('#' + f.dataset.fechar).close();
+});
+$('#btnNovo').onclick = () => abrirItem();
+function abrirItem(item) {
+  editId = item ? item.id : null;
+  const f = $('#formItem'); f.reset(); $('#itemMsg').textContent = '';
+  $('#itemTitulo').textContent = item ? 'Editar item' : 'Novo item';
+  $('#campoInicial').hidden = !!item;
+  if (item) {
+    f.tipo.value = item.tipo; f.nome.value = item.nome;
+    f.valor_total.value = String(item.valor_total).replace('.', ',');
+    f.data_limite.value = item.data_limite || '';
+  }
+  $('#dlgItem').showModal();
+  f.nome.focus();
+}
+$('#formItem').addEventListener('submit', async e => {
+  e.preventDefault();
+  const f = e.target, erro = t => $('#itemMsg').textContent = t;
+  const nome = f.nome.value.trim(), total = parseMoney(f.valor_total.value);
+  if (!nome) return erro('Dê um nome ao item.');
+  if (!(total > 0)) return erro('Informe um valor total maior que zero.');
+  const inicialTxt = f.inicial.value.trim(), inicial = inicialTxt ? parseMoney(inicialTxt) : 0;
+  if (!editId && !(inicial >= 0)) return erro('O valor inicial não é válido. Use apenas números, como 1.500,00.');
+  const payload = { tipo: f.tipo.value, nome, valor_total: total, data_limite: f.data_limite.value || null };
+  const btn = $('#itemSalvar'); btn.disabled = true;
+  try {
+    if (editId) {
+      const { error } = await sb.from('itens').update(payload).eq('id', editId);
+      if (error) return erro('Não foi possível salvar. Tente de novo.');
+    } else {
+      const { data, error } = await sb.from('itens').insert(payload).select('id').single();
+      if (error) return erro('Não foi possível salvar. Tente de novo.');
+      if (inicial > 0) {
+        const r = await sb.from('lancamentos').insert({ item_id: data.id, valor: inicial, data: hojeISO(), nota: 'Valor inicial' });
+        if (r.error) toast('Item criado, mas o valor inicial não foi registrado.', true);
+      }
+    }
+    $('#dlgItem').close();
+    toast(editId ? 'Item atualizado' : 'Item criado');
+    await carregar();
+  } finally { btn.disabled = false; }
+});
+
+/* ---------- janela de detalhe ---------- */
+function abrirDetalhe(id, foco = false) {
+  detalheId = id;
+  $('#valorMsg').textContent = '';
+  const f = $('#formValor'); f.reset(); f.data.value = hojeISO();
+  renderDetalhe();
+  const d = $('#dlgDetalhe'); if (!d.open) d.showModal();
+  if (foco) f.valor.focus();
+}
+$('#dlgDetalhe').addEventListener('close', () => { detalheId = null; });
+function mesesAte(d) {
+  const diff = (new Date(d + 'T00:00:00') - new Date()) / 86400000;
+  return diff <= 0 ? 0 : Math.max(1, Math.ceil(diff / 30.44));
+}
+function renderDetalhe() {
+  const i = itens.find(x => x.id === detalheId); if (!i) return;
+  const s = soma(i), pct = Math.min(100, s / i.valor_total * 100), falta = Math.max(0, i.valor_total - s), meta = i.tipo === 'meta';
+  const tag = $('#dTag'); tag.textContent = meta ? 'Meta' : 'Dívida'; tag.className = 'tag ' + i.tipo;
+  $('#dNome').textContent = i.nome;
+  let prazo = '';
+  if (i.data_limite && falta > 0) {
+    const m = mesesAte(i.data_limite);
+    prazo = m ? `<div><b>${brl(falta / m)}</b>por mês até ${fmtData(i.data_limite)}</div>` : `<div><b class="warn">Vencido</b>em ${fmtData(i.data_limite)}</div>`;
+  }
+  $('#dResumo').innerHTML = `
+    <p class="big-num">${brl(Math.min(s, i.valor_total))} <span>${meta ? 'juntados' : 'pagos'} de ${brl(i.valor_total)}</span></p>
+    <div class="bar big" role="progressbar" aria-label="Progresso" aria-valuenow="${Math.round(pct)}" aria-valuemin="0" aria-valuemax="100"><i style="width:${pct}%;background:${falta === 0 ? 'var(--gold)' : meta ? 'var(--meta)' : 'var(--divida)'}"></i></div>
+    <div class="facts"><div><b>${Math.floor(pct)}%</b>concluído</div><div><b>${brl(falta)}</b>${meta ? 'falta juntar' : 'falta pagar'}</div>${prazo}</div>`;
+  $('#btnValor').textContent = meta ? 'Guardar valor' : 'Registrar pagamento';
+  $('#dHist').innerHTML = i.lancamentos.length ? i.lancamentos.map(l => `
+    <li><div class="desc">${fmtData(l.data)}${l.nota ? `<small>${esc(l.nota)}</small>` : ''}</div>
+    <span class="val">${brl(l.valor)}</span>
+    <button class="del" data-del="${l.id}" aria-label="Excluir lançamento de ${brl(l.valor)}">Excluir</button></li>`).join('')
+    : '<li class="hist-vazio">Nenhum valor registrado ainda.</li>';
+}
+$('#formValor').addEventListener('submit', async e => {
+  e.preventDefault();
+  const i = itens.find(x => x.id === detalheId); if (!i) return;
+  const f = e.target, erro = t => $('#valorMsg').textContent = t;
+  erro('');
+  const valor = parseMoney(f.valor.value);
+  if (!(valor > 0)) return erro('Informe um valor maior que zero.');
+  if (!f.data.value) return erro('Informe a data.');
+  const antes = soma(i), btn = $('#btnValor'); btn.disabled = true;
+  try {
+    const { error } = await sb.from('lancamentos').insert({ item_id: i.id, valor, data: f.data.value, nota: f.nota.value.trim() || null });
+    if (error) return erro('Não foi possível registrar. Tente de novo.');
+    f.valor.value = ''; f.nota.value = '';
+    await carregar();
+    const novo = itens.find(x => x.id === i.id);
+    if (novo && antes < novo.valor_total && soma(novo) >= novo.valor_total) {
+      confete(); toast(novo.tipo === 'meta' ? 'Meta concluída! Parabéns!' : 'Dívida quitada! Parabéns!');
+    } else toast(i.tipo === 'meta' ? 'Valor guardado' : 'Pagamento registrado');
+    f.valor.focus();
+  } finally { btn.disabled = false; }
+});
+$('#dHist').addEventListener('click', async e => {
+  const b = e.target.closest('[data-del]'); if (!b) return;
+  if (!confirm('Excluir este lançamento? O progresso será recalculado.')) return;
+  const { error } = await sb.from('lancamentos').delete().eq('id', b.dataset.del);
+  if (error) return toast('Não foi possível excluir. Tente de novo.', true);
+  toast('Lançamento excluído'); carregar();
+});
+$('#dEditar').onclick = () => { const i = itens.find(x => x.id === detalheId); if (i) { $('#dlgDetalhe').close(); abrirItem(i); } };
+$('#dExcluir').onclick = async () => {
+  const i = itens.find(x => x.id === detalheId); if (!i) return;
+  if (!confirm(`Excluir "${i.nome}" e todo o histórico dele? Essa ação não pode ser desfeita.`)) return;
+  const { error } = await sb.from('itens').delete().eq('id', i.id);
+  if (error) return toast('Não foi possível excluir. Tente de novo.', true);
+  $('#dlgDetalhe').close(); toast('Item excluído'); carregar();
+};
+
+/* ---------- administração ---------- */
+const fmtTs = t => t ? new Date(t).toLocaleDateString('pt-BR') : 'nunca';
+const pc = (f, t) => t > 0 ? Math.floor(Math.min(f, t) / t * 100) : 0;
+async function checarAdmin() {
+  const { data, error } = await sb.rpc('is_admin');
+  ehAdmin = !error && data === true;
+  $('#navAdmin').hidden = !ehAdmin;
+  trocarVista('meu');
+}
+function trocarVista(v) {
+  vista = v;
+  $('#vistaMeu').hidden = v !== 'meu';
+  $('#vistaAdmin').hidden = v !== 'admin';
+  document.querySelectorAll('#navAdmin .tab').forEach(b => b.setAttribute('aria-pressed', b.dataset.vista === v));
+  if (v === 'admin' && ehAdmin) carregarAdmin();
+}
+$('#navAdmin').addEventListener('click', e => { const b = e.target.closest('[data-vista]'); if (b) trocarVista(b.dataset.vista); });
+async function carregarAdmin() {
+  const { data, error } = await sb.rpc('admin_listar_usuarios');
+  if (error) { toast('Não foi possível carregar os usuários. Tente de novo.', true); return; }
+  usuarios = data.map(u => ({
+    ...u, total_metas: Number(u.total_metas), total_dividas: Number(u.total_dividas),
+    feito_metas: Number(u.feito_metas), feito_dividas: Number(u.feito_dividas)
+  }));
+  renderAdmin();
+}
+function renderAdmin() {
+  const t = usuarios.reduce((a, u) => ({
+    nm: a.nm + u.qtd_metas, nd: a.nd + u.qtd_dividas, tm: a.tm + u.total_metas,
+    td: a.td + u.total_dividas, fm: a.fm + u.feito_metas, fd: a.fd + u.feito_dividas
+  }), { nm: 0, nd: 0, tm: 0, td: 0, fm: 0, fd: 0 });
+  const nAdm = usuarios.filter(u => u.e_admin).length;
+  $('#adminKpis').innerHTML = `
+    <div class="panel"><h2>Usuários</h2><p class="num">${usuarios.length}</p><p class="of">${nAdm} ${nAdm === 1 ? 'administrador' : 'administradores'}</p></div>
+    <div class="panel meta"><h2>Metas</h2><p class="num">${t.nm}</p><p class="of">${brl(t.fm)} juntados de ${brl(t.tm)}</p></div>
+    <div class="panel divida"><h2>Dívidas</h2><p class="num">${t.nd}</p><p class="of">${brl(t.fd)} pagos de ${brl(t.td)}</p></div>`;
+  const q = $('#adminBusca').value.trim().toLowerCase();
+  const l = usuarios.filter(u => !q || (u.email || '').toLowerCase().includes(q));
+  const n = (k, v) => `${k} ${k === 1 ? 'item' : 'itens'}, ${v}%`;
+  $('#adminLista').innerHTML = l.length ? l.map(u => {
+    const eu = u.id === userId;
+    return `<article class="urow">
+      <div>
+        <strong class="uemail">${esc(u.email)}</strong>${u.e_admin ? ' <span class="tag admin">Admin</span>' : ''}${eu ? ' <span class="tag voce">Você</span>' : ''}
+        <small>Cadastro em ${fmtTs(u.criado_em)}</small><small>Último acesso: ${fmtTs(u.ultimo_acesso)}</small>
+      </div>
+      <div class="umini">
+        <span><span class="tag meta">Metas</span> ${n(u.qtd_metas, pc(u.feito_metas, u.total_metas))}</span>
+        <span><span class="tag divida">Dívidas</span> ${n(u.qtd_dividas, pc(u.feito_dividas, u.total_dividas))}</span>
+      </div>
+      <div class="uacoes">
+        <button class="btn small" data-ver="${u.id}">Ver itens</button>
+        ${eu ? '' : `<button class="btn small ghost" data-adm="${u.id}" data-val="${!u.e_admin}">${u.e_admin ? 'Remover admin' : 'Tornar admin'}</button>`}
+        ${eu || u.e_admin ? '' : `<button class="btn small danger" data-exc="${u.id}">Excluir conta</button>`}
+      </div>
+    </article>`;
+  }).join('') : '<div class="vazio"><p>Nenhum usuário encontrado.</p></div>';
+}
+$('#adminBusca').addEventListener('input', renderAdmin);
+$('#adminAtualizar').onclick = carregarAdmin;
+$('#adminLista').addEventListener('click', async e => {
+  const ver = e.target.closest('[data-ver]'), adm = e.target.closest('[data-adm]'), exc = e.target.closest('[data-exc]');
+  if (ver) return abrirUsuario(ver.dataset.ver);
+  if (adm) {
+    const u = usuarios.find(x => x.id === adm.dataset.adm), dar = adm.dataset.val === 'true';
+    if (!u || !confirm(dar ? `Dar acesso de administrador a ${u.email}?` : `Remover o acesso de administrador de ${u.email}?`)) return;
+    const { error } = await sb.rpc('admin_definir_admin', { alvo: u.id, valor: dar });
+    if (error) return toast(error.message || 'Não foi possível concluir. Tente de novo.', true);
+    toast(dar ? 'Acesso de administrador concedido' : 'Acesso de administrador removido');
+    return carregarAdmin();
+  }
+  if (exc) {
+    const u = usuarios.find(x => x.id === exc.dataset.exc);
+    if (!u || !confirm(`Excluir a conta de ${u.email} e todas as metas e dívidas dela? Essa ação não pode ser desfeita.`)) return;
+    const { error } = await sb.rpc('admin_excluir_usuario', { alvo: u.id });
+    if (error) return toast(error.message || 'Não foi possível excluir. Tente de novo.', true);
+    toast('Conta excluída');
+    carregarAdmin();
+  }
+});
+async function abrirUsuario(uid) {
+  const u = usuarios.find(x => x.id === uid); if (!u) return;
+  $('#uNome').textContent = u.email;
+  $('#uCorpo').innerHTML = '<p class="hist-vazio">Carregando...</p>';
+  $('#dlgUsuario').showModal();
+  const { data, error } = await sb.from('itens')
+    .select('id,tipo,nome,valor_total,lancamentos(valor)')
+    .eq('user_id', uid).order('criado_em', { ascending: false });
+  if (error) { $('#uCorpo').innerHTML = '<p class="hist-vazio">Não foi possível carregar os itens.</p>'; return; }
+  $('#uCorpo').innerHTML = data.length ? data.map(i => {
+    const tot = Number(i.valor_total), s = (i.lancamentos || []).reduce((a, l) => a + Number(l.valor), 0), p = Math.min(100, s / tot * 100);
+    return `<div class="uitem ${i.tipo}">
+      <div class="uitem-top"><strong>${esc(i.nome)}</strong><span class="tag ${i.tipo}">${i.tipo === 'meta' ? 'Meta' : 'Dívida'}</span></div>
+      <div class="bar"><i style="width:${p}%"></i></div>
+      <div class="amts"><span><strong>${brl(Math.min(s, tot))}</strong> de ${brl(tot)}</span><span>${Math.floor(p)}%</span></div>
+    </div>`;
+  }).join('') : '<p class="hist-vazio">Esta pessoa ainda não cadastrou nada.</p>';
+}
+
+/* ---------- início ---------- */
+(function iniciar() {
+  if (SUPABASE_URL.startsWith('COLE_') || SUPABASE_ANON_KEY.startsWith('COLE_')) {
+    $('#viewAuth').hidden = false;
+    $('#authForm').hidden = true;
+    $('.auth .lead').innerHTML = 'Falta configurar o Supabase. Abra o arquivo <b>index.html</b> e preencha <b>SUPABASE_URL</b> e <b>SUPABASE_ANON_KEY</b> no começo do script.';
+    return;
+  }
+  sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  sb.auth.onAuthStateChange((evento, session) => {
+    if (evento === 'PASSWORD_RECOVERY') { setTimeout(() => $('#dlgSenha').showModal(), 0); }
+    if (session) setTimeout(() => entrar(session), 0); else mostrarAuth();
+  });
+  sb.auth.getSession().then(({ data }) => { if (!data.session) mostrarAuth(); });
+})();
+</script>
+</body>
+</html>
