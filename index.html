@@ -220,6 +220,26 @@ body{color:var(--ink);background:radial-gradient(900px 500px at 5% -5%,rgba(108,
 @keyframes pop{from{opacity:0;transform:translateY(16px) scale(.96)}}
 .ctop{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:12px;min-height:26px}
 .card .tag{background:color-mix(in srgb,var(--g1) 17%,transparent);color:var(--g1)}
+
+.panel[data-resumo]{cursor:pointer}
+.panel[data-resumo]:hover{transform:translateY(-3px)}
+.panel[data-resumo]:focus-visible{outline:3px solid #2B6CB0;outline-offset:3px}
+.panel .ver{font-size:.85rem;font-weight:600;opacity:.9;text-decoration:underline;margin:6px 0 0}
+.rtotal{display:flex;justify-content:space-between;align-items:baseline;gap:12px;padding:12px 0;border-bottom:2px solid var(--line);font-weight:700}
+.rtotal b{font-family:var(--display);font-size:1.4rem}
+/* balões de vencimento: vermelho = vencida/vence hoje, amarelo = prestes a vencer */
+.balao{display:inline-flex;align-items:center;gap:6px;font-size:.8rem;font-weight:700;padding:3px 10px;border-radius:99px;white-space:nowrap}
+.balao::before{content:"";width:8px;height:8px;border-radius:50%;background:currentColor}
+.balao.vermelho{background:#FDE3E1;color:#B3261E}
+.balao.vermelho::before{animation:pulsa 1.4s ease-in-out infinite}
+.balao.amarelo{background:#FFF1BF;color:#7A5200}
+[data-tema=dark] .balao.vermelho{background:#5A1B17;color:#FFB4AB}
+[data-tema=dark] .balao.amarelo{background:#4D3B00;color:#FFD966}
+@keyframes pulsa{50%{opacity:.35}}
+.tab .ponto{display:inline-block;width:9px;height:9px;border-radius:50%;margin-left:7px;vertical-align:middle;box-shadow:0 0 0 2px rgba(255,255,255,.7)}
+.tab .ponto.vermelho{background:#E5362B}
+.tab .ponto.amarelo{background:#F5B400}
+@media (prefers-reduced-motion:reduce){.balao.vermelho::before{animation:none}}
 .selo{font-size:.8rem;font-weight:700;padding:3px 10px;border-radius:99px;background:linear-gradient(90deg,#FFC83D,#FF9A3D);color:#4a2a00}
 .cmid{display:flex;justify-content:space-between;align-items:center;gap:12px}.cinfo{min-width:0}
 .card .nome{font-size:1.2rem}.card .ring .rg{stroke:var(--g1)}.card .rt{font-size:1rem}
@@ -451,6 +471,14 @@ dialog{background:var(--surface);color:var(--ink);animation:abre .25s cubic-bezi
 </dialog>
 
 <!-- Janela: nova senha (após link de recuperação) -->
+<dialog id="dlgResumo" aria-labelledby="rTitulo">
+  <div class="dlg">
+    <div class="dlg-head"><div><span class="tag meta" id="rTag">Contas</span><h2 id="rTitulo"></h2></div><button type="button" class="x" data-fechar="dlgResumo" aria-label="Fechar">×</button></div>
+    <div id="rCorpo"></div>
+    <div class="dlg-foot"><button type="button" class="btn ghost" data-fechar="dlgResumo">Fechar</button></div>
+  </div>
+</dialog>
+
 <dialog id="dlgSenha" aria-labelledby="senhaTitulo">
   <form class="dlg" id="formSenha" novalidate>
     <div class="dlg-head"><h2 id="senhaTitulo">Criar nova senha</h2></div>
@@ -580,6 +608,7 @@ async function entrar(session) {
   $('#userEmail').textContent = perfilNome || emailUser;
   await checarAdmin();
   await carregar();
+  carregarCartoes(); carregarContas();
 }
 
 /* ---------- dados ---------- */
@@ -919,7 +948,7 @@ async function carregarCartoes() {
     .select('id,nome,limite,dia_vencimento,alerta_dias,alerta_limite,compras_cartao(id,valor,data,descricao,paga,criado_em)')
     .eq('user_id', userId).order('criado_em');
   if (error) { toast('Não foi possível carregar os cartões. Tente de novo.', true); return; }
-  cartoes = data; renderCartoes();
+  cartoes = data; renderCartoes(); marcarAbas();
   if (cartaoId) { cartoes.some(c => c.id === cartaoId) ? renderCartaoDet() : $('#dlgCartaoDet').close(); }
 }
 function renderCartoes() {
@@ -927,7 +956,7 @@ function renderCartoes() {
     const u = usadoC(c), lim = Number(c.limite), pct = Math.min(100, u / lim * 100), v = proxVenc(c.dia_vencimento);
     const perto = u > 0 && v.dias <= c.alerta_dias, [g1, g2] = PALC[k % 4];
     return `<article class="row card" style="--g1:${g1};--g2:${g2};animation-delay:${k * 60}ms" data-cid="${c.id}">
-      <div class="ctop"><span class="tag">Cartão</span>${pct >= c.alerta_limite ? '<span class="selo">Perto do limite ⚠️</span>' : ''}</div>
+      <div class="ctop"><span class="tag">Cartão</span><span style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">${u > 0 ? balaoHtml(nivelVenc(v.dias, c.alerta_dias), v.dias === 0 ? 'Fatura vence hoje' : v.dias === 1 ? 'Fatura vence amanhã' : `Fatura vence em ${v.dias} dias`) : ''}${pct >= c.alerta_limite ? '<span class="selo">Perto do limite ⚠️</span>' : ''}</span></div>
       <div class="cmid"><div class="cinfo"><button class="nome" data-copen="${c.id}">${esc(c.nome)}</button>
         <div class="prazo">${perto ? `<span class="warn">Fatura vence ${v.dias === 0 ? 'hoje' : 'em ' + v.dias + ' dia(s)'}</span>` : `Vence dia ${c.dia_vencimento}, em ${v.dias} dia(s)`}</div></div>${ring(pct, '', 84, 10)}</div>
       <div class="camts"><strong>${brl(u)}</strong><span>de ${brl(lim)}</span></div>
@@ -1048,7 +1077,7 @@ async function carregarContas() {
     .eq('user_id', userId).order('vencimento', { ascending: false });
   if (error) { toast('Não foi possível carregar as contas. Tente de novo.', true); return; }
   contasFat = data.map(f => ({ ...f, valor: f.valor == null ? null : Number(f.valor) }));
-  renderContas();
+  renderContas(); marcarAbas();
   if (contaTipo) renderContaDet();
 }
 
@@ -1084,12 +1113,27 @@ function projetar(tipo, n = 3) {
   return { itens, k, dia, min: Math.min(...vals), max: Math.max(...vals) };
 }
 
+/* nível do balão: 'vermelho' (vencida ou vence hoje), 'amarelo' (prestes a vencer) ou null */
+const nivelVenc = (dias, aviso = 3) => dias <= 0 ? 'vermelho' : dias <= aviso ? 'amarelo' : null;
+const balaoHtml = (nivel, txt) => nivel ? `<span class="balao ${nivel}">${txt}</span>` : '';
+function marcarAbas() {
+  const rank = { vermelho: 2, amarelo: 1 };
+  const pior = a => a.reduce((m, n) => (rank[n] || 0) > (rank[m] || 0) ? n : m, null);
+  const nc = pior(cartoes.map(c => usadoC(c) > 0 ? nivelVenc(proxVenc(c.dia_vencimento).dias, c.alerta_dias) : null));
+  const nt = pior(contasFat.filter(f => !f.paga).map(f => nivelVenc(diasAte(f.vencimento))));
+  [['cartoes', nc], ['contas', nt]].forEach(([v, n]) => {
+    const b = document.querySelector(`#navAdmin [data-vista="${v}"]`); if (!b) return;
+    const old = b.querySelector('.ponto'); if (old) old.remove();
+    if (n) { const i = document.createElement('i'); i.className = 'ponto ' + n; i.setAttribute('aria-label', n === 'vermelho' ? 'conta vencida ou vencendo hoje' : 'conta prestes a vencer'); b.appendChild(i); }
+  });
+}
+
 function statusVenc(f) {
   const d = diasAte(f.vencimento);
   if (f.paga) return { txt: 'Paga', cls: 'pago', alerta: false };
-  if (d < 0) return { txt: `Vencida há ${-d} dia(s)`, cls: 'warn', alerta: true };
-  if (d === 0) return { txt: 'Vence hoje', cls: 'warn', alerta: true };
-  return { txt: `Vence em ${d} dia(s)`, cls: '', alerta: d <= 3 };
+  if (d < 0) return { txt: `Vencida há ${-d} dia(s)`, cls: 'warn', alerta: true, nivel: 'vermelho', balao: 'Vencida' };
+  if (d === 0) return { txt: 'Vence hoje', cls: 'warn', alerta: true, nivel: 'vermelho', balao: 'Vence hoje' };
+  return { txt: `Vence em ${d} dia(s)`, cls: '', alerta: d <= 3, nivel: nivelVenc(d), balao: d === 1 ? 'Vence amanhã' : `Vence em ${d} dias` };
 }
 
 function renderContas() {
@@ -1101,8 +1145,8 @@ function renderContas() {
     faturasDe(t).filter(f => !f.paga).forEach(f => { abertoN++; aberto += f.valor || 0; if (diasAte(f.vencimento) < 0) vencidas++; });
   });
   $('#contasHero').innerHTML =
-    `<div class="panel meta"><div class="ptxt"><h2>Estimativa da próxima conta</h2><p class="num">${brl(prevTotal)}</p><p class="${prevN ? 'of' : 'empty'}">${prevN ? `soma das próximas contas de ${prevN} serviço(s)` : 'Lance suas contas para ver a estimativa.'}</p></div></div>` +
-    `<div class="panel divida"><div class="ptxt"><h2>Em aberto</h2><p class="num">${brl(aberto)}</p><p class="of">${abertoN} conta(s) a pagar${vencidas ? ` · ${vencidas} vencida(s)` : ''}</p></div></div>`;
+    `<div class="panel meta" role="button" tabindex="0" data-resumo="estimativa"><div class="ptxt"><h2>Estimativa da próxima conta</h2><p class="num">${brl(prevTotal)}</p><p class="${prevN ? 'of' : 'empty'}">${prevN ? `soma das próximas contas de ${prevN} serviço(s)` : 'Lance suas contas para ver a estimativa.'}</p><p class="ver">Ver detalhes ›</p></div></div>` +
+    `<div class="panel divida" role="button" tabindex="0" data-resumo="aberto"><div class="ptxt"><h2>Em aberto</h2><p class="num">${brl(aberto)}</p><p class="of">${abertoN} conta(s) a pagar${vencidas ? ` · ${vencidas} vencida(s)` : ''}</p><p class="ver">Ver contas ›</p></div></div>`;
 
   $('#contasLista').innerHTML = tipos.map((t, k) => {
     const c = CONTAS[t], [g1, g2] = c.cor, todas = faturasDe(t);
@@ -1115,7 +1159,7 @@ function renderContas() {
       ? `<div class="projt">Projeção</div><ul class="proj">${p.itens.map(x => `<li><span>${mesAno(x.venc)} · dia ${x.venc.slice(8, 10)}</span><b>~ ${brl(x.valor)}</b></li>`).join('')}</ul>`
       : `<p class="proj-vazio">${todas.length ? 'Informe o valor de pelo menos uma conta para ver a projeção.' : 'Lance as últimas contas para ver a projeção.'}</p>`;
     return `<article class="row card" style="--g1:${g1};--g2:${g2};animation-delay:${k * 60}ms" data-ctipo="${t}">
-      <div class="ctop"><span class="tag">${c.nome}</span>${st && st.alerta ? '<span class="selo">Atenção ⚠️</span>' : ''}</div>
+      <div class="ctop"><span class="tag">${c.nome}</span>${st && st.nivel ? balaoHtml(st.nivel, st.balao) : ''}</div>
       <div class="cmid"><div class="cinfo"><button class="nome" data-ctopen="${t}">${c.emoji} ${c.nome}</button><div class="prazo">${linhaVenc}</div></div></div>
       <div class="camts"><strong>${ult ? brl(ult.valor) : '—'}</strong><span>${ult ? 'última conta' : 'sem valor lançado'}</span></div>
       ${proj}
@@ -1126,6 +1170,37 @@ $('#contasLista').addEventListener('click', e => {
   const add = e.target.closest('[data-cadd]'); if (add) return abrirConta(add.dataset.cadd, true);
   const row = e.target.closest('.row'); if (row) abrirConta(row.dataset.ctipo);
 });
+
+/* ---------- resumo: clique nos painéis de Estimativa / Em aberto ---------- */
+function abrirResumo(tipo) {
+  const corpo = $('#rCorpo');
+  if (tipo === 'aberto') {
+    $('#rTitulo').textContent = 'Contas em aberto';
+    const l = [];
+    Object.keys(CONTAS).forEach(t => faturasDe(t).filter(f => !f.paga).forEach(f => l.push({ ...f, t })));
+    l.sort((a, b) => a.vencimento.localeCompare(b.vencimento));
+    const total = l.reduce((a, f) => a + (f.valor || 0), 0);
+    corpo.innerHTML = l.length
+      ? `<div class="rtotal"><span>Total em aberto</span><b>${brl(total)}</b></div><ul class="hist" style="max-height:none">${l.map(f => {
+          const st = statusVenc(f), c = CONTAS[f.t];
+          return `<li><div class="desc">${c.emoji} ${c.nome} · ${fmtData(f.vencimento)}<small class="${st.cls}">${st.txt}</small>${st.nivel ? balaoHtml(st.nivel, st.balao) : ''}</div><span class="val">${f.valor == null ? 'sem valor' : brl(f.valor)}</span><span class="acoes"><button class="del" data-rabrir="${f.t}">Abrir</button></span></li>`;
+        }).join('')}</ul>`
+      : '<p class="hist-vazio">Nenhuma conta em aberto. 🎉</p>';
+  } else {
+    $('#rTitulo').textContent = 'Estimativa da próxima conta';
+    let total = 0;
+    const l = Object.keys(CONTAS).map(t => {
+      const c = CONTAS[t], p = projetar(t, 1), x = p && p.itens[0];
+      if (x) total += x.valor;
+      return `<li><div class="desc">${c.emoji} ${c.nome}<small>${x ? 'vence em ' + fmtData(x.venc) : 'sem projeção ainda'}</small></div><span class="val">${x ? '~ ' + brl(x.valor) : '—'}</span><span class="acoes"><button class="del" data-rabrir="${t}">Abrir</button></span></li>`;
+    }).join('');
+    corpo.innerHTML = `<div class="rtotal"><span>Soma estimada</span><b>${brl(total)}</b></div><ul class="hist" style="max-height:none">${l}</ul><p class="dica">Estimativa com base nas contas já lançadas. O valor real pode variar.</p>`;
+  }
+  $('#dlgResumo').showModal();
+}
+$('#contasHero').addEventListener('click', e => { const p = e.target.closest('[data-resumo]'); if (p) abrirResumo(p.dataset.resumo); });
+$('#contasHero').addEventListener('keydown', e => { if (e.key !== 'Enter' && e.key !== ' ') return; const p = e.target.closest('[data-resumo]'); if (p) { e.preventDefault(); abrirResumo(p.dataset.resumo); } });
+$('#rCorpo').addEventListener('click', e => { const b = e.target.closest('[data-rabrir]'); if (!b) return; $('#dlgResumo').close(); abrirConta(b.dataset.rabrir); });
 
 function abrirConta(tipo, foco) {
   contaTipo = tipo; faturaEdit = null;
@@ -1165,7 +1240,7 @@ function renderContaDet() {
     : '<p class="proj-vazio">Sem projeção ainda.</p>';
   $('#ctHist').innerHTML = todas.length ? todas.map(f => {
     const st = statusVenc(f);
-    return `<li><div class="desc">${fmtData(f.vencimento)}<small class="${st.cls}">${st.txt}</small></div>
+    return `<li><div class="desc">${fmtData(f.vencimento)}<small class="${st.cls}">${st.txt}</small>${st.nivel ? balaoHtml(st.nivel, st.balao) : ''}</div>
       <span class="val">${f.valor == null ? 'sem valor' : brl(f.valor)}</span>
       <span class="acoes"><button class="del" data-cpaga="${f.id}">${f.paga ? 'Reabrir' : 'Pagar'}</button><button class="del" data-cedit="${f.id}">Editar</button><button class="del" data-cdelf="${f.id}" aria-label="Excluir conta de ${fmtData(f.vencimento)}">Excluir</button></span></li>`;
   }).join('') : '<li class="hist-vazio">Nenhuma conta lançada ainda.</li>';
