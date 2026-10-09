@@ -166,6 +166,69 @@ dialog::backdrop{background:rgba(15,25,40,.45)}
 @media (prefers-reduced-motion:reduce){
   .bar i,#toast{transition:none}
 }
+
+/* ===== V3: cor, vida e interação ===== */
+:root{--bg:#F3F1FF;--surface:#fff;--ink:#1A1446;--muted:#6B6890;--line:#E3E0F7;--meta:#00B8A3;--divida:#FF4D8D;--meta-soft:#D5F6F1;--divida-soft:#FFE0EC;--brand:#6C4DFF;--shadow:0 10px 30px rgba(76,52,200,.13)}
+[data-tema=dark]{--bg:#0E0B2B;--surface:#1A1545;--ink:#F2F0FF;--muted:#A9A5D6;--line:#2E2870;--meta-soft:#0B3F3B;--divida-soft:#4A1334;--shadow:0 10px 30px rgba(0,0,0,.45)}
+[data-tema=dark] .tag.meta{color:#7CF3E3}[data-tema=dark] .tag.divida{color:#FFA8CB}[data-tema=dark] .tag.admin{background:#2A2F7A;color:#BFC8FF}
+[data-tema=dark] .bar,[data-tema=dark] .x:hover{background:#2A2470}
+body{color:var(--ink);background:radial-gradient(900px 500px at 5% -5%,rgba(108,77,255,.25),transparent 60%),radial-gradient(800px 500px at 100% 0,rgba(255,77,141,.2),transparent 55%),radial-gradient(900px 600px at 50% 115%,rgba(0,184,163,.2),transparent 60%),var(--bg);background-attachment:fixed;transition:background-color .3s}
+.top{position:sticky;top:0;z-index:20;max-width:none;margin:0;padding:12px max(20px,calc((100vw - 980px)/2));backdrop-filter:blur(14px);background:color-mix(in srgb,var(--bg) 72%,transparent)}
+.brand::before{content:"";display:inline-block;width:.8em;height:.8em;border-radius:50%;background:conic-gradient(#6C4DFF,#FF4D8D,#FFC83D,#00B8A3,#6C4DFF);margin-right:8px;animation:gira 6s linear infinite}
+@keyframes gira{to{transform:rotate(360deg)}}
+.btn,.tab,.chip-btn{transition:transform .15s,box-shadow .2s,background .2s,border-color .2s}
+.btn{background:var(--surface);color:var(--ink);border-color:var(--line)}
+.btn:hover{transform:translateY(-2px);box-shadow:0 8px 18px rgba(76,52,200,.2)}
+.btn:active{transform:scale(.95)}
+.btn.primary,.btn.go{background:linear-gradient(135deg,#6C4DFF,#3D8BFF);border-color:transparent;color:#fff}
+.btn.primary:hover,.btn.go:hover{background:linear-gradient(135deg,#7D61FF,#4F98FF);box-shadow:0 10px 22px rgba(108,77,255,.45)}
+.tab:hover{background:color-mix(in srgb,var(--brand) 14%,transparent);color:var(--ink)}
+.tab[aria-pressed="true"]{background:linear-gradient(135deg,#6C4DFF,#FF4D8D);color:#fff;box-shadow:0 6px 16px rgba(108,77,255,.35)}
+.field input,.busca input{background:var(--surface);color:var(--ink);border-color:var(--line)}
+.field input:focus,.busca input:focus{border-color:var(--brand);box-shadow:0 0 0 4px rgba(108,77,255,.18);outline:0}
+.auth{background:var(--surface);padding:34px 30px;border-radius:26px;box-shadow:var(--shadow)}
+.auth h1{background:linear-gradient(90deg,#6C4DFF,#FF4D8D 60%,#FFA64D);-webkit-background-clip:text;background-clip:text;color:transparent}
+.saudacao{margin:6px 0 20px}.saudacao h1{font-size:clamp(1.7rem,4.4vw,2.4rem);font-weight:800;letter-spacing:-.02em}.saudacao p{margin:4px 0 0;color:var(--muted);font-size:1.05rem}.saudacao b{color:var(--brand)}
+.hero{background:none;border:0;border-radius:0;overflow:visible;gap:18px}
+.hero .panel+.panel,.hero.tres .panel+.panel{border:0!important}
+.panel{display:flex;justify-content:space-between;align-items:center;gap:16px;border-radius:24px;color:#fff;position:relative;overflow:hidden;box-shadow:var(--shadow);transition:transform .25s,box-shadow .25s}
+.panel:hover{transform:translateY(-4px) scale(1.01)}
+.panel::after{content:"";position:absolute;right:-40px;top:-40px;width:160px;height:160px;border-radius:50%;background:rgba(255,255,255,.14);pointer-events:none}
+.panel.meta{background:linear-gradient(135deg,#00B8A3,#2BD98B 65%,#7CEFC8)}
+.panel.divida{background:linear-gradient(135deg,#FF4D8D,#FF7A59 65%,#FFA64D)}
+.panel:not(.meta):not(.divida){background:linear-gradient(135deg,#6C4DFF,#3D8BFF)}
+.hero.tres .panel{display:block}
+.panel h2,.panel .of,.panel .foot,.panel .empty{color:rgba(255,255,255,.92)}.panel .foot b{color:#fff}
+.panel .num{color:#fff}.panel .of{margin-bottom:10px}
+.ptxt{min-width:0;position:relative;z-index:1}.panel .ring{position:relative;z-index:1;flex:none}
+.rt{fill:var(--ink);font-family:var(--display);font-weight:800;font-size:1.05rem}.panel .rt{fill:#fff;font-size:1.5rem}
+.rg{animation:ring 1.2s cubic-bezier(.2,.8,.2,1)}@keyframes ring{from{stroke-dashoffset:var(--c)}}
+#lista{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:18px}
+.row.card{display:block;position:relative;overflow:hidden;padding:22px 20px 20px;border:0;border-radius:24px;background:var(--surface);box-shadow:var(--shadow);transition:transform .25s,box-shadow .25s;animation:pop .5s cubic-bezier(.2,.8,.2,1) backwards}
+.row.card::before{content:"";position:absolute;left:0;right:0;top:0;height:7px;background:linear-gradient(90deg,var(--g1),var(--g2))}
+.row.card:hover{transform:translateY(-6px);box-shadow:0 18px 38px color-mix(in srgb,var(--g1) 38%,transparent)}
+.row.card:active{transform:translateY(-2px) scale(.99)}
+@keyframes pop{from{opacity:0;transform:translateY(16px) scale(.96)}}
+.ctop{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:12px;min-height:26px}
+.card .tag{background:color-mix(in srgb,var(--g1) 17%,transparent);color:var(--g1)}
+.selo{font-size:.8rem;font-weight:700;padding:3px 10px;border-radius:99px;background:linear-gradient(90deg,#FFC83D,#FF9A3D);color:#4a2a00}
+.cmid{display:flex;justify-content:space-between;align-items:center;gap:12px}.cinfo{min-width:0}
+.card .nome{font-size:1.2rem}.card .ring .rg{stroke:var(--g1)}.card .rt{font-size:1rem}
+.prazo{margin-top:4px;color:var(--muted);font-size:.9rem}
+.camts{margin:14px 0 16px;display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}.camts strong{font-family:var(--display);font-size:1.5rem;font-weight:800}.camts span{color:var(--muted)}
+.card .acao .btn{width:100%}
+.row.card.feito{box-shadow:0 0 0 2px #FFC83D,0 14px 32px rgba(255,200,61,.35)}.row.card.feito::before{background:linear-gradient(90deg,#FFC83D,#FF9A3D)}
+.chips{grid-column:1/-1;display:flex;gap:8px;flex-wrap:wrap}
+.chip-btn{border:0;background:linear-gradient(135deg,#EDE9FF,#FFE3EF);color:#4a35c9;font-weight:700;padding:8px 16px;border-radius:99px;cursor:pointer}
+.chip-btn:hover{transform:translateY(-2px) scale(1.06);box-shadow:0 6px 14px rgba(108,77,255,.3)}.chip-btn:active{transform:scale(.92)}
+.urow{background:var(--surface);border:0;border-radius:20px;padding:16px 18px;margin-bottom:12px;box-shadow:var(--shadow);transition:transform .2s}
+.urow:hover{transform:translateY(-3px)}
+.av{display:inline-grid;place-items:center;width:34px;height:34px;border-radius:50%;margin-right:10px;vertical-align:middle;background:linear-gradient(135deg,#6C4DFF,#FF4D8D);color:#fff;font-weight:800}
+.vazio{background:var(--surface);border-radius:24px;box-shadow:var(--shadow)}.vz{font-size:3rem;animation:flutua 2.4s ease-in-out infinite}@keyframes flutua{50%{transform:translateY(-8px)}}
+dialog{background:var(--surface);color:var(--ink);animation:abre .25s cubic-bezier(.2,.8,.2,1)}@keyframes abre{from{opacity:0;transform:translateY(14px) scale(.97)}}
+#toast{background:linear-gradient(135deg,#6C4DFF,#3D8BFF)}#toast.erro{background:var(--danger)}
+@media (max-width:720px){.panel{padding:22px}.hero.tres .panel{display:block}}
+@media (prefers-reduced-motion:reduce){.brand::before,.rg,.row.card,.vz,dialog{animation:none}.btn,.panel,.row.card,.urow{transition:none}}
 </style>
 </head>
 <body>
@@ -191,15 +254,16 @@ dialog::backdrop{background:rgba(15,25,40,.45)}
 <!-- App -->
 <div id="viewApp" hidden>
   <header class="top">
-    <div class="brand">Falta Pouco <small style="font-family:var(--body);font-weight:500;font-size:.7rem;color:var(--muted)">V2</small></div>
+    <div class="brand">Falta Pouco <small style="font-family:var(--body);font-weight:500;font-size:.7rem;color:var(--muted)">V3</small></div>
     <nav class="tabs" id="navAdmin" hidden aria-label="Áreas do app">
       <button class="tab" data-vista="meu" aria-pressed="true">Meu painel</button>
       <button class="tab" data-vista="admin" aria-pressed="false">Administração</button>
     </nav>
-    <div class="user"><span id="userEmail"></span><button class="btn ghost small" id="btnSair">Sair</button></div>
+    <div class="user"><span id="userEmail"></span><button class="btn ghost small" id="btnTema" type="button" aria-label="Alternar tema claro/escuro">🌙</button><button class="btn ghost small" id="btnSair">Sair</button></div>
   </header>
   <main>
     <div id="vistaMeu">
+    <div id="saudacao" class="saudacao" aria-live="polite"></div>
     <section class="hero" id="hero" aria-label="Resumo geral"></section>
     <div class="toolbar">
       <div class="tabs" id="tabs">
@@ -258,6 +322,7 @@ dialog::backdrop{background:rgba(15,25,40,.45)}
       <label class="field"><span>Valor (R$)</span><input name="valor" inputmode="decimal" placeholder="0,00" required></label>
       <label class="field"><span>Data</span><input name="data" type="date" required></label>
       <label class="field wide"><span>Observação (opcional)</span><input name="nota" maxlength="120"></label>
+      <div class="chips" id="chips" aria-label="Valores rápidos"><button type="button" class="chip-btn" data-v="50">+ 50</button><button type="button" class="chip-btn" data-v="100">+ 100</button><button type="button" class="chip-btn" data-v="200">+ 200</button><button type="button" class="chip-btn" data-v="500">+ 500</button></div>
       <button class="btn primary" type="submit" id="btnValor">Adicionar valor</button>
     </form>
     <p class="msg" id="valorMsg" role="alert"></p>
@@ -431,18 +496,17 @@ function totais(tipo) {
   const ok = l.reduce((t, i) => t + Math.min(soma(i), i.valor_total), 0);
   return { n: l.length, total, ok, falta: total - ok, pct: total ? ok / total * 100 : 0 };
 }
+const ring = (pct, cor, size = 84, sw = 10, track = 'rgba(128,128,170,.22)') => {
+  const r = (size - sw) / 2, c = 2 * Math.PI * r, m = size / 2;
+  return `<svg class="ring" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" role="img" aria-label="${Math.floor(pct)}% concluído"><circle cx="${m}" cy="${m}" r="${r}" fill="none" stroke="${track}" stroke-width="${sw}"/><circle class="rg" cx="${m}" cy="${m}" r="${r}" fill="none" ${cor ? `stroke="${cor}"` : ''} stroke-width="${sw}" stroke-linecap="round" stroke-dasharray="${c}" stroke-dashoffset="${c * (1 - pct / 100)}" transform="rotate(-90 ${m} ${m})" style="--c:${c}"/><text class="rt" x="50%" y="50%" text-anchor="middle" dominant-baseline="central">${Math.floor(pct)}%</text></svg>`;
+};
+const PAL = { meta: [['#00B8A3', '#2BD98B'], ['#3D8BFF', '#6C4DFF'], ['#8A5CFF', '#C45CFF'], ['#00A6D6', '#35E0C9']], divida: [['#FF4D8D', '#FF7A59'], ['#FF8A3D', '#FFC83D'], ['#E0397A', '#9B4DFF'], ['#FF5A5F', '#FF9A5A']] };
+const corItem = i => { let h = 0; for (const ch of i.id) h = (h * 31 + ch.charCodeAt(0)) >>> 0; return PAL[i.tipo][h % 4]; };
 function painel(tipo) {
   const t = totais(tipo), meta = tipo === 'meta';
-  const titulo = meta ? 'Metas' : 'Dívidas';
-  const verbo = meta ? 'juntados' : 'pagos';
-  if (!t.n) return `<div class="panel ${tipo}"><h2>${titulo}</h2><p class="num">${brl(0)}</p><p class="empty">${meta ? 'Nenhuma meta cadastrada ainda.' : 'Nenhuma dívida cadastrada ainda.'}</p></div>`;
-  return `<div class="panel ${tipo}">
-    <h2>${titulo}</h2>
-    <p class="num">${brl(t.ok)}</p>
-    <p class="of">${verbo} de ${brl(t.total)}</p>
-    <div class="bar" role="progressbar" aria-label="${titulo}" aria-valuenow="${Math.round(t.pct)}" aria-valuemin="0" aria-valuemax="100"><i style="width:${t.pct}%"></i></div>
-    <div class="foot"><span><b>${Math.floor(t.pct)}%</b> concluído</span><span>Faltam <b>${brl(t.falta)}</b></span></div>
-  </div>`;
+  const titulo = meta ? 'Metas' : 'Dívidas', verbo = meta ? 'juntados' : 'pagos';
+  if (!t.n) return `<div class="panel ${tipo}"><div class="ptxt"><h2>${titulo}</h2><p class="num">${brl(0)}</p><p class="empty">${meta ? 'Nenhuma meta ainda. Que tal começar uma?' : 'Nenhuma dívida cadastrada.'}</p></div></div>`;
+  return `<div class="panel ${tipo}"><div class="ptxt"><h2>${titulo}</h2><p class="num" data-count="${t.ok}">${brl(t.ok)}</p><p class="of">${verbo} de ${brl(t.total)}</p><div class="foot"><span>Faltam <b>${brl(t.falta)}</b></span></div></div>${ring(t.pct, '#fff', 104, 12, 'rgba(255,255,255,.3)')}</div>`;
 }
 function prazoTxt(i) {
   if (!i.data_limite) return '';
@@ -450,19 +514,14 @@ function prazoTxt(i) {
   const vencido = i.data_limite < hojeISO();
   return vencido ? `<span class="warn">Prazo vencido em ${fmtData(i.data_limite)}</span>` : `Até ${fmtData(i.data_limite)}`;
 }
-function linha(i) {
-  const s = soma(i), pct = Math.min(100, s / i.valor_total * 100), ok = feito(i);
-  const acao = ok ? `<span class="ok">${i.tipo === 'meta' ? 'Meta concluída' : 'Dívida quitada'}</span>`
-    : `<button class="btn small" data-add="${i.id}">${i.tipo === 'meta' ? 'Guardar valor' : 'Registrar pagamento'}</button>`;
-  return `<article class="row ${i.tipo}${ok ? ' feito' : ''}" data-id="${i.id}">
-    <div>
-      <button class="nome" data-open="${i.id}">${esc(i.nome)}</button>
-      <div class="meta-line"><span class="tag ${i.tipo}">${i.tipo === 'meta' ? 'Meta' : 'Dívida'}</span><span>${prazoTxt(i)}</span></div>
-    </div>
-    <div>
-      <div class="bar" role="progressbar" aria-label="${esc(i.nome)}" aria-valuenow="${Math.round(pct)}" aria-valuemin="0" aria-valuemax="100"><i style="width:${pct}%"></i></div>
-      <div class="amts"><span><strong>${brl(s)}</strong> de ${brl(i.valor_total)}</span><span>${Math.floor(pct)}%</span></div>
-    </div>
+function linha(i, k = 0) {
+  const s = soma(i), pct = Math.min(100, s / i.valor_total * 100), ok = feito(i), [g1, g2] = corItem(i);
+  const sl = ok ? 'Concluída 🏆' : pct >= 90 ? 'Quase lá! 🔥' : pct >= 50 ? 'Passou da metade' : '';
+  const acao = ok ? '' : `<button class="btn small go" data-add="${i.id}">${i.tipo === 'meta' ? 'Guardar valor' : 'Registrar pagamento'}</button>`;
+  return `<article class="row card${ok ? ' feito' : ''}" style="--g1:${g1};--g2:${g2};animation-delay:${Math.min(k, 12) * 60}ms" data-id="${i.id}">
+    <div class="ctop"><span class="tag ${i.tipo}">${i.tipo === 'meta' ? 'Meta' : 'Dívida'}</span>${sl ? `<span class="selo">${sl}</span>` : ''}</div>
+    <div class="cmid"><div class="cinfo"><button class="nome" data-open="${i.id}">${esc(i.nome)}</button><div class="prazo">${prazoTxt(i)}</div></div>${ring(pct, '', 84, 10)}</div>
+    <div class="camts"><strong>${brl(Math.min(s, i.valor_total))}</strong><span>de ${brl(i.valor_total)}</span></div>
     <div class="acao">${acao}</div>
   </article>`;
 }
@@ -474,8 +533,23 @@ function render() {
   l.sort((a, b) => feito(a) - feito(b));
   if (!l.length) {
     const vazio = filtro === 'todos' ? 'Você ainda não cadastrou nada. Comece com a primeira meta ou dívida.' : 'Nenhum item nesta lista.';
-    $('#lista').innerHTML = `<div class="vazio"><p>${vazio}</p>${filtro === 'todos' ? '<button class="btn primary" data-novo>Cadastrar primeiro item</button>' : ''}</div>`;
-  } else $('#lista').innerHTML = l.map(linha).join('');
+    $('#lista').innerHTML = `<div class="vazio"><div class="vz">🚀</div><p>${vazio}</p>${filtro === 'todos' ? '<button class="btn primary" data-novo>Cadastrar primeiro item</button>' : ''}</div>`;
+  } else $('#lista').innerHTML = l.map((i, k) => linha(i, k)).join('');
+  saudar(); contar();
+}
+function saudar() {
+  const tot = itens.reduce((a, i) => a + i.valor_total, 0), ok = itens.reduce((a, i) => a + Math.min(soma(i), i.valor_total), 0);
+  const p = tot ? Math.floor(ok / tot * 100) : 0, c = itens.filter(feito).length;
+  $('#saudacao').innerHTML = !itens.length ? '<h1>Olá! 👋</h1><p>Cadastre sua primeira meta ou dívida e veja o progresso crescer.</p>'
+    : `<h1>Olá! 👋</h1><p>Você já avançou <b>${p}%</b> do caminho${c ? ` e concluiu <b>${c}</b> ${c === 1 ? 'item' : 'itens'} 🎉` : ''}. Continue assim!</p>`;
+}
+function contar() {
+  const calmo = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  document.querySelectorAll('[data-count]').forEach(el => {
+    const to = Number(el.dataset.count); if (calmo) return;
+    const t0 = performance.now();
+    (function f(t) { const k = Math.min(1, (t - t0) / 900); el.textContent = brl(to * (1 - Math.pow(1 - k, 3))); if (k < 1) requestAnimationFrame(f); })(t0);
+  });
 }
 $('#tabs').addEventListener('click', e => {
   const b = e.target.closest('.tab'); if (!b) return;
@@ -590,7 +664,12 @@ $('#formValor').addEventListener('submit', async e => {
     const novo = itens.find(x => x.id === i.id);
     if (novo && antes < novo.valor_total && soma(novo) >= novo.valor_total) {
       confete(); toast(novo.tipo === 'meta' ? 'Meta concluída! Parabéns!' : 'Dívida quitada! Parabéns!');
-    } else toast(i.tipo === 'meta' ? 'Valor guardado' : 'Pagamento registrado');
+    } else {
+      const a = antes / i.valor_total * 100, b = novo ? soma(novo) / novo.valor_total * 100 : a;
+      const mk = [75, 50, 25].find(m => a < m && b >= m);
+      toast(mk === 50 ? 'Metade do caminho! 🎉' : mk === 75 ? 'Falta pouco! Já são 75% 🚀' : mk === 25 ? 'Primeiro quarto concluído! 💪' : (i.tipo === 'meta' ? 'Valor guardado ✨' : 'Pagamento registrado ✨'));
+      if (mk) confete();
+    }
     f.valor.focus();
   } finally { btn.disabled = false; }
 });
@@ -653,7 +732,7 @@ function renderAdmin() {
     const eu = u.id === userId;
     return `<article class="urow">
       <div>
-        <strong class="uemail">${esc(u.email)}</strong>${u.e_admin ? ' <span class="tag admin">Admin</span>' : ''}${eu ? ' <span class="tag voce">Você</span>' : ''}
+        <span class="av">${esc((u.email || "?")[0]).toUpperCase()}</span><strong class="uemail">${esc(u.email)}</strong>${u.e_admin ? ' <span class="tag admin">Admin</span>' : ''}${eu ? ' <span class="tag voce">Você</span>' : ''}
         <small>Cadastro em ${fmtTs(u.criado_em)}</small><small>Último acesso: ${fmtTs(u.ultimo_acesso)}</small>
       </div>
       <div class="umini">
@@ -708,6 +787,20 @@ async function abrirUsuario(uid) {
     </div>`;
   }).join('') : '<p class="hist-vazio">Esta pessoa ainda não cadastrou nada.</p>';
 }
+
+/* ---------- tema e atalhos ---------- */
+function aplicaTema(t) {
+  document.documentElement.dataset.tema = t; $('#btnTema').textContent = t === 'dark' ? '☀️' : '🌙';
+  try { localStorage.setItem('tema', t); } catch (e) {}
+}
+$('#btnTema').onclick = () => aplicaTema(document.documentElement.dataset.tema === 'dark' ? 'light' : 'dark');
+$('#chips').addEventListener('click', e => {
+  const b = e.target.closest('[data-v]'); if (!b) return;
+  const f = $('#formValor'), cur = parseMoney(f.valor.value);
+  f.valor.value = String((Number.isFinite(cur) ? cur : 0) + Number(b.dataset.v)).replace('.', ','); f.valor.focus();
+});
+let temaSalvo; try { temaSalvo = localStorage.getItem('tema'); } catch (e) {}
+aplicaTema(temaSalvo || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'));
 
 /* ---------- início ---------- */
 (function iniciar() {
