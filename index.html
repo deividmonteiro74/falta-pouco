@@ -229,6 +229,14 @@ dialog{background:var(--surface);color:var(--ink);animation:abre .25s cubic-bezi
 #toast{background:linear-gradient(135deg,#6C4DFF,#3D8BFF)}#toast.erro{background:var(--danger)}
 @media (max-width:720px){.panel{padding:22px}.hero.tres .panel{display:block}}
 @media (prefers-reduced-motion:reduce){.brand::before,.rg,.row.card,.vz,dialog{animation:none}.btn,.panel,.row.card,.urow{transition:none}}
+
+/* ===== V4 ===== */
+.rodape{text-align:center;color:var(--muted);font-size:.88rem;padding:28px 16px 22px}
+#viewAuth{display:flex;flex-direction:column;justify-content:center;align-items:center}
+.user .linkbtn{color:var(--ink);font-weight:600;text-decoration:none;max-width:190px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.user .linkbtn:hover{color:var(--brand)}
+.vt{font-size:1.5rem;font-weight:800}.sub{margin:4px 0 0;color:var(--muted);max-width:520px}
+#cartoesLista{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:18px}
 </style>
 </head>
 <body>
@@ -239,6 +247,7 @@ dialog{background:var(--surface);color:var(--ink);animation:abre .25s cubic-bezi
     <h1>Falta Pouco</h1>
     <p class="lead">Cadastre suas dívidas e metas, registre cada valor e acompanhe quanto já avançou.</p>
     <form id="authForm" novalidate>
+      <label class="field" id="campoNome" hidden><span>Seu nome</span><input id="nome" autocomplete="name" maxlength="60"></label>
       <label class="field"><span>E-mail</span><input id="email" type="email" autocomplete="email" required></label>
       <label class="field"><span>Senha</span><input id="senha" type="password" autocomplete="current-password" minlength="6" required></label>
       <button class="btn primary" id="authBtn" type="submit">Entrar</button>
@@ -249,17 +258,19 @@ dialog{background:var(--surface);color:var(--ink);animation:abre .25s cubic-bezi
       </div>
     </form>
   </div>
+  <footer class="rodape">Criado por Deivid M. Monteiro</footer>
 </div>
 
 <!-- App -->
 <div id="viewApp" hidden>
   <header class="top">
-    <div class="brand">Falta Pouco <small style="font-family:var(--body);font-weight:500;font-size:.7rem;color:var(--muted)">V3</small></div>
+    <div class="brand">Falta Pouco <small style="font-family:var(--body);font-weight:500;font-size:.7rem;color:var(--muted)">V4</small></div>
     <nav class="tabs" id="navAdmin" hidden aria-label="Áreas do app">
       <button class="tab" data-vista="meu" aria-pressed="true">Meu painel</button>
-      <button class="tab" data-vista="admin" aria-pressed="false">Administração</button>
+      <button class="tab" data-vista="cartoes" aria-pressed="false">Cartão de crédito</button>
+      <button class="tab" id="tabAdmin" data-vista="admin" aria-pressed="false" hidden>Administração</button>
     </nav>
-    <div class="user"><span id="userEmail"></span><button class="btn ghost small" id="btnTema" type="button" aria-label="Alternar tema claro/escuro">🌙</button><button class="btn ghost small" id="btnSair">Sair</button></div>
+    <div class="user"><button class="linkbtn" id="userEmail" type="button" title="Alterar nome"></button><button class="btn ghost small" id="btnTema" type="button" aria-label="Alternar tema claro/escuro">🌙</button><button class="btn ghost small" id="btnSair">Sair</button></div>
   </header>
   <main>
     <div id="vistaMeu">
@@ -276,6 +287,13 @@ dialog{background:var(--surface);color:var(--ink);animation:abre .25s cubic-bezi
     </div>
     <section id="lista" aria-label="Seus itens"></section>
     </div>
+    <section id="vistaCartoes" hidden aria-label="Cartão de crédito">
+      <div class="toolbar">
+        <div><h2 class="vt">Cartões de crédito</h2><p class="sub">Lance cada compra e acompanhe limite e vencimento. Você recebe avisos por e-mail perto do vencimento e do limite.</p></div>
+        <button class="btn primary" id="btnNovoCartao" type="button">Novo cartão</button>
+      </div>
+      <div id="cartoesLista"></div>
+    </section>
     <section id="vistaAdmin" hidden aria-label="Administração">
       <div class="hero tres" id="adminKpis"></div>
       <div class="toolbar">
@@ -285,6 +303,7 @@ dialog{background:var(--surface);color:var(--ink);animation:abre .25s cubic-bezi
       <div id="adminLista"></div>
     </section>
   </main>
+  <footer class="rodape">Criado por Deivid M. Monteiro</footer>
 </div>
 
 <!-- Janela: novo / editar item -->
@@ -346,6 +365,39 @@ dialog{background:var(--surface);color:var(--ink);animation:abre .25s cubic-bezi
   </div>
 </dialog>
 
+<!-- Janela: cartão (novo/editar) -->
+<dialog id="dlgCartao" aria-labelledby="cartaoTitulo">
+  <form class="dlg" id="formCartao" novalidate>
+    <div class="dlg-head"><h2 id="cartaoTitulo">Novo cartão</h2><button type="button" class="x" data-fechar="dlgCartao" aria-label="Fechar">×</button></div>
+    <label class="field"><span>Nome do cartão</span><input name="nome" maxlength="40" placeholder="Ex.: Cartão 1" required></label>
+    <label class="field"><span>Limite (R$)</span><input name="limite" inputmode="decimal" placeholder="0,00" required></label>
+    <label class="field"><span>Dia do vencimento da fatura (1 a 31)</span><input name="dia" type="number" min="1" max="31" required></label>
+    <label class="field"><span>Avisar por e-mail quantos dias antes do vencimento</span><input name="adias" type="number" min="0" max="15" value="3" required></label>
+    <label class="field"><span>Avisar quando usar este % do limite</span><input name="alim" type="number" min="1" max="100" value="80" required></label>
+    <p class="msg" id="cartaoMsg" role="alert"></p>
+    <div class="dlg-foot"><button type="button" class="btn ghost" data-fechar="dlgCartao">Cancelar</button><button type="submit" class="btn primary">Salvar cartão</button></div>
+  </form>
+</dialog>
+
+<!-- Janela: detalhe do cartão -->
+<dialog id="dlgCartaoDet" aria-labelledby="cNome">
+  <div class="dlg">
+    <div class="dlg-head"><div><span class="tag meta">Cartão de crédito</span><h2 id="cNome"></h2></div><button type="button" class="x" data-fechar="dlgCartaoDet" aria-label="Fechar">×</button></div>
+    <div id="cResumo"></div>
+    <form class="inline-form" id="formCompra" novalidate>
+      <label class="field"><span>Valor usado (R$)</span><input name="valor" inputmode="decimal" placeholder="0,00" required></label>
+      <label class="field"><span>Data</span><input name="data" type="date" required></label>
+      <label class="field wide"><span>Descrição (opcional)</span><input name="desc" maxlength="80"></label>
+      <div class="chips" id="chipsC" aria-label="Valores rápidos"><button type="button" class="chip-btn" data-v="20">+ 20</button><button type="button" class="chip-btn" data-v="50">+ 50</button><button type="button" class="chip-btn" data-v="100">+ 100</button><button type="button" class="chip-btn" data-v="300">+ 300</button></div>
+      <button class="btn primary" type="submit" id="btnCompra">Registrar compra</button>
+    </form>
+    <p class="msg" id="cMsg" role="alert"></p>
+    <h3>Fatura aberta</h3>
+    <ul class="hist" id="cHist"></ul>
+    <div class="dlg-foot"><button class="btn go" id="cPaga" type="button">Fatura paga</button><button class="btn" id="cEditar" type="button">Editar cartão</button><button class="btn danger" id="cExcluir" type="button">Excluir</button></div>
+  </div>
+</dialog>
+
 <!-- Janela: nova senha (após link de recuperação) -->
 <dialog id="dlgSenha" aria-labelledby="senhaTitulo">
   <form class="dlg" id="formSenha" novalidate>
@@ -386,7 +438,7 @@ function parseMoney(txt) {
 }
 
 let sb = null, itens = [], filtro = 'todos', detalheId = null, editId = null, modoCadastro = false, userId = null;
-let ehAdmin = false, vista = 'meu', usuarios = [];
+let ehAdmin = false, vista = 'meu', usuarios = [], perfilNome = '', emailUser = '';
 
 /* ---------- avisos ---------- */
 let toastTimer;
@@ -426,6 +478,7 @@ function setModo(cad) {
   $('#authBtn').textContent = cad ? 'Criar conta' : 'Entrar';
   $('#toggleModo').textContent = cad ? 'Já tenho conta' : 'Criar uma conta';
   $('#senha').autocomplete = cad ? 'new-password' : 'current-password';
+  $('#campoNome').hidden = !cad;
   authMsg('');
 }
 function mostrarAuth() { $('#viewApp').hidden = true; $('#viewAuth').hidden = false; userId = null; itens = []; usuarios = []; ehAdmin = false; $('#navAdmin').hidden = true; trocarVista('meu'); }
@@ -434,11 +487,13 @@ $('#toggleModo').onclick = () => setModo(!modoCadastro);
 $('#authForm').addEventListener('submit', async e => {
   e.preventDefault();
   const email = $('#email').value.trim(), senha = $('#senha').value;
+  const nomeCad = $('#nome').value.trim();
+  if (modoCadastro && !nomeCad) return authMsg('Informe o seu nome.');
   if (!email || senha.length < 6) return authMsg('Informe o e-mail e uma senha com 6 ou mais caracteres.');
   const btn = $('#authBtn'); btn.disabled = true; authMsg('');
   try {
     if (modoCadastro) {
-      const { data, error } = await sb.auth.signUp({ email, password: senha });
+      const { data, error } = await sb.auth.signUp({ email, password: senha, options: { data: { nome: nomeCad } } });
       if (error) return authMsg(traduz(error.message));
       if (!data.session) authMsg('Conta criada. Abra o link enviado ao seu e-mail e depois entre.', true);
     } else {
@@ -467,7 +522,9 @@ async function entrar(session) {
   if (userId === session.user.id) return;
   userId = session.user.id;
   $('#viewAuth').hidden = true; $('#viewApp').hidden = false;
-  $('#userEmail').textContent = session.user.email;
+  perfilNome = (session.user.user_metadata && session.user.user_metadata.nome) || '';
+  emailUser = session.user.email;
+  $('#userEmail').textContent = perfilNome || emailUser;
   await checarAdmin();
   await carregar();
 }
@@ -540,8 +597,9 @@ function render() {
 function saudar() {
   const tot = itens.reduce((a, i) => a + i.valor_total, 0), ok = itens.reduce((a, i) => a + Math.min(soma(i), i.valor_total), 0);
   const p = tot ? Math.floor(ok / tot * 100) : 0, c = itens.filter(feito).length;
-  $('#saudacao').innerHTML = !itens.length ? '<h1>Olá! 👋</h1><p>Cadastre sua primeira meta ou dívida e veja o progresso crescer.</p>'
-    : `<h1>Olá! 👋</h1><p>Você já avançou <b>${p}%</b> do caminho${c ? ` e concluiu <b>${c}</b> ${c === 1 ? 'item' : 'itens'} 🎉` : ''}. Continue assim!</p>`;
+  const nm = perfilNome ? ', ' + esc(perfilNome.trim().split(/\s+/)[0]) : '';
+  $('#saudacao').innerHTML = !itens.length ? `<h1>Olá${nm}! 👋</h1><p>Cadastre sua primeira meta ou dívida e veja o progresso crescer.</p>`
+    : `<h1>Olá${nm}! 👋</h1><p>Você já avançou <b>${p}%</b> do caminho${c ? ` e concluiu <b>${c}</b> ${c === 1 ? 'item' : 'itens'} 🎉` : ''}. Continue assim!</p>`;
 }
 function contar() {
   const calmo = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -695,15 +753,18 @@ const pc = (f, t) => t > 0 ? Math.floor(Math.min(f, t) / t * 100) : 0;
 async function checarAdmin() {
   const { data, error } = await sb.rpc('is_admin');
   ehAdmin = !error && data === true;
-  $('#navAdmin').hidden = !ehAdmin;
+  $('#navAdmin').hidden = false;
+  $('#tabAdmin').hidden = !ehAdmin;
   trocarVista('meu');
 }
 function trocarVista(v) {
   vista = v;
   $('#vistaMeu').hidden = v !== 'meu';
+  $('#vistaCartoes').hidden = v !== 'cartoes';
   $('#vistaAdmin').hidden = v !== 'admin';
   document.querySelectorAll('#navAdmin .tab').forEach(b => b.setAttribute('aria-pressed', b.dataset.vista === v));
   if (v === 'admin' && ehAdmin) carregarAdmin();
+  if (v === 'cartoes' && userId) carregarCartoes();
 }
 $('#navAdmin').addEventListener('click', e => { const b = e.target.closest('[data-vista]'); if (b) trocarVista(b.dataset.vista); });
 async function carregarAdmin() {
@@ -787,6 +848,133 @@ async function abrirUsuario(uid) {
     </div>`;
   }).join('') : '<p class="hist-vazio">Esta pessoa ainda não cadastrou nada.</p>';
 }
+
+/* ---------- cartão de crédito ---------- */
+let cartoes = [], cartaoId = null, cartaoEdit = null;
+const PALC = [['#6C4DFF', '#3D8BFF'], ['#FF4D8D', '#FF7A59'], ['#00B8A3', '#2BD98B'], ['#8A5CFF', '#C45CFF']];
+const usadoC = c => c.compras_cartao.filter(x => !x.paga).reduce((a, x) => a + Number(x.valor), 0);
+function proxVenc(dia) {
+  const h = new Date(); h.setHours(0, 0, 0, 0);
+  const mk = (y, m) => new Date(y, m, Math.min(dia, new Date(y, m + 1, 0).getDate()));
+  let d = mk(h.getFullYear(), h.getMonth()); if (d < h) d = mk(h.getFullYear(), h.getMonth() + 1);
+  return { d, dias: Math.round((d - h) / 86400000) };
+}
+async function carregarCartoes() {
+  const { data, error } = await sb.from('cartoes')
+    .select('id,nome,limite,dia_vencimento,alerta_dias,alerta_limite,compras_cartao(id,valor,data,descricao,paga,criado_em)')
+    .eq('user_id', userId).order('criado_em');
+  if (error) { toast('Não foi possível carregar os cartões. Tente de novo.', true); return; }
+  cartoes = data; renderCartoes();
+  if (cartaoId) { cartoes.some(c => c.id === cartaoId) ? renderCartaoDet() : $('#dlgCartaoDet').close(); }
+}
+function renderCartoes() {
+  $('#cartoesLista').innerHTML = cartoes.length ? cartoes.map((c, k) => {
+    const u = usadoC(c), lim = Number(c.limite), pct = Math.min(100, u / lim * 100), v = proxVenc(c.dia_vencimento);
+    const perto = u > 0 && v.dias <= c.alerta_dias, [g1, g2] = PALC[k % 4];
+    return `<article class="row card" style="--g1:${g1};--g2:${g2};animation-delay:${k * 60}ms" data-cid="${c.id}">
+      <div class="ctop"><span class="tag">Cartão</span>${pct >= c.alerta_limite ? '<span class="selo">Perto do limite ⚠️</span>' : ''}</div>
+      <div class="cmid"><div class="cinfo"><button class="nome" data-copen="${c.id}">${esc(c.nome)}</button>
+        <div class="prazo">${perto ? `<span class="warn">Fatura vence ${v.dias === 0 ? 'hoje' : 'em ' + v.dias + ' dia(s)'}</span>` : `Vence dia ${c.dia_vencimento}, em ${v.dias} dia(s)`}</div></div>${ring(pct, '', 84, 10)}</div>
+      <div class="camts"><strong>${brl(u)}</strong><span>de ${brl(lim)}</span></div>
+      <div class="prazo" style="margin:-8px 0 14px">Disponível: ${brl(Math.max(0, lim - u))}</div>
+      <div class="acao"><button class="btn small go" data-cadd="${c.id}">Registrar compra</button></div></article>`;
+  }).join('') : '<div class="vazio"><div class="vz">💳</div><p>Nenhum cartão cadastrado. Cadastre o seu para acompanhar fatura, limite e vencimento.</p><button class="btn primary" data-cnovo>Cadastrar cartão</button></div>';
+  contar();
+}
+$('#cartoesLista').addEventListener('click', e => {
+  if (e.target.closest('[data-cnovo]')) return abrirCartaoForm();
+  const add = e.target.closest('[data-cadd]'); if (add) return abrirCartao(add.dataset.cadd, true);
+  const row = e.target.closest('.row'); if (row) abrirCartao(row.dataset.cid);
+});
+$('#btnNovoCartao').onclick = () => abrirCartaoForm();
+function abrirCartaoForm(c) {
+  cartaoEdit = c ? c.id : null;
+  const f = $('#formCartao'); f.reset(); $('#cartaoMsg').textContent = '';
+  $('#cartaoTitulo').textContent = c ? 'Editar cartão' : 'Novo cartão';
+  if (c) { f.nome.value = c.nome; f.limite.value = String(c.limite).replace('.', ','); f.dia.value = c.dia_vencimento; f.adias.value = c.alerta_dias; f.alim.value = c.alerta_limite; }
+  $('#dlgCartao').showModal(); f.nome.focus();
+}
+$('#formCartao').addEventListener('submit', async e => {
+  e.preventDefault();
+  const f = e.target, erro = t => $('#cartaoMsg').textContent = t;
+  const nome = f.nome.value.trim(), limite = parseMoney(f.limite.value), dia = Number(f.dia.value), adias = Number(f.adias.value), alim = Number(f.alim.value);
+  if (!nome) return erro('Dê um nome ao cartão.');
+  if (!(limite > 0)) return erro('Informe o limite do cartão.');
+  if (!(dia >= 1 && dia <= 31)) return erro('O dia do vencimento deve ser de 1 a 31.');
+  if (!(adias >= 0 && adias <= 15) || !(alim >= 1 && alim <= 100)) return erro('Confira os avisos: de 0 a 15 dias e de 1% a 100%.');
+  const payload = { nome, limite, dia_vencimento: dia, alerta_dias: adias, alerta_limite: alim };
+  const { error } = cartaoEdit ? await sb.from('cartoes').update(payload).eq('id', cartaoEdit) : await sb.from('cartoes').insert(payload);
+  if (error) return erro('Não foi possível salvar. Tente de novo.');
+  $('#dlgCartao').close(); toast(cartaoEdit ? 'Cartão atualizado' : 'Cartão cadastrado'); carregarCartoes();
+});
+function abrirCartao(id, foco) {
+  cartaoId = id; const f = $('#formCompra'); f.reset(); f.data.value = hojeISO(); $('#cMsg').textContent = '';
+  renderCartaoDet(); const d = $('#dlgCartaoDet'); if (!d.open) d.showModal(); if (foco) f.valor.focus();
+}
+$('#dlgCartaoDet').addEventListener('close', () => { cartaoId = null; });
+function renderCartaoDet() {
+  const c = cartoes.find(x => x.id === cartaoId); if (!c) return;
+  const u = usadoC(c), lim = Number(c.limite), pct = Math.min(100, u / lim * 100), v = proxVenc(c.dia_vencimento);
+  $('#cNome').textContent = c.nome;
+  $('#cResumo').innerHTML = `<p class="big-num">${brl(u)} <span>de ${brl(lim)} de limite</span></p>
+    <div class="bar big"><i style="width:${pct}%;background:${pct >= c.alerta_limite ? 'var(--divida)' : 'var(--brand)'}"></i></div>
+    <div class="facts"><div><b>${brl(Math.max(0, lim - u))}</b>disponível</div><div><b>Dia ${c.dia_vencimento}</b>vence em ${v.dias} dia(s)</div><div><b>${c.alerta_dias} dias e ${c.alerta_limite}%</b>avisos por e-mail</div></div>`;
+  const ab = c.compras_cartao.filter(x => !x.paga).sort((a, b) => b.data.localeCompare(a.data) || b.criado_em.localeCompare(a.criado_em));
+  $('#cHist').innerHTML = ab.length ? ab.map(x => `<li><div class="desc">${fmtData(x.data)}${x.descricao ? `<small>${esc(x.descricao)}</small>` : ''}</div><span class="val">${brl(Number(x.valor))}</span><button class="del" data-cdel="${x.id}" aria-label="Excluir compra de ${brl(Number(x.valor))}">Excluir</button></li>`).join('')
+    : '<li class="hist-vazio">Nenhuma compra na fatura aberta.</li>';
+}
+$('#formCompra').addEventListener('submit', async e => {
+  e.preventDefault();
+  const f = e.target, erro = t => $('#cMsg').textContent = t; erro('');
+  const valor = parseMoney(f.valor.value);
+  if (!(valor > 0)) return erro('Informe um valor maior que zero.');
+  if (!f.data.value) return erro('Informe a data.');
+  const btn = $('#btnCompra'); btn.disabled = true;
+  try {
+    const { error } = await sb.from('compras_cartao').insert({ cartao_id: cartaoId, valor, data: f.data.value, descricao: f.desc.value.trim() || null });
+    if (error) return erro('Não foi possível registrar. Tente de novo.');
+    f.valor.value = ''; f.desc.value = '';
+    await carregarCartoes();
+    const c = cartoes.find(x => x.id === cartaoId);
+    toast(c && usadoC(c) / Number(c.limite) * 100 >= c.alerta_limite ? 'Compra registrada. Atenção: você está perto do limite ⚠️' : 'Compra registrada ✨');
+    f.valor.focus();
+  } finally { btn.disabled = false; }
+});
+$('#cHist').addEventListener('click', async e => {
+  const b = e.target.closest('[data-cdel]'); if (!b) return;
+  if (!confirm('Excluir esta compra?')) return;
+  const { error } = await sb.from('compras_cartao').delete().eq('id', b.dataset.cdel);
+  if (error) return toast('Não foi possível excluir. Tente de novo.', true);
+  toast('Compra excluída'); carregarCartoes();
+});
+$('#cPaga').onclick = async () => {
+  const c = cartoes.find(x => x.id === cartaoId); if (!c) return;
+  if (!usadoC(c)) return toast('Não há compras na fatura aberta.');
+  if (!confirm(`Marcar a fatura de ${brl(usadoC(c))} como paga? O limite usado volta a zero.`)) return;
+  const { error } = await sb.from('compras_cartao').update({ paga: true }).eq('cartao_id', c.id).eq('paga', false);
+  if (error) return toast('Não foi possível concluir. Tente de novo.', true);
+  confete(); toast('Fatura paga! Limite liberado 🎉'); carregarCartoes();
+};
+$('#cEditar').onclick = () => { const c = cartoes.find(x => x.id === cartaoId); if (c) { $('#dlgCartaoDet').close(); abrirCartaoForm(c); } };
+$('#cExcluir').onclick = async () => {
+  const c = cartoes.find(x => x.id === cartaoId); if (!c) return;
+  if (!confirm(`Excluir o cartão "${c.nome}" e todas as compras dele? Essa ação não pode ser desfeita.`)) return;
+  const { error } = await sb.from('cartoes').delete().eq('id', c.id);
+  if (error) return toast('Não foi possível excluir. Tente de novo.', true);
+  $('#dlgCartaoDet').close(); toast('Cartão excluído'); carregarCartoes();
+};
+$('#chipsC').addEventListener('click', e => {
+  const b = e.target.closest('[data-v]'); if (!b) return;
+  const f = $('#formCompra'), cur = parseMoney(f.valor.value);
+  f.valor.value = String((Number.isFinite(cur) ? cur : 0) + Number(b.dataset.v)).replace('.', ','); f.valor.focus();
+});
+$('#userEmail').onclick = async () => {
+  const novo = prompt('Como você quer ser chamado?', perfilNome || '');
+  if (novo === null || !novo.trim()) return;
+  const { error } = await sb.auth.updateUser({ data: { nome: novo.trim() } });
+  if (error) return toast('Não foi possível alterar o nome.', true);
+  perfilNome = novo.trim(); $('#userEmail').textContent = perfilNome; saudar(); toast('Nome atualizado');
+};
 
 /* ---------- tema e atalhos ---------- */
 function aplicaTema(t) {
