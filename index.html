@@ -237,6 +237,21 @@ dialog{background:var(--surface);color:var(--ink);animation:abre .25s cubic-bezi
 .user .linkbtn:hover{color:var(--brand)}
 .vt{font-size:1.5rem;font-weight:800}.sub{margin:4px 0 0;color:var(--muted);max-width:520px}
 #cartoesLista{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:18px}
+
+/* ===== V5: contas da casa ===== */
+#contasLista{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:18px;margin-top:22px}
+#contasHero{margin-top:18px}
+.projt{font-weight:700;font-size:.9rem;margin:2px 0 6px}
+.proj{list-style:none;margin:0 0 16px;padding:10px 14px;border-radius:14px;background:color-mix(in srgb,var(--g1,#6C4DFF) 10%,transparent);font-size:.92rem}
+.proj li{display:flex;justify-content:space-between;gap:10px;padding:3px 0}
+.proj b{font-family:var(--display)}
+.proj-vazio{color:var(--muted);font-size:.9rem;margin:0 0 16px}
+.field.chk{display:flex;align-items:center;gap:10px}
+.field.chk input{width:auto;min-height:0}
+.field.chk span{margin:0}
+.hist .acoes{display:flex;gap:2px;flex-wrap:wrap;justify-content:flex-end}
+.hist .pago{color:var(--meta);font-weight:600}
+.dica{font-size:.88rem;color:var(--muted);margin:0 0 4px}
 </style>
 </head>
 <body>
@@ -268,6 +283,7 @@ dialog{background:var(--surface);color:var(--ink);animation:abre .25s cubic-bezi
     <nav class="tabs" id="navAdmin" hidden aria-label="Áreas do app">
       <button class="tab" data-vista="meu" aria-pressed="true">Meu painel</button>
       <button class="tab" data-vista="cartoes" aria-pressed="false">Cartão de crédito</button>
+      <button class="tab" data-vista="contas" aria-pressed="false">Contas</button>
       <button class="tab" id="tabAdmin" data-vista="admin" aria-pressed="false" hidden>Administração</button>
     </nav>
     <div class="user"><button class="linkbtn" id="userEmail" type="button" title="Alterar nome"></button><button class="btn ghost small" id="btnTema" type="button" aria-label="Alternar tema claro/escuro">🌙</button><button class="btn ghost small" id="btnSair">Sair</button></div>
@@ -293,6 +309,13 @@ dialog{background:var(--surface);color:var(--ink);animation:abre .25s cubic-bezi
         <button class="btn primary" id="btnNovoCartao" type="button">Novo cartão</button>
       </div>
       <div id="cartoesLista"></div>
+    </section>
+    <section id="vistaContas" hidden aria-label="Contas da casa">
+      <div class="toolbar">
+        <div><h2 class="vt">Contas da casa</h2><p class="sub">Lance cada conta com a data de vencimento. Para luz e água, o app estima as próximas pela média das anteriores. Quanto mais contas lançadas (de 3 a 6), melhor a estimativa.</p></div>
+      </div>
+      <section class="hero" id="contasHero" aria-label="Resumo das contas"></section>
+      <div id="contasLista"></div>
     </section>
     <section id="vistaAdmin" hidden aria-label="Administração">
       <div class="hero tres" id="adminKpis"></div>
@@ -398,6 +421,26 @@ dialog{background:var(--surface);color:var(--ink);animation:abre .25s cubic-bezi
   </div>
 </dialog>
 
+<!-- Janela: conta (luz, água, internet) -->
+<dialog id="dlgConta" aria-labelledby="ctNome">
+  <div class="dlg">
+    <div class="dlg-head"><div><span class="tag" id="ctTag">Conta</span><h2 id="ctNome"></h2></div><button type="button" class="x" data-fechar="dlgConta" aria-label="Fechar">×</button></div>
+    <div id="ctResumo"></div>
+    <form class="inline-form" id="formConta" novalidate>
+      <label class="field"><span>Vencimento</span><input name="venc" type="date" required></label>
+      <label class="field"><span>Valor (R$, opcional)</span><input name="valor" inputmode="decimal" placeholder="0,00"></label>
+      <label class="field chk wide"><input type="checkbox" name="paga"><span>Esta conta já foi paga</span></label>
+      <button class="btn primary" type="submit" id="btnConta">Lançar conta</button>
+      <button class="btn ghost" type="button" id="btnContaCancel" hidden>Cancelar edição</button>
+    </form>
+    <p class="msg" id="ctMsg" role="alert"></p>
+    <h3>Próximas contas (estimativa)</h3>
+    <div id="ctProj"></div>
+    <h3>Histórico</h3>
+    <ul class="hist" id="ctHist"></ul>
+  </div>
+</dialog>
+
 <!-- Janela: nova senha (após link de recuperação) -->
 <dialog id="dlgSenha" aria-labelledby="senhaTitulo">
   <form class="dlg" id="formSenha" novalidate>
@@ -468,6 +511,7 @@ const traduz = m => {
   if (/already registered/i.test(m)) return 'Esse e-mail já tem conta. Use "Entrar".';
   if (/at least 6/i.test(m)) return 'A senha precisa ter pelo menos 6 caracteres.';
   if (/valid email|invalid format/i.test(m)) return 'Digite um e-mail válido.';
+  if (/email rate limit/i.test(m)) return 'O envio de e-mails de confirmação está temporariamente no limite. Tente de novo em alguns minutos.';
   if (/rate limit|too many/i.test(m)) return 'Muitas tentativas. Aguarde um pouco e tente de novo.';
   if (/not confirmed/i.test(m)) return 'Confirme seu e-mail pelo link que enviamos antes de entrar.';
   return 'Não foi possível concluir. Verifique os dados e tente de novo.';
@@ -481,7 +525,7 @@ function setModo(cad) {
   $('#campoNome').hidden = !cad;
   authMsg('');
 }
-function mostrarAuth() { $('#viewApp').hidden = true; $('#viewAuth').hidden = false; userId = null; itens = []; usuarios = []; ehAdmin = false; $('#navAdmin').hidden = true; trocarVista('meu'); }
+function mostrarAuth() { $('#viewApp').hidden = true; $('#viewAuth').hidden = false; userId = null; itens = []; usuarios = []; contasFat = []; ehAdmin = false; $('#navAdmin').hidden = true; trocarVista('meu'); }
 
 $('#toggleModo').onclick = () => setModo(!modoCadastro);
 $('#authForm').addEventListener('submit', async e => {
@@ -761,10 +805,12 @@ function trocarVista(v) {
   vista = v;
   $('#vistaMeu').hidden = v !== 'meu';
   $('#vistaCartoes').hidden = v !== 'cartoes';
+  $('#vistaContas').hidden = v !== 'contas';
   $('#vistaAdmin').hidden = v !== 'admin';
   document.querySelectorAll('#navAdmin .tab').forEach(b => b.setAttribute('aria-pressed', b.dataset.vista === v));
   if (v === 'admin' && ehAdmin) carregarAdmin();
   if (v === 'cartoes' && userId) carregarCartoes();
+  if (v === 'contas' && userId) carregarContas();
 }
 $('#navAdmin').addEventListener('click', e => { const b = e.target.closest('[data-vista]'); if (b) trocarVista(b.dataset.vista); });
 async function carregarAdmin() {
@@ -968,6 +1014,201 @@ $('#chipsC').addEventListener('click', e => {
   const f = $('#formCompra'), cur = parseMoney(f.valor.value);
   f.valor.value = String((Number.isFinite(cur) ? cur : 0) + Number(b.dataset.v)).replace('.', ','); f.valor.focus();
 });
+
+/* ---------- contas da casa (luz, água, internet) ---------- */
+const CONTAS = {
+  luz:      { nome: 'Luz',      emoji: '💡', cor: ['#FFC83D', '#FF9A3D'], dica: 'média ponderada das últimas contas, com tendência suavizada' },
+  agua:     { nome: 'Água',     emoji: '💧', cor: ['#00A6D6', '#35E0C9'], dica: 'média ponderada das últimas contas, com tendência suavizada' },
+  internet: { nome: 'Internet', emoji: '📶', cor: ['#6C4DFF', '#3D8BFF'], dica: 'valor fixo: repete a última conta' }
+};
+let contasFat = [], contaTipo = null, faturaEdit = null;
+
+const diasAte = iso => { const h = new Date(); h.setHours(0, 0, 0, 0); return Math.round((new Date(iso + 'T00:00:00') - h) / 86400000); };
+const mesAno = iso => { const s = new Date(iso + 'T00:00:00').toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' }).replace('.', ''); return s; };
+function addMeses(iso, n, dia) {
+  const [y, m] = iso.split('-').map(Number);
+  const base = new Date(y, m - 1 + n, 1);
+  const ultimo = new Date(base.getFullYear(), base.getMonth() + 1, 0).getDate();
+  return new Date(base.getFullYear(), base.getMonth(), Math.min(dia, ultimo)).toLocaleDateString('sv-SE');
+}
+const faturasDe = t => contasFat.filter(f => f.tipo === t);
+
+async function carregarContas() {
+  const { data, error } = await sb.from('contas_faturas')
+    .select('id,tipo,vencimento,valor,paga,criado_em')
+    .eq('user_id', userId).order('vencimento', { ascending: false });
+  if (error) { toast('Não foi possível carregar as contas. Tente de novo.', true); return; }
+  contasFat = data.map(f => ({ ...f, valor: f.valor == null ? null : Number(f.valor) }));
+  renderContas();
+  if (contaTipo) renderContaDet();
+}
+
+/* Projeção: média ponderada (contas mais recentes pesam mais) das últimas 6 com valor.
+   Com 4 ou mais contas, soma metade da tendência (regressão linear), limitada a ±8% por mês.
+   Internet repete a última conta. Só gera datas de hoje em diante. */
+function projetar(tipo, n = 3) {
+  const todas = faturasDe(tipo);
+  if (!todas.length) return null;
+  const dia = Number(todas[0].vencimento.slice(8, 10));
+  const hist = todas.filter(f => f.valor != null).slice(0, 6).reverse();
+  const k = hist.length;
+  if (!k) return { itens: [], k: 0, dia };
+  const vals = hist.map(f => f.valor);
+  let nivel, passo = 0;
+  if (tipo === 'internet') nivel = vals[k - 1];
+  else {
+    let sw = 0, sv = 0; vals.forEach((v, i) => { sw += i + 1; sv += (i + 1) * v; });
+    nivel = sv / sw;
+    if (k >= 4) {
+      const mx = (k - 1) / 2, my = vals.reduce((a, b) => a + b, 0) / k;
+      let num = 0, den = 0; vals.forEach((v, i) => { num += (i - mx) * (v - my); den += (i - mx) ** 2; });
+      const incl = den ? num / den : 0, lim = nivel * 0.08;
+      passo = Math.max(-lim, Math.min(lim, incl * 0.5));
+    }
+  }
+  const itens = [], hoje = hojeISO();
+  for (let i = 1; i <= 48 && itens.length < n; i++) {
+    const venc = addMeses(todas[0].vencimento, i, dia);
+    if (venc < hoje) continue;
+    itens.push({ venc, valor: Math.max(0, Math.round((nivel + passo * i) * 100) / 100) });
+  }
+  return { itens, k, dia, min: Math.min(...vals), max: Math.max(...vals) };
+}
+
+function statusVenc(f) {
+  const d = diasAte(f.vencimento);
+  if (f.paga) return { txt: 'Paga', cls: 'pago', alerta: false };
+  if (d < 0) return { txt: `Vencida há ${-d} dia(s)`, cls: 'warn', alerta: true };
+  if (d === 0) return { txt: 'Vence hoje', cls: 'warn', alerta: true };
+  return { txt: `Vence em ${d} dia(s)`, cls: '', alerta: d <= 3 };
+}
+
+function renderContas() {
+  const tipos = Object.keys(CONTAS);
+  let prevTotal = 0, prevN = 0, aberto = 0, abertoN = 0, vencidas = 0;
+  tipos.forEach(t => {
+    const p = projetar(t, 1);
+    if (p && p.itens.length) { prevTotal += p.itens[0].valor; prevN++; }
+    faturasDe(t).filter(f => !f.paga).forEach(f => { abertoN++; aberto += f.valor || 0; if (diasAte(f.vencimento) < 0) vencidas++; });
+  });
+  $('#contasHero').innerHTML =
+    `<div class="panel meta"><div class="ptxt"><h2>Estimativa da próxima conta</h2><p class="num">${brl(prevTotal)}</p><p class="${prevN ? 'of' : 'empty'}">${prevN ? `soma das próximas contas de ${prevN} serviço(s)` : 'Lance suas contas para ver a estimativa.'}</p></div></div>` +
+    `<div class="panel divida"><div class="ptxt"><h2>Em aberto</h2><p class="num">${brl(aberto)}</p><p class="of">${abertoN} conta(s) a pagar${vencidas ? ` · ${vencidas} vencida(s)` : ''}</p></div></div>`;
+
+  $('#contasLista').innerHTML = tipos.map((t, k) => {
+    const c = CONTAS[t], [g1, g2] = c.cor, todas = faturasDe(t);
+    const pend = todas.filter(f => !f.paga).sort((a, b) => a.vencimento.localeCompare(b.vencimento))[0];
+    const ult = todas.find(f => f.valor != null);
+    const st = pend ? statusVenc(pend) : null;
+    const p = projetar(t, 3);
+    const linhaVenc = pend ? `<span class="${st.cls}">${st.txt}</span> · ${fmtData(pend.vencimento)}` : (todas.length ? 'Nenhuma conta em aberto' : 'Nenhuma conta lançada');
+    const proj = p && p.itens.length
+      ? `<div class="projt">Projeção</div><ul class="proj">${p.itens.map(x => `<li><span>${mesAno(x.venc)} · dia ${x.venc.slice(8, 10)}</span><b>~ ${brl(x.valor)}</b></li>`).join('')}</ul>`
+      : `<p class="proj-vazio">${todas.length ? 'Informe o valor de pelo menos uma conta para ver a projeção.' : 'Lance as últimas contas para ver a projeção.'}</p>`;
+    return `<article class="row card" style="--g1:${g1};--g2:${g2};animation-delay:${k * 60}ms" data-ctipo="${t}">
+      <div class="ctop"><span class="tag">${c.nome}</span>${st && st.alerta ? '<span class="selo">Atenção ⚠️</span>' : ''}</div>
+      <div class="cmid"><div class="cinfo"><button class="nome" data-ctopen="${t}">${c.emoji} ${c.nome}</button><div class="prazo">${linhaVenc}</div></div></div>
+      <div class="camts"><strong>${ult ? brl(ult.valor) : '—'}</strong><span>${ult ? 'última conta' : 'sem valor lançado'}</span></div>
+      ${proj}
+      <div class="acao"><button class="btn small go" data-cadd="${t}">Lançar conta</button></div></article>`;
+  }).join('');
+}
+$('#contasLista').addEventListener('click', e => {
+  const add = e.target.closest('[data-cadd]'); if (add) return abrirConta(add.dataset.cadd, true);
+  const row = e.target.closest('.row'); if (row) abrirConta(row.dataset.ctipo);
+});
+
+function abrirConta(tipo, foco) {
+  contaTipo = tipo; faturaEdit = null;
+  $('#ctMsg').textContent = '';
+  prepararFormConta();
+  renderContaDet();
+  const d = $('#dlgConta'); if (!d.open) d.showModal();
+  if (foco) $('#formConta').venc.focus();
+}
+$('#dlgConta').addEventListener('close', () => { contaTipo = null; faturaEdit = null; });
+function prepararFormConta(f) {
+  const form = $('#formConta'); form.reset();
+  $('#btnConta').textContent = f ? 'Salvar alterações' : 'Lançar conta';
+  $('#btnContaCancel').hidden = !f;
+  if (f) { form.venc.value = f.vencimento; form.valor.value = f.valor == null ? '' : String(f.valor).replace('.', ','); form.paga.checked = f.paga; }
+  else {
+    const todas = faturasDe(contaTipo || ''), ult = todas[0];
+    form.venc.value = ult ? addMeses(ult.vencimento, 1, Number(ult.vencimento.slice(8, 10))) : '';
+    form.paga.checked = !!form.venc.value && form.venc.value < hojeISO();
+  }
+}
+$('#formConta').venc.addEventListener('change', e => { $('#formConta').paga.checked = !!e.target.value && e.target.value < hojeISO(); });
+$('#btnContaCancel').onclick = () => { faturaEdit = null; $('#ctMsg').textContent = ''; prepararFormConta(); };
+
+function renderContaDet() {
+  const c = CONTAS[contaTipo]; if (!c) return;
+  const todas = faturasDe(contaTipo), comValor = todas.filter(f => f.valor != null);
+  const tag = $('#ctTag'); tag.textContent = 'Conta'; tag.className = 'tag meta';
+  $('#ctNome').textContent = `${c.emoji} ${c.nome}`;
+  const p = projetar(contaTipo, 3);
+  const media = comValor.length ? comValor.slice(0, 6).reduce((a, f) => a + f.valor, 0) / Math.min(6, comValor.length) : null;
+  $('#ctResumo').innerHTML = comValor.length
+    ? `<div class="facts"><div><b>${brl(comValor[0].valor)}</b>última conta</div><div><b>${brl(media)}</b>média das últimas ${Math.min(6, comValor.length)}</div>${p && p.k > 1 ? `<div><b>${brl(p.min)} a ${brl(p.max)}</b>faixa recente</div>` : ''}</div>`
+    : '<p class="dica">Lance as últimas contas (com valor) para o app calcular a projeção.</p>';
+  $('#ctProj').innerHTML = p && p.itens.length
+    ? `<ul class="proj" style="--g1:${c.cor[0]}">${p.itens.map(x => `<li><span>${fmtData(x.venc)}</span><b>~ ${brl(x.valor)}</b></li>`).join('')}</ul><p class="dica">Estimativa com base em ${p.k} conta(s): ${c.dica}. O valor real pode variar.</p>`
+    : '<p class="proj-vazio">Sem projeção ainda.</p>';
+  $('#ctHist').innerHTML = todas.length ? todas.map(f => {
+    const st = statusVenc(f);
+    return `<li><div class="desc">${fmtData(f.vencimento)}<small class="${st.cls}">${st.txt}</small></div>
+      <span class="val">${f.valor == null ? 'sem valor' : brl(f.valor)}</span>
+      <span class="acoes"><button class="del" data-cpaga="${f.id}">${f.paga ? 'Reabrir' : 'Pagar'}</button><button class="del" data-cedit="${f.id}">Editar</button><button class="del" data-cdelf="${f.id}" aria-label="Excluir conta de ${fmtData(f.vencimento)}">Excluir</button></span></li>`;
+  }).join('') : '<li class="hist-vazio">Nenhuma conta lançada ainda.</li>';
+}
+
+$('#formConta').addEventListener('submit', async e => {
+  e.preventDefault();
+  const f = e.target, erro = t => $('#ctMsg').textContent = t; erro('');
+  if (!f.venc.value) return erro('Informe a data de vencimento.');
+  const txt = f.valor.value.trim(), valor = txt ? parseMoney(txt) : null;
+  if (txt && !(valor >= 0)) return erro('O valor não é válido. Use apenas números, como 185,40.');
+  const payload = { vencimento: f.venc.value, valor, paga: f.paga.checked };
+  const btn = $('#btnConta'); btn.disabled = true;
+  try {
+    const { error } = faturaEdit
+      ? await sb.from('contas_faturas').update(payload).eq('id', faturaEdit)
+      : await sb.from('contas_faturas').insert({ ...payload, tipo: contaTipo });
+    if (error) return erro('Não foi possível salvar. Tente de novo.');
+    const editou = !!faturaEdit, venc = payload.vencimento, dia = Number(venc.slice(8, 10));
+    faturaEdit = null;
+    await carregarContas();
+    prepararFormConta();
+    if (!editou) { // sugere o mês anterior (histórico) ou o seguinte
+      const prox = addMeses(venc, venc < hojeISO() ? -1 : 1, dia);
+      $('#formConta').venc.value = prox; $('#formConta').paga.checked = prox < hojeISO();
+    }
+    toast(editou ? 'Conta atualizada' : 'Conta lançada ✨');
+    $('#formConta').valor.focus();
+  } finally { btn.disabled = false; }
+});
+
+$('#ctHist').addEventListener('click', async e => {
+  const pg = e.target.closest('[data-cpaga]'), ed = e.target.closest('[data-cedit]'), dl = e.target.closest('[data-cdelf]');
+  if (pg) {
+    const f = contasFat.find(x => x.id === pg.dataset.cpaga); if (!f) return;
+    const { error } = await sb.from('contas_faturas').update({ paga: !f.paga }).eq('id', f.id);
+    if (error) return toast('Não foi possível atualizar. Tente de novo.', true);
+    toast(f.paga ? 'Conta reaberta' : 'Conta marcada como paga ✅'); return carregarContas();
+  }
+  if (ed) {
+    const f = contasFat.find(x => x.id === ed.dataset.cedit); if (!f) return;
+    faturaEdit = f.id; $('#ctMsg').textContent = ''; prepararFormConta(f); $('#formConta').valor.focus(); return;
+  }
+  if (dl) {
+    if (!confirm('Excluir esta conta?')) return;
+    const { error } = await sb.from('contas_faturas').delete().eq('id', dl.dataset.cdelf);
+    if (error) return toast('Não foi possível excluir. Tente de novo.', true);
+    if (faturaEdit === dl.dataset.cdelf) { faturaEdit = null; prepararFormConta(); }
+    toast('Conta excluída'); carregarContas();
+  }
+});
+
 $('#userEmail').onclick = async () => {
   const novo = prompt('Como você quer ser chamado?', perfilNome || '');
   if (novo === null || !novo.trim()) return;
