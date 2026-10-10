@@ -284,6 +284,33 @@ dialog{background:var(--surface);color:var(--ink);animation:abre .25s cubic-bezi
 .hist .pago{color:var(--meta);font-weight:600}
 .dica{font-size:.88rem;color:var(--muted);margin:0 0 4px}
 #toggleModo{font-weight:700}
+
+/* ===== V10: gastos, salário e fechamento ===== */
+.mesnav{display:flex;align-items:center;gap:10px}.mes{min-width:150px;text-align:center;text-transform:capitalize}
+.toolbar .acoes{display:flex;gap:8px;flex-wrap:wrap}
+.biglist{max-height:none;overflow:visible;margin-top:12px}
+.biglist li{background:var(--surface);border:0;border-radius:16px;padding:14px 16px;margin-bottom:10px;box-shadow:var(--shadow)}
+.biglist .val.pos{color:var(--meta)}.biglist li.tot{font-size:1.05rem}
+.panel.neg{background:linear-gradient(135deg,#E5383B,#FF6B6B)}
+.hero.tres{margin-top:14px}
+.rel-comp{font-size:1.05rem;margin:0 0 6px}
+#fim{position:fixed;inset:0;z-index:200;display:grid;place-items:center;padding:24px;background:rgba(14,11,43,.78);backdrop-filter:blur(6px);animation:abre .3s}
+#fim[hidden]{display:none}
+.fim-card{background:var(--surface);color:var(--ink);border-radius:28px;padding:34px 28px 26px;text-align:center;max-width:440px;width:100%;box-shadow:0 24px 70px rgba(0,0,0,.45);border-top:9px solid var(--brand);animation:pop .6s cubic-bezier(.2,.8,.2,1)}
+.fim-card.verde{border-top-color:#2BD98B}.fim-card.zerou{border-top-color:#FFC83D}.fim-card.vermelho{border-top-color:#E5383B}
+.fim-emoji{font-size:5rem;line-height:1;animation:pulo 1.3s ease-in-out infinite}
+.fim-card.vermelho .fim-emoji,.fim-card.zerou .fim-emoji{animation-name:treme}
+.fim-card h2{font-size:1.7rem;font-weight:800;margin:14px 0 6px}
+.fim-val{font-family:var(--display);font-size:2.4rem;font-weight:800;margin:6px 0}
+.fim-card.verde .fim-val{color:#00A88F}.fim-card.vermelho .fim-val{color:#E5383B}.fim-card.zerou .fim-val{color:#D98A00}
+.fim-sub{color:var(--muted);margin:0 0 6px}
+@keyframes pulo{50%{transform:translateY(-12px) scale(1.1)}}
+@keyframes treme{0%,100%{transform:rotate(0)}20%{transform:rotate(-10deg)}40%{transform:rotate(9deg)}60%{transform:rotate(-6deg)}80%{transform:rotate(5deg)}}
+.fl{position:fixed;bottom:-50px;font-size:2rem;z-index:201;pointer-events:none;animation:sobe 3.4s ease-out forwards}
+.fl.cai{bottom:auto;top:-50px;animation-name:desce}
+@keyframes sobe{to{transform:translateY(-115vh) rotate(30deg);opacity:.2}}
+@keyframes desce{to{transform:translateY(115vh) rotate(-25deg);opacity:.3}}
+@media (prefers-reduced-motion:reduce){.fim-emoji,.fim-card,#fim{animation:none}}
 </style>
 </head>
 <body>
@@ -311,11 +338,13 @@ dialog{background:var(--surface);color:var(--ink);animation:abre .25s cubic-bezi
 <!-- App -->
 <div id="viewApp" hidden>
   <header class="top">
-    <div class="brand">Falta Pouco <small style="font-family:var(--body);font-weight:500;font-size:.7rem;color:var(--muted)">V9</small></div>
+    <div class="brand">Falta Pouco <small style="font-family:var(--body);font-weight:500;font-size:.7rem;color:var(--muted)">V10</small></div>
     <nav class="tabs" id="navAdmin" hidden aria-label="Áreas do app">
       <button class="tab" data-vista="meu" aria-pressed="true">Meu painel</button>
       <button class="tab" data-vista="cartoes" aria-pressed="false">Cartão de crédito</button>
       <button class="tab" data-vista="contas" aria-pressed="false">Contas</button>
+      <button class="tab" data-vista="gastos" aria-pressed="false">Gastos</button>
+      <button class="tab" data-vista="salario" aria-pressed="false">Salário</button>
       <button class="tab" id="tabAdmin" data-vista="admin" aria-pressed="false" hidden>Administração</button>
     </nav>
     <div class="user"><button class="linkbtn" id="userEmail" type="button" title="Alterar nome"></button><button class="btn ghost small" id="btnTema" type="button" aria-label="Alternar tema claro/escuro">🌙</button><button class="btn ghost small" id="btnSair">Sair</button></div>
@@ -348,6 +377,24 @@ dialog{background:var(--surface);color:var(--ink);animation:abre .25s cubic-bezi
       </div>
       <section class="hero" id="contasHero" aria-label="Resumo das contas"></section>
       <div id="contasLista"></div>
+    </section>
+    <section id="vistaGastos" hidden aria-label="Gastos do mês">
+      <div class="toolbar">
+        <div class="mesnav"><button class="btn small" data-mes="-1" aria-label="Mês anterior">‹</button><strong class="mes" data-mes-label></strong><button class="btn small" data-mes="1" aria-label="Próximo mês">›</button></div>
+        <div class="acoes"><button class="btn" data-rel type="button">Relatório do mês</button><button class="btn primary" data-novo="gastos" type="button">Novo gasto</button></div>
+      </div>
+      <div class="hero tres" data-resumo></div>
+      <div class="chips" id="chips_gastos"></div>
+      <ul class="hist biglist" id="lista_gastos"></ul>
+    </section>
+    <section id="vistaSalario" hidden aria-label="Salário e entradas">
+      <div class="toolbar">
+        <div class="mesnav"><button class="btn small" data-mes="-1" aria-label="Mês anterior">‹</button><strong class="mes" data-mes-label></strong><button class="btn small" data-mes="1" aria-label="Próximo mês">›</button></div>
+        <div class="acoes"><button class="btn" data-copiar type="button">Copiar do mês anterior</button><button class="btn" data-rel type="button">Relatório do mês</button><button class="btn primary" data-novo="rendas" type="button">Nova entrada</button></div>
+      </div>
+      <div class="hero tres" data-resumo></div>
+      <div class="chips" id="chips_rendas"></div>
+      <ul class="hist biglist" id="lista_rendas"></ul>
     </section>
     <section id="vistaAdmin" hidden aria-label="Administração">
       <div class="hero tres" id="adminKpis"></div>
@@ -473,6 +520,40 @@ dialog{background:var(--surface);color:var(--ink);animation:abre .25s cubic-bezi
   </div>
 </dialog>
 
+<!-- Janela: gasto / entrada -->
+<dialog id="dlgLanc" aria-labelledby="lancTitulo">
+  <form class="dlg" id="formLanc" novalidate>
+    <div class="dlg-head"><h2 id="lancTitulo">Novo gasto</h2><button type="button" class="x" data-fechar="dlgLanc" aria-label="Fechar">×</button></div>
+    <label class="field"><span id="lancRotulo">O que foi? (ex.: Gás)</span><input name="descricao" maxlength="60" required></label>
+    <div class="chips" id="lancSug" aria-label="Sugestões"></div>
+    <label class="field"><span>Valor (R$)</span><input name="valor" inputmode="decimal" placeholder="0,00" required></label>
+    <label class="field"><span>Dia</span><input name="data" type="date" required></label>
+    <p class="msg" id="lancMsg" role="alert"></p>
+    <div class="dlg-foot"><button type="button" class="btn ghost" data-fechar="dlgLanc">Cancelar</button><button type="submit" class="btn primary">Salvar</button></div>
+  </form>
+</dialog>
+
+<!-- Janela: relatório do mês -->
+<dialog id="dlgRel" aria-labelledby="relTitulo">
+  <div class="dlg">
+    <div class="dlg-head"><h2 id="relTitulo">Relatório do mês</h2><button type="button" class="x" data-fechar="dlgRel" aria-label="Fechar">×</button></div>
+    <p id="relComp" class="rel-comp"></p>
+    <ul class="hist biglist" id="relLista"></ul>
+    <div class="dlg-foot"><button class="btn go" id="relAnim" type="button">Ver animação do fechamento</button></div>
+  </div>
+</dialog>
+
+<!-- Animação de fechamento do mês -->
+<div id="fim" hidden role="dialog" aria-modal="true" aria-labelledby="fimTitulo">
+  <div class="fim-card" id="fimCard">
+    <div class="fim-emoji" id="fimEmoji"></div>
+    <h2 id="fimTitulo"></h2>
+    <p class="fim-val" id="fimVal"></p>
+    <p class="fim-sub" id="fimSub"></p>
+    <div class="dlg-foot"><button class="btn" id="fimRel" type="button">Ver relatório</button><button class="btn primary" id="fimOk" type="button">Fechar</button></div>
+  </div>
+</div>
+
 <!-- Janela: nova senha (após link de recuperação) -->
 <dialog id="dlgResumo" aria-labelledby="rTitulo">
   <div class="dlg">
@@ -565,7 +646,7 @@ function setModo(cad) {
   $('#campoNome').hidden = !cad;
   authMsg('');
 }
-function mostrarAuth() { $('#viewApp').hidden = true; $('#viewAuth').hidden = false; userId = null; itens = []; usuarios = []; contasFat = []; ehAdmin = false; $('#navAdmin').hidden = true; trocarVista('meu'); }
+function mostrarAuth() { $('#viewApp').hidden = true; $('#viewAuth').hidden = false; userId = null; itens = []; usuarios = []; contasFat = []; ehAdmin = false; fechChecado = false; $('#navAdmin').hidden = true; trocarVista('meu'); }
 
 $('#toggleModo').onclick = () => setModo(!modoCadastro);
 $('#authForm').addEventListener('submit', async e => {
@@ -611,7 +692,7 @@ async function entrar(session) {
   $('#userEmail').textContent = perfilNome || emailUser;
   await checarAdmin();
   await carregar();
-  carregarCartoes(); carregarContas();
+  carregarCartoes(); carregarContas(); verificarFechamento();
 }
 
 /* ---------- dados ---------- */
@@ -847,11 +928,14 @@ function trocarVista(v) {
   $('#vistaMeu').hidden = v !== 'meu';
   $('#vistaCartoes').hidden = v !== 'cartoes';
   $('#vistaContas').hidden = v !== 'contas';
+  $('#vistaGastos').hidden = v !== 'gastos';
+  $('#vistaSalario').hidden = v !== 'salario';
   $('#vistaAdmin').hidden = v !== 'admin';
   document.querySelectorAll('#navAdmin .tab').forEach(b => b.setAttribute('aria-pressed', b.dataset.vista === v));
   if (v === 'admin' && ehAdmin) carregarAdmin();
   if (v === 'cartoes' && userId) carregarCartoes();
   if (v === 'contas' && userId) carregarContas();
+  if ((v === 'gastos' || v === 'salario') && userId) carregarMes();
 }
 $('#navAdmin').addEventListener('click', e => { const b = e.target.closest('[data-vista]'); if (b) trocarVista(b.dataset.vista); });
 async function carregarAdmin() {
@@ -1303,6 +1387,142 @@ $('#userEmail').onclick = async () => {
   if (error) return toast('Não foi possível alterar o nome.', true);
   perfilNome = novo.trim(); $('#userEmail').textContent = perfilNome; saudar(); toast('Nome atualizado');
 };
+
+/* ---------- gastos, salário e fechamento do mês ---------- */
+let mesSel = hojeISO().slice(0, 7), mesDados = null, lancMod = null, lancEdit = null, fechChecado = false, fimMes = null;
+const MESES = { gastos: { tab: 'gastos', rot: 'O que foi? (ex.: Gás)', tit: 'gasto', sug: ['Gás', 'Mercado', 'Transporte', 'Combustível', 'Saúde', 'Lazer', 'Outros'] },
+  rendas: { tab: 'rendas', rot: 'Descrição (ex.: Salário)', tit: 'entrada', sug: ['Salário', '13º salário', 'Extra', 'Outros'] } };
+const mesAdd = (m, n) => { const [y, mm] = m.split('-').map(Number), d = new Date(y, mm - 1 + n, 1); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0'); };
+const mesNome = m => { const [y, mm] = m.split('-').map(Number); return new Date(y, mm - 1, 1).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' }); };
+const somaV = l => (l || []).reduce((a, x) => a + Number(x.valor || 0), 0);
+async function totaisMes(m) {
+  const ini = m + '-01', fim = mesAdd(m, 1) + '-01', u = userId;
+  const q = (t, col, sel = '*') => sb.from(t).select(sel).eq('user_id', u).gte(col, ini).lt(col, fim);
+  const [g, r, c, k, d] = await Promise.all([
+    q('gastos', 'data').order('data', { ascending: false }), q('rendas', 'data').order('data', { ascending: false }),
+    q('contas_faturas', 'vencimento', 'valor'), q('compras_cartao', 'data', 'valor'),
+    sb.from('lancamentos').select('valor,itens!inner(tipo)').eq('user_id', u).eq('itens.tipo', 'divida').gte('data', ini).lt('data', fim)
+  ]);
+  if ([g, r, c, k, d].some(x => x.error)) throw new Error('falha');
+  const t = { gastos: somaV(g.data), contas: somaV(c.data), cartao: somaV(k.data), dividas: somaV(d.data), renda: somaV(r.data), listaG: g.data, listaR: r.data };
+  t.despesas = t.gastos + t.contas + t.cartao + t.dividas; t.saldo = t.renda - t.despesas;
+  return t;
+}
+async function carregarMes() {
+  try { const [a, b] = await Promise.all([totaisMes(mesSel), totaisMes(mesAdd(mesSel, -1))]); mesDados = { ...a, ant: b }; }
+  catch (e) { toast('Não foi possível carregar o mês. Tente de novo.', true); return; }
+  renderMes();
+}
+function resumoHtml(t) {
+  const neg = t.saldo < 0;
+  return `<div class="panel"><h2>Entrou</h2><p class="num" data-count="${t.renda}">${brl(t.renda)}</p><p class="of">salário e outras entradas</p></div>
+  <div class="panel divida"><h2>Saiu</h2><p class="num" data-count="${t.despesas}">${brl(t.despesas)}</p><p class="of">todas as despesas do mês</p></div>
+  <div class="panel ${neg ? 'neg' : 'meta'}"><h2>${neg ? 'No vermelho' : 'Sobrou'}</h2><p class="num" data-count="${Math.abs(t.saldo)}">${brl(Math.abs(t.saldo))}</p><p class="of">${!t.renda ? 'cadastre seu salário' : neg ? 'a mais do que você recebeu' : 'ainda no verde 💚'}</p></div>`;
+}
+function linhaLanc(x, mod) {
+  const r = mod === 'rendas';
+  return `<li><div class="desc"><strong>${esc(x.descricao)}</strong><small>${fmtData(x.data)}</small></div><span class="val ${r ? 'pos' : ''}">${r ? '+' : '−'} ${brl(Number(x.valor))}</span><button class="del" data-ed="${mod}:${x.id}">Editar</button><button class="del" data-rm="${mod}:${x.id}">Excluir</button></li>`;
+}
+function renderMes() {
+  const t = mesDados; if (!t) return;
+  document.querySelectorAll('[data-mes-label]').forEach(e => e.textContent = mesNome(mesSel));
+  document.querySelectorAll('[data-resumo]').forEach(e => e.innerHTML = resumoHtml(t));
+  $('#lista_gastos').innerHTML = t.listaG.length ? t.listaG.map(x => linhaLanc(x, 'gastos')).join('') : '<li class="hist-vazio">Nenhum gasto neste mês. Toque em "Novo gasto" para lançar o primeiro.</li>';
+  $('#lista_rendas').innerHTML = t.listaR.length ? t.listaR.map(x => linhaLanc(x, 'rendas')).join('') : '<li class="hist-vazio">Nenhuma entrada neste mês. Cadastre seu salário em "Nova entrada".</li>';
+  const gr = {}; t.listaG.forEach(x => { const k = x.descricao.trim().toLowerCase(); gr[k] = gr[k] || { n: x.descricao.trim(), v: 0 }; gr[k].v += Number(x.valor); });
+  $('#chips_gastos').innerHTML = Object.values(gr).sort((a, b) => b.v - a.v).map(g => `<span class="chip-btn" style="cursor:default">${esc(g.n)}: ${brl(g.v)}</span>`).join('');
+  contar();
+}
+document.addEventListener('click', e => {
+  const n = e.target.closest('[data-mes]'); if (n) { mesSel = mesAdd(mesSel, Number(n.dataset.mes)); carregarMes(); return; }
+  if (e.target.closest('[data-rel]')) return abrirRel();
+  if (e.target.closest('[data-copiar]')) return copiarRendas();
+  const nv = e.target.closest('[data-novo]'); if (nv && MESES[nv.dataset.novo]) return abrirLanc(nv.dataset.novo);
+  const ed = e.target.closest('[data-ed]'), rm = e.target.closest('[data-rm]');
+  if (ed) { const [m, id] = ed.dataset.ed.split(':'); return abrirLanc(m, (m === 'gastos' ? mesDados.listaG : mesDados.listaR).find(x => x.id === id)); }
+  if (rm) excluirLanc(...rm.dataset.rm.split(':'));
+});
+function abrirLanc(mod, item) {
+  lancMod = mod; lancEdit = item ? item.id : null;
+  const f = $('#formLanc'); f.reset(); $('#lancMsg').textContent = '';
+  $('#lancTitulo').textContent = (item ? 'Editar ' : 'Novo ') + MESES[mod].tit; $('#lancRotulo').textContent = MESES[mod].rot;
+  $('#lancSug').innerHTML = MESES[mod].sug.map(s => `<button type="button" class="chip-btn" data-sug="${esc(s)}">${esc(s)}</button>`).join('');
+  const hoje = hojeISO();
+  f.data.value = item ? item.data : (hoje.slice(0, 7) === mesSel ? hoje : mesSel + '-01');
+  if (mod === 'rendas' && !item) f.descricao.value = 'Salário';
+  if (item) { f.descricao.value = item.descricao; f.valor.value = String(item.valor).replace('.', ','); }
+  $('#dlgLanc').showModal(); (item || mod === 'rendas' ? f.valor : f.descricao).focus();
+}
+$('#lancSug').addEventListener('click', e => { const b = e.target.closest('[data-sug]'); if (b) { $('#formLanc').descricao.value = b.dataset.sug; $('#formLanc').valor.focus(); } });
+$('#formLanc').addEventListener('submit', async e => {
+  e.preventDefault();
+  const f = e.target, erro = t => $('#lancMsg').textContent = t, valor = parseMoney(f.valor.value), desc = f.descricao.value.trim();
+  if (!desc) return erro('Escreva o que foi.');
+  if (!(valor > 0)) return erro('Informe um valor maior que zero.');
+  if (!f.data.value) return erro('Informe o dia.');
+  const row = { descricao: desc, valor, data: f.data.value }, t = MESES[lancMod].tab;
+  const { error } = lancEdit ? await sb.from(t).update(row).eq('id', lancEdit) : await sb.from(t).insert(row);
+  if (error) return erro('Não foi possível salvar. Tente de novo.');
+  $('#dlgLanc').close(); toast(lancMod === 'rendas' ? 'Entrada salva 💚' : 'Gasto salvo ✨'); carregarMes();
+});
+async function excluirLanc(mod, id) {
+  if (!confirm('Excluir este lançamento?')) return;
+  const { error } = await sb.from(MESES[mod].tab).delete().eq('id', id);
+  if (error) return toast('Não foi possível excluir. Tente de novo.', true);
+  toast('Lançamento excluído'); carregarMes();
+}
+async function copiarRendas() {
+  const ant = mesAdd(mesSel, -1);
+  const { data, error } = await sb.from('rendas').select('descricao,valor,data').eq('user_id', userId).gte('data', ant + '-01').lt('data', mesSel + '-01');
+  if (error) return toast('Não foi possível copiar. Tente de novo.', true);
+  if (!data.length) return toast('Não há entradas em ' + mesNome(ant) + ' para copiar.');
+  if (!confirm(`Copiar ${data.length} entrada(s) de ${mesNome(ant)} para ${mesNome(mesSel)}?`)) return;
+  const [y, m] = mesSel.split('-').map(Number), ult = new Date(y, m, 0).getDate();
+  const rows = data.map(r => ({ descricao: r.descricao, valor: r.valor, data: mesSel + '-' + String(Math.min(Number(r.data.slice(8)), ult)).padStart(2, '0') }));
+  const e2 = (await sb.from('rendas').insert(rows)).error;
+  if (e2) return toast('Não foi possível copiar. Tente de novo.', true);
+  toast('Entradas copiadas ✅'); carregarMes();
+}
+function abrirRel() {
+  const t = mesDados; if (!t) return toast('Aguarde o mês carregar.');
+  const a = t.ant, dif = t.despesas - a.despesas, pct = a.despesas ? Math.round(Math.abs(dif) / a.despesas * 100) : 0, ma = mesNome(mesAdd(mesSel, -1));
+  $('#relTitulo').textContent = 'Relatório de ' + mesNome(mesSel);
+  $('#relComp').innerHTML = !a.despesas ? `Não há despesas em ${ma} para comparar.` : dif > 0 ? `Você gastou <b>${brl(dif)} a mais</b> (${pct}%) do que em ${ma}.` : dif < 0 ? `Você gastou <b>${brl(-dif)} a menos</b> (${pct}%) do que em ${ma}. 👏` : `Você gastou o mesmo que em ${ma}.`;
+  const L = [['Entradas (salário e outras)', t.renda, 'pos'], ['Gastos avulsos', t.gastos], ['Contas da casa (luz, água, internet)', t.contas], ['Compras no cartão', t.cartao], ['Dívidas pagas', t.dividas], ['Total de despesas', t.despesas, 'tot'], [t.saldo < 0 ? 'Ficou no vermelho' : 'Sobrou', Math.abs(t.saldo), 'tot']];
+  $('#relLista').innerHTML = L.map(([n, v, c]) => `<li class="${c === 'tot' ? 'tot' : ''}"><div class="desc">${c === 'tot' ? `<strong>${n}</strong>` : n}</div><span class="val ${c === 'pos' ? 'pos' : ''}">${brl(v)}</span></li>`).join('');
+  $('#dlgRel').showModal();
+}
+$('#relAnim').onclick = () => { if (!mostrarFim(mesSel, mesDados)) toast('Cadastre o salário e as despesas deste mês para ver a animação.'); else $('#dlgRel').close(); };
+function resultadoMes(t) {
+  if (!(t.renda > 0)) return t.despesas > 0 ? 'sem-renda' : 'vazio';
+  const p = t.saldo / t.renda; return p > 0.02 ? 'verde' : p >= -0.02 ? 'zerou' : 'vermelho';
+}
+function mostrarFim(m, t) {
+  const r = resultadoMes(t); if (!['verde', 'zerou', 'vermelho'].includes(r)) return false;
+  const nm = mesNome(m), v = Math.abs(t.saldo);
+  const C = { verde: ['🎉', 'Parabéns! Você fechou no verde', brl(v), `Você economizou em ${nm}. Que tal mandar uma parte para uma meta?`, ['💰', '🎉', '✨', '💚']],
+    zerou: ['😅', 'Você gastou tudo!', brl(0), `Todo o dinheiro de ${nm} foi embora, sem folga para imprevistos.`, ['🪙', '💸']],
+    vermelho: ['😟', 'Você fechou no vermelho', brl(v), `Foi o que você gastou a mais do que recebeu em ${nm}. Veja o relatório para achar onde cortar.`, ['💸', '🔻']] }[r];
+  fimMes = m; $('#fimCard').className = 'fim-card ' + r; $('#fimEmoji').textContent = C[0]; $('#fimTitulo').textContent = C[1]; $('#fimVal').textContent = C[2]; $('#fimSub').textContent = C[3];
+  $('#fim').hidden = false; $('#fimOk').focus();
+  if (!matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    if (r === 'verde') confete();
+    for (let i = 0; i < 16; i++) { const s = document.createElement('span'); s.className = 'fl' + (r === 'verde' ? '' : ' cai'); s.textContent = C[4][i % C[4].length]; s.style.cssText = `left:${Math.random() * 94}vw;animation-delay:${Math.random() * 1.2}s`; document.body.appendChild(s); setTimeout(() => s.remove(), 4800); }
+  }
+  return true;
+}
+$('#fimOk').onclick = () => { $('#fim').hidden = true; };
+$('#fimRel').onclick = async () => { $('#fim').hidden = true; mesSel = fimMes; trocarVista('gastos'); await carregarMes(); abrirRel(); };
+addEventListener('keydown', e => { if (e.key === 'Escape' && !$('#fim').hidden) $('#fim').hidden = true; });
+async function verificarFechamento() {
+  if (fechChecado) return; fechChecado = true;
+  const pm = mesAdd(hojeISO().slice(0, 7), -1);
+  const { data, error } = await sb.from('fechamentos').select('mes').eq('user_id', userId).eq('mes', pm);
+  if (error || (data && data.length)) return;
+  let t; try { t = await totaisMes(pm); } catch (e) { fechChecado = false; return; }
+  await sb.from('fechamentos').insert({ mes: pm, resultado: resultadoMes(t), saldo: t.saldo });
+  mostrarFim(pm, t);
+}
 
 /* ---------- tema e atalhos ---------- */
 function aplicaTema(t) {
