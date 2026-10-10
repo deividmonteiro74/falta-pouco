@@ -281,6 +281,7 @@ dialog{background:var(--surface);color:var(--ink);animation:abre .25s cubic-bezi
 .hist .acoes{display:flex;gap:2px;flex-wrap:wrap;justify-content:flex-end}
 .hist .pago{color:var(--meta);font-weight:600}
 .dica{font-size:.88rem;color:var(--muted);margin:0 0 4px}
+#toggleModo{font-weight:700}
 </style>
 </head>
 <body>
@@ -308,7 +309,7 @@ dialog{background:var(--surface);color:var(--ink);animation:abre .25s cubic-bezi
 <!-- App -->
 <div id="viewApp" hidden>
   <header class="top">
-    <div class="brand">Falta Pouco <small style="font-family:var(--body);font-weight:500;font-size:.7rem;color:var(--muted)">V6</small></div>
+    <div class="brand">Falta Pouco <small style="font-family:var(--body);font-weight:500;font-size:.7rem;color:var(--muted)">V7</small></div>
     <nav class="tabs" id="navAdmin" hidden aria-label="Áreas do app">
       <button class="tab" data-vista="meu" aria-pressed="true">Meu painel</button>
       <button class="tab" data-vista="cartoes" aria-pressed="false">Cartão de crédito</button>
@@ -544,7 +545,7 @@ function confete() {
 /* ---------- autenticação ---------- */
 const traduz = m => {
   m = String(m || '');
-  if (/Invalid login/i.test(m)) return 'E-mail ou senha incorretos.';
+  if (/Invalid login/i.test(m)) return 'E-mail ou senha incorretos. Se você ainda não tem conta, toque em "Criar uma conta" aqui embaixo.';
   if (/already registered/i.test(m)) return 'Esse e-mail já tem conta. Use "Entrar".';
   if (/at least 6/i.test(m)) return 'A senha precisa ter pelo menos 6 caracteres.';
   if (/valid email|invalid format/i.test(m)) return 'Digite um e-mail válido.';
