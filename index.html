@@ -311,6 +311,16 @@ dialog{background:var(--surface);color:var(--ink);animation:abre .25s cubic-bezi
 @keyframes sobe{to{transform:translateY(-115vh) rotate(30deg);opacity:.2}}
 @keyframes desce{to{transform:translateY(115vh) rotate(-25deg);opacity:.3}}
 @media (prefers-reduced-motion:reduce){.fim-emoji,.fim-card,#fim{animation:none}}
+.bal.par{background:color-mix(in srgb,var(--brand) 16%,transparent);color:var(--brand)}
+.hist .pg-val{color:var(--meta);font-weight:700}
+
+/* ===== V12: limite estourado ===== */
+.row.card.estourou{box-shadow:0 0 0 2px #E5383B,0 14px 34px rgba(229,56,59,.38)}
+.row.card.estourou::before{background:linear-gradient(90deg,#E5383B,#FF6B6B)}
+.row.card.estourou .ring .rg{stroke:#E5383B}
+.row.card.estourou .rt{fill:#E5383B}
+.row.card.estourou .camts strong{color:#E5383B}
+.aviso-estouro{margin:12px 0 0;padding:10px 14px;border-radius:12px;background:rgba(229,56,59,.14);color:#E5383B;font-weight:600}
 </style>
 </head>
 <body>
@@ -338,7 +348,7 @@ dialog{background:var(--surface);color:var(--ink);animation:abre .25s cubic-bezi
 <!-- App -->
 <div id="viewApp" hidden>
   <header class="top">
-    <div class="brand">Falta Pouco <small style="font-family:var(--body);font-weight:500;font-size:.7rem;color:var(--muted)">V10</small></div>
+    <div class="brand">Falta Pouco <small style="font-family:var(--body);font-weight:500;font-size:.7rem;color:var(--muted)">V12</small></div>
     <nav class="tabs" id="navAdmin" hidden aria-label="Áreas do app">
       <button class="tab" data-vista="meu" aria-pressed="true">Meu painel</button>
       <button class="tab" data-vista="cartoes" aria-pressed="false">Cartão de crédito</button>
@@ -487,16 +497,26 @@ dialog{background:var(--surface);color:var(--ink);animation:abre .25s cubic-bezi
     <div class="dlg-head"><div><span class="tag meta">Cartão de crédito</span><h2 id="cNome"></h2></div><button type="button" class="x" data-fechar="dlgCartaoDet" aria-label="Fechar">×</button></div>
     <div id="cResumo"></div>
     <form class="inline-form" id="formCompra" novalidate>
-      <label class="field"><span>Valor usado (R$)</span><input name="valor" inputmode="decimal" placeholder="0,00" required></label>
+      <label class="field"><span>Valor total da compra (R$)</span><input name="valor" inputmode="decimal" placeholder="0,00" required></label>
       <label class="field"><span>Data</span><input name="data" type="date" required></label>
-      <label class="field wide"><span>Descrição (opcional)</span><input name="desc" maxlength="80"></label>
+      <label class="field"><span>Parcelas (1 = à vista)</span><input name="parc" type="number" min="1" max="24" value="1"></label>
+      <label class="field"><span>Descrição (opcional)</span><input name="desc" maxlength="80"></label>
+      <p class="help" id="parcPrev" style="grid-column:1/-1;margin:0"></p>
       <div class="chips" id="chipsC" aria-label="Valores rápidos"><button type="button" class="chip-btn" data-v="20">+ 20</button><button type="button" class="chip-btn" data-v="50">+ 50</button><button type="button" class="chip-btn" data-v="100">+ 100</button><button type="button" class="chip-btn" data-v="300">+ 300</button></div>
       <button class="btn primary" type="submit" id="btnCompra">Registrar compra</button>
     </form>
     <p class="msg" id="cMsg" role="alert"></p>
-    <h3>Fatura aberta</h3>
+    <h3>Pagar a fatura</h3>
+    <form class="inline-form" id="formPag" novalidate style="margin-top:6px;padding-top:12px">
+      <label class="field"><span>Valor pago agora (R$)</span><input name="valor" inputmode="decimal" placeholder="0,00" required></label>
+      <label class="field"><span>Data do pagamento</span><input name="data" type="date" required></label>
+      <button class="btn" type="submit" id="btnPag">Registrar pagamento parcial</button>
+    </form>
+    <p class="msg" id="pMsg" role="alert"></p>
+    <ul class="hist" id="cPags"></ul>
+    <h3>Compras em aberto</h3>
     <ul class="hist" id="cHist"></ul>
-    <div class="dlg-foot"><button class="btn go" id="cPaga" type="button">Fatura paga</button><button class="btn" id="cEditar" type="button">Editar cartão</button><button class="btn danger" id="cExcluir" type="button">Excluir</button></div>
+    <div class="dlg-foot"><button class="btn go" id="cPaga" type="button">Quitar fatura</button><button class="btn" id="cEditar" type="button">Editar cartão</button><button class="btn danger" id="cExcluir" type="button">Excluir</button></div>
   </div>
 </dialog>
 
@@ -1023,7 +1043,21 @@ async function abrirUsuario(uid) {
 /* ---------- cartão de crédito ---------- */
 let cartoes = [], cartaoId = null, cartaoEdit = null;
 const PALC = [['#6C4DFF', '#3D8BFF'], ['#FF4D8D', '#FF7A59'], ['#00B8A3', '#2BD98B'], ['#8A5CFF', '#C45CFF']];
-const usadoC = c => c.compras_cartao.filter(x => !x.paga).reduce((a, x) => a + Number(x.valor), 0);
+const somaC = l => l.reduce((a, x) => a + Number(x.valor), 0);
+const abertasC = c => c.compras_cartao.filter(x => !x.paga);
+const corteC = c => { const v = proxVenc(c.dia_vencimento).d; return v.getFullYear() + '-' + String(v.getMonth() + 1).padStart(2, '0') + '-31'; };
+const pagoC = c => somaC((c.pagamentos_cartao || []).filter(p => !p.aplicado));
+const faturaBrutaC = c => somaC(abertasC(c).filter(x => x.data <= corteC(c)));
+const faturaC = c => Math.max(0, faturaBrutaC(c) - pagoC(c));
+const futurasC = c => somaC(abertasC(c).filter(x => x.data > corteC(c)));
+const usadoC = c => Math.max(0, somaC(abertasC(c)) - pagoC(c));
+const addMesISO = (iso, n) => { const [y, m, d] = iso.split('-').map(Number), al = new Date(y, m - 1 + n, 1), ult = new Date(al.getFullYear(), al.getMonth() + 1, 0).getDate(); return al.getFullYear() + '-' + String(al.getMonth() + 1).padStart(2, '0') + '-' + String(Math.min(d, ult)).padStart(2, '0'); };
+async function quitarFatura(c) {
+  const corte = corteC(c);
+  const a = await sb.from('compras_cartao').update({ paga: true }).eq('cartao_id', c.id).eq('paga', false).lte('data', corte);
+  const b = await sb.from('pagamentos_cartao').update({ aplicado: true }).eq('cartao_id', c.id).eq('aplicado', false);
+  return !a.error && !b.error;
+}
 function proxVenc(dia) {
   const h = new Date(); h.setHours(0, 0, 0, 0);
   const mk = (y, m) => new Date(y, m, Math.min(dia, new Date(y, m + 1, 0).getDate()));
@@ -1032,7 +1066,7 @@ function proxVenc(dia) {
 }
 async function carregarCartoes() {
   const { data, error } = await sb.from('cartoes')
-    .select('id,nome,limite,dia_vencimento,alerta_dias,alerta_limite,compras_cartao(id,valor,data,descricao,paga,criado_em)')
+    .select('id,nome,limite,dia_vencimento,alerta_dias,alerta_limite,compras_cartao(id,valor,data,descricao,paga,criado_em,parcela_num,parcelas_total,grupo_id),pagamentos_cartao(id,valor,data,nota,aplicado)')
     .eq('user_id', userId).order('criado_em');
   if (error) { toast('Não foi possível carregar os cartões. Tente de novo.', true); return; }
   cartoes = data; renderCartoes(); marcarAbas();
@@ -1041,13 +1075,13 @@ async function carregarCartoes() {
 function renderCartoes() {
   $('#cartoesLista').innerHTML = cartoes.length ? cartoes.map((c, k) => {
     const u = usadoC(c), lim = Number(c.limite), pct = Math.min(100, u / lim * 100), v = proxVenc(c.dia_vencimento);
-    const perto = u > 0 && v.dias <= c.alerta_dias, [g1, g2] = PALC[k % 4];
-    return `<article class="row card" style="--g1:${g1};--g2:${g2};animation-delay:${k * 60}ms" data-cid="${c.id}">
-      <div class="ctop"><span class="tag">Cartão</span><span style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">${u > 0 ? balaoHtml(nivelVenc(v.dias, c.alerta_dias), v.dias === 0 ? 'Fatura vence hoje' : v.dias === 1 ? 'Fatura vence amanhã' : `Fatura vence em ${v.dias} dias`) : ''}${pct >= c.alerta_limite ? '<span class="selo">Perto do limite ⚠️</span>' : ''}</span></div>
+    const fat = faturaC(c), perto = fat > 0 && v.dias <= c.alerta_dias, [g1, g2] = PALC[k % 4], est = u > lim + 0.001;
+    return `<article class="row card${est ? ' estourou' : ''}" style="--g1:${g1};--g2:${g2};animation-delay:${k * 60}ms" data-cid="${c.id}">
+      <div class="ctop"><span class="tag">Cartão</span><span style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">${fat > 0 ? balaoHtml(nivelVenc(v.dias, c.alerta_dias), v.dias === 0 ? 'Fatura vence hoje' : v.dias === 1 ? 'Fatura vence amanhã' : `Fatura vence em ${v.dias} dias`) : ''}${est ? balaoHtml('vermelho', 'Limite estourado 🚨') : pct >= c.alerta_limite ? '<span class="selo">Perto do limite ⚠️</span>' : ''}</span></div>
       <div class="cmid"><div class="cinfo"><button class="nome" data-copen="${c.id}">${esc(c.nome)}</button>
         <div class="prazo">${perto ? `<span class="warn">Fatura vence ${v.dias === 0 ? 'hoje' : 'em ' + v.dias + ' dia(s)'}</span>` : `Vence dia ${c.dia_vencimento}, em ${v.dias} dia(s)`}</div></div>${ring(pct, '', 84, 10)}</div>
       <div class="camts"><strong>${brl(u)}</strong><span>de ${brl(lim)}</span></div>
-      <div class="prazo" style="margin:-8px 0 14px">Disponível: ${brl(Math.max(0, lim - u))}</div>
+      <div class="prazo" style="margin:-8px 0 14px">${est ? `<span class="warn">Estourou o limite em ${brl(u - lim)} (${Math.round(u / lim * 100)}% do limite)</span>` : `Disponível: ${brl(Math.max(0, lim - u))}`}<br>Fatura atual: ${brl(fat)}${pagoC(c) > 0 ? ` (já pago ${brl(pagoC(c))})` : ''}</div>
       <div class="acao"><button class="btn small go" data-cadd="${c.id}">Registrar compra</button></div></article>`;
   }).join('') : '<div class="vazio"><div class="vz">💳</div><p>Nenhum cartão cadastrado. Cadastre o seu para acompanhar fatura, limite e vencimento.</p><button class="btn primary" data-cnovo>Cadastrar cartão</button></div>';
   contar();
@@ -1079,20 +1113,23 @@ $('#formCartao').addEventListener('submit', async e => {
   $('#dlgCartao').close(); toast(cartaoEdit ? 'Cartão atualizado' : 'Cartão cadastrado'); carregarCartoes();
 });
 function abrirCartao(id, foco) {
-  cartaoId = id; const f = $('#formCompra'); f.reset(); f.data.value = hojeISO(); $('#cMsg').textContent = '';
+  cartaoId = id; const f = $('#formCompra'); f.reset(); f.data.value = hojeISO(); $('#formPag').reset(); $('#formPag').data.value = hojeISO(); $('#pMsg').textContent = ''; $('#parcPrev').textContent = ''; $('#cMsg').textContent = '';
   renderCartaoDet(); const d = $('#dlgCartaoDet'); if (!d.open) d.showModal(); if (foco) f.valor.focus();
 }
 $('#dlgCartaoDet').addEventListener('close', () => { cartaoId = null; });
 function renderCartaoDet() {
   const c = cartoes.find(x => x.id === cartaoId); if (!c) return;
-  const u = usadoC(c), lim = Number(c.limite), pct = Math.min(100, u / lim * 100), v = proxVenc(c.dia_vencimento);
+  const u = usadoC(c), lim = Number(c.limite), pct = Math.min(100, u / lim * 100), v = proxVenc(c.dia_vencimento), fat = faturaC(c), pago = pagoC(c), fut = futurasC(c), corte = corteC(c);
   $('#cNome').textContent = c.nome;
   $('#cResumo').innerHTML = `<p class="big-num">${brl(u)} <span>de ${brl(lim)} de limite</span></p>
-    <div class="bar big"><i style="width:${pct}%;background:${pct >= c.alerta_limite ? 'var(--divida)' : 'var(--brand)'}"></i></div>
-    <div class="facts"><div><b>${brl(Math.max(0, lim - u))}</b>disponível</div><div><b>Dia ${c.dia_vencimento}</b>vence em ${v.dias} dia(s)</div><div><b>${c.alerta_dias} dias e ${c.alerta_limite}%</b>avisos por e-mail</div></div>`;
-  const ab = c.compras_cartao.filter(x => !x.paga).sort((a, b) => b.data.localeCompare(a.data) || b.criado_em.localeCompare(a.criado_em));
-  $('#cHist').innerHTML = ab.length ? ab.map(x => `<li><div class="desc">${fmtData(x.data)}${x.descricao ? `<small>${esc(x.descricao)}</small>` : ''}</div><span class="val">${brl(Number(x.valor))}</span><button class="del" data-cdel="${x.id}" aria-label="Excluir compra de ${brl(Number(x.valor))}">Excluir</button></li>`).join('')
-    : '<li class="hist-vazio">Nenhuma compra na fatura aberta.</li>';
+    <div class="bar big"><i style="width:${pct}%;background:${u > lim + 0.001 ? '#E5383B' : pct >= c.alerta_limite ? 'var(--divida)' : 'var(--brand)'}"></i></div>
+    ${u > lim + 0.001 ? `<p class="aviso-estouro">🚨 Você estourou o limite em <b>${brl(u - lim)}</b> (usou ${Math.round(u / lim * 100)}% dele).</p>` : ''}
+    <div class="facts"><div><b>${brl(fat)}</b>fatura atual a pagar</div><div><b>${brl(pago)}</b>já pago da fatura</div><div><b>${brl(fut)}</b>parcelas futuras</div><div><b>${brl(Math.max(0, lim - u))}</b>disponível</div><div><b>Dia ${c.dia_vencimento}</b>vence em ${v.dias} dia(s)</div></div>`;
+  const ab = abertasC(c).sort((a, b) => a.data.localeCompare(b.data) || a.criado_em.localeCompare(b.criado_em));
+  $('#cHist').innerHTML = ab.length ? ab.map(x => `<li><div class="desc">${fmtData(x.data)}${x.parcelas_total > 1 ? ` <span class="bal par">parcela ${x.parcela_num}/${x.parcelas_total}</span>` : ''}<small>${x.descricao ? esc(x.descricao) + ' ' : ''}${x.data > corte ? '(próxima fatura)' : ''}</small></div><span class="val">${brl(Number(x.valor))}</span><button class="del" data-cdel="${x.id}" aria-label="Excluir compra de ${brl(Number(x.valor))}">Excluir</button></li>`).join('')
+    : '<li class="hist-vazio">Nenhuma compra em aberto.</li>';
+  const ps = (c.pagamentos_cartao || []).filter(p => !p.aplicado).sort((a, b) => b.data.localeCompare(a.data));
+  $('#cPags').innerHTML = ps.length ? ps.map(p => `<li><div class="desc">Pago em ${fmtData(p.data)}<small>pagamento parcial da fatura</small></div><span class="val pg-val">${brl(Number(p.valor))}</span><button class="del" data-pdel="${p.id}">Excluir</button></li>`).join('') : '';
 }
 $('#formCompra').addEventListener('submit', async e => {
   e.preventDefault();
@@ -1102,30 +1139,65 @@ $('#formCompra').addEventListener('submit', async e => {
   if (!f.data.value) return erro('Informe a data.');
   const btn = $('#btnCompra'); btn.disabled = true;
   try {
-    const { error } = await sb.from('compras_cartao').insert({ cartao_id: cartaoId, valor, data: f.data.value, descricao: f.desc.value.trim() || null });
+    const n = Math.min(24, Math.max(1, parseInt(f.parc.value, 10) || 1)), gid = crypto.randomUUID(), base = Math.floor(valor / n * 100) / 100, desc = f.desc.value.trim();
+    const rows = Array.from({ length: n }, (_, i) => ({ cartao_id: cartaoId, valor: i === n - 1 ? Math.round((valor - base * (n - 1)) * 100) / 100 : base, data: addMesISO(f.data.value, i), descricao: desc || null, parcela_num: i + 1, parcelas_total: n, grupo_id: n > 1 ? gid : null }));
+    const { error } = await sb.from('compras_cartao').insert(rows);
     if (error) return erro('Não foi possível registrar. Tente de novo.');
-    f.valor.value = ''; f.desc.value = '';
+    f.valor.value = ''; f.desc.value = ''; f.parc.value = 1; $('#parcPrev').textContent = '';
     await carregarCartoes();
     const c = cartoes.find(x => x.id === cartaoId);
-    toast(c && usadoC(c) / Number(c.limite) * 100 >= c.alerta_limite ? 'Compra registrada. Atenção: você está perto do limite ⚠️' : 'Compra registrada ✨');
+    toast(c && usadoC(c) / Number(c.limite) * 100 >= c.alerta_limite ? 'Compra registrada. Atenção: você está perto do limite ⚠️' : (n > 1 ? `Compra em ${n}x registrada ✨` : 'Compra registrada ✨'));
     f.valor.focus();
   } finally { btn.disabled = false; }
 });
 $('#cHist').addEventListener('click', async e => {
   const b = e.target.closest('[data-cdel]'); if (!b) return;
-  if (!confirm('Excluir esta compra?')) return;
-  const { error } = await sb.from('compras_cartao').delete().eq('id', b.dataset.cdel);
+  const c = cartoes.find(y => y.id === cartaoId), x = c && c.compras_cartao.find(y => y.id === b.dataset.cdel), todas = x && x.parcelas_total > 1 && x.grupo_id;
+  if (!confirm(todas ? `Esta compra foi parcelada em ${x.parcelas_total}x. Excluir TODAS as parcelas?` : 'Excluir esta compra?')) return;
+  const { error } = todas ? await sb.from('compras_cartao').delete().eq('grupo_id', x.grupo_id) : await sb.from('compras_cartao').delete().eq('id', b.dataset.cdel);
   if (error) return toast('Não foi possível excluir. Tente de novo.', true);
   toast('Compra excluída'); carregarCartoes();
 });
 $('#cPaga').onclick = async () => {
   const c = cartoes.find(x => x.id === cartaoId); if (!c) return;
-  if (!usadoC(c)) return toast('Não há compras na fatura aberta.');
-  if (!confirm(`Marcar a fatura de ${brl(usadoC(c))} como paga? O limite usado volta a zero.`)) return;
-  const { error } = await sb.from('compras_cartao').update({ paga: true }).eq('cartao_id', c.id).eq('paga', false);
-  if (error) return toast('Não foi possível concluir. Tente de novo.', true);
-  confete(); toast('Fatura paga! Limite liberado 🎉'); carregarCartoes();
+  if (!(faturaBrutaC(c) > 0)) return toast('Não há compras na fatura atual.');
+  if (!confirm(`Quitar a fatura atual${pagoC(c) > 0 ? ` (restam ${brl(faturaC(c))}; você já pagou ${brl(pagoC(c))})` : ` de ${brl(faturaC(c))}`}? As parcelas futuras continuam em aberto.`)) return;
+  if (!(await quitarFatura(c))) return toast('Não foi possível concluir. Tente de novo.', true);
+  confete(); toast('Fatura quitada! Limite liberado 🎉'); carregarCartoes();
 };
+$('#formPag').addEventListener('submit', async e => {
+  e.preventDefault();
+  const f = e.target, erro = t => $('#pMsg').textContent = t; erro('');
+  const c = cartoes.find(x => x.id === cartaoId); if (!c) return;
+  const valor = parseMoney(f.valor.value), fat = faturaC(c);
+  if (!(valor > 0)) return erro('Informe o valor pago.');
+  if (!f.data.value) return erro('Informe a data do pagamento.');
+  if (!(fat > 0)) return erro('Não há fatura atual a pagar.');
+  if (valor > fat + 0.001) return erro(`O valor passa da fatura atual (${brl(fat)}).`);
+  const btn = $('#btnPag'); btn.disabled = true;
+  try {
+    const { error } = await sb.from('pagamentos_cartao').insert({ cartao_id: c.id, valor, data: f.data.value });
+    if (error) return erro('Não foi possível registrar. Tente de novo.');
+    f.valor.value = '';
+    if (valor >= fat - 0.001) {
+      await carregarCartoes();
+      const c2 = cartoes.find(x => x.id === cartaoId);
+      if (c2 && await quitarFatura(c2)) { confete(); toast('Fatura quitada! Limite liberado 🎉'); }
+    } else toast(`Pagamento de ${brl(valor)} registrado. Ainda falta ${brl(fat - valor)} 💚`);
+    carregarCartoes();
+  } finally { btn.disabled = false; }
+});
+$('#cPags').addEventListener('click', async e => {
+  const b = e.target.closest('[data-pdel]'); if (!b) return;
+  if (!confirm('Excluir este pagamento parcial? O valor volta para a fatura.')) return;
+  const { error } = await sb.from('pagamentos_cartao').delete().eq('id', b.dataset.pdel);
+  if (error) return toast('Não foi possível excluir. Tente de novo.', true);
+  toast('Pagamento excluído'); carregarCartoes();
+});
+$('#formCompra').addEventListener('input', () => {
+  const f = $('#formCompra'), v = parseMoney(f.valor.value), n = Math.min(24, Math.max(1, parseInt(f.parc.value, 10) || 1));
+  $('#parcPrev').textContent = v > 0 && n > 1 ? `Serão ${n} parcelas de cerca de ${brl(v / n)}, uma por mês.` : '';
+});
 $('#cEditar').onclick = () => { const c = cartoes.find(x => x.id === cartaoId); if (c) { $('#dlgCartaoDet').close(); abrirCartaoForm(c); } };
 $('#cExcluir').onclick = async () => {
   const c = cartoes.find(x => x.id === cartaoId); if (!c) return;
@@ -1206,7 +1278,8 @@ const balaoHtml = (nivel, txt) => nivel ? `<span class="balao ${nivel}">${txt}</
 function marcarAbas() {
   const rank = { vermelho: 2, amarelo: 1 };
   const pior = a => a.reduce((m, n) => (rank[n] || 0) > (rank[m] || 0) ? n : m, null);
-  const nc = pior(cartoes.map(c => usadoC(c) > 0 ? nivelVenc(proxVenc(c.dia_vencimento).dias, c.alerta_dias) : null));
+  const nivelCartao = c => { const u = usadoC(c), lim = Number(c.limite); if (u > lim + 0.001) return 'vermelho'; const n = faturaC(c) > 0 ? nivelVenc(proxVenc(c.dia_vencimento).dias, c.alerta_dias) : null; return n || (u / lim * 100 >= c.alerta_limite ? 'amarelo' : null); };
+  const nc = pior(cartoes.map(nivelCartao));
   const nt = pior(contasFat.filter(f => !f.paga).map(f => nivelVenc(diasAte(f.vencimento))));
   [['cartoes', nc], ['contas', nt]].forEach(([v, n]) => {
     const b = document.querySelector(`#navAdmin [data-vista="${v}"]`); if (!b) return;
