@@ -321,6 +321,86 @@ dialog{background:var(--surface);color:var(--ink);animation:abre .25s cubic-bezi
 .row.card.estourou .rt{fill:#E5383B}
 .row.card.estourou .camts strong{color:#E5383B}
 .aviso-estouro{margin:12px 0 0;padding:10px 14px;border-radius:12px;background:rgba(229,56,59,.14);color:#E5383B;font-weight:600}
+.foto-box input[type=file]{width:100%;margin-top:4px}
+.foto-acoes{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.foto-box .help{margin:8px 0 0}
+
+/* ===== V14: barra lateral, balões de gastos e animações ===== */
+html{scroll-behavior:smooth}
+.btn,.chip-btn,#navAdmin .tab{position:relative;overflow:hidden}
+.ripple{position:absolute;border-radius:50%;background:currentColor;opacity:.28;transform:scale(0);animation:rip .65s ease-out forwards;pointer-events:none}
+@keyframes rip{to{transform:scale(1);opacity:0}}
+body::before{content:"";position:fixed;inset:-25%;z-index:-1;pointer-events:none;background:radial-gradient(40% 35% at 20% 25%,rgba(108,77,255,.20),transparent 70%),radial-gradient(35% 35% at 80% 20%,rgba(255,77,141,.16),transparent 70%),radial-gradient(40% 40% at 60% 85%,rgba(0,184,163,.16),transparent 70%);animation:deriva 26s ease-in-out infinite alternate}
+@keyframes deriva{to{transform:translate3d(4%,3%,0) scale(1.08) rotate(3deg)}}
+.vista-in{animation:vistaIn .5s cubic-bezier(.2,.8,.2,1)}
+@keyframes vistaIn{from{opacity:0;transform:translateY(18px)}}
+.vista-in .panel,.vista-in .chips>*,.vista-in .urow,.vista-in .biglist>li{animation:pop .55s cubic-bezier(.2,.8,.2,1) backwards}
+.vista-in .panel:nth-child(2){animation-delay:.08s}.vista-in .panel:nth-child(3){animation-delay:.16s}
+.vista-in .chips>*{animation-delay:calc(var(--i,0)*45ms)}
+.vista-in .biglist>li:nth-child(1),.vista-in .urow:nth-child(1){animation-delay:40ms}
+.vista-in .biglist>li:nth-child(2),.vista-in .urow:nth-child(2){animation-delay:80ms}
+.vista-in .biglist>li:nth-child(3),.vista-in .urow:nth-child(3){animation-delay:120ms}
+.vista-in .biglist>li:nth-child(4),.vista-in .urow:nth-child(4){animation-delay:160ms}
+.vista-in .biglist>li:nth-child(5),.vista-in .urow:nth-child(5){animation-delay:200ms}
+.vista-in .biglist>li:nth-child(6),.vista-in .urow:nth-child(6){animation-delay:240ms}
+.vista-in .biglist>li:nth-child(7),.vista-in .urow:nth-child(7){animation-delay:280ms}
+.vista-in .biglist>li:nth-child(8),.vista-in .urow:nth-child(8){animation-delay:320ms}
+.vista-in .biglist>li:nth-child(9),.vista-in .urow:nth-child(9){animation-delay:360ms}
+.vista-in .biglist>li:nth-child(10),.vista-in .urow:nth-child(10){animation-delay:400ms}
+.bar i{animation:enche 1.1s cubic-bezier(.2,.8,.2,1)}@keyframes enche{from{width:0}}
+.panel::after{animation:bolha 9s ease-in-out infinite alternate}@keyframes bolha{to{transform:translate(-18px,14px) scale(1.15)}}
+.btn.primary::after,.btn.go::after{content:"";position:absolute;top:0;left:-60%;width:40%;height:100%;background:linear-gradient(100deg,transparent,rgba(255,255,255,.35),transparent);transform:skewX(-20deg);transition:left .6s}
+.btn.primary:hover::after,.btn.go:hover::after{left:130%}
+/* balões de gastos */
+.help#dicaGastos{margin:10px 0 0}
+.grupos{margin-top:10px;gap:10px}
+.gasto-chip{display:inline-flex;align-items:center;gap:8px;padding:11px 18px;font-size:1rem;cursor:pointer;box-shadow:0 6px 16px rgba(108,77,255,.16)}
+.gasto-chip b{font-weight:800}.gasto-chip span{font-weight:600;opacity:.9}
+.gasto-chip em{font-style:normal;font-size:.75rem;font-weight:800;padding:2px 8px;border-radius:99px;background:#6C4DFF;color:#fff}
+.gasto-chip:hover{transform:translateY(-4px) scale(1.05);box-shadow:0 12px 24px rgba(108,77,255,.34)}
+#grLista li{box-shadow:none;border:1px solid var(--line)}
+/* barra lateral (desktop) e barra inferior (celular) */
+#navAdmin{position:relative}
+#navAdmin .tab{z-index:1;display:flex;align-items:center;gap:12px;text-align:left;transition:color .25s,transform .2s}
+#navAdmin .tab .ico{font-size:1.25rem;line-height:1;display:inline-block;transition:transform .3s cubic-bezier(.2,.8,.2,1)}
+#navAdmin .tab:hover .ico{transform:scale(1.2) rotate(-8deg)}
+#navAdmin .tab[aria-pressed="true"]{background:transparent;box-shadow:none;color:#fff}
+#navAdmin .tab[aria-pressed="true"] .ico{animation:icoPop .55s cubic-bezier(.2,.8,.2,1)}
+@keyframes icoPop{40%{transform:scale(1.4) rotate(-10deg)}}
+.nav-ind{position:absolute;z-index:0;left:0;top:0;width:0;height:0;border-radius:16px;background:linear-gradient(135deg,#6C4DFF,#FF4D8D);box-shadow:0 8px 22px rgba(108,77,255,.45);pointer-events:none;transition:left .4s cubic-bezier(.2,.8,.2,1),top .4s cubic-bezier(.2,.8,.2,1),width .4s cubic-bezier(.2,.8,.2,1),height .4s cubic-bezier(.2,.8,.2,1)}
+#navAdmin .tab .ponto.vermelho{animation:pulso 1.6s ease-in-out infinite}
+@keyframes pulso{50%{box-shadow:0 0 0 6px rgba(229,54,43,.25)}}
+@media (min-width:900px){
+  #viewApp{padding-left:260px}
+  .top{position:fixed;left:0;top:0;bottom:0;width:260px;max-width:none;margin:0;padding:24px 14px 18px;flex-direction:column;align-items:stretch;justify-content:flex-start;flex-wrap:nowrap;gap:20px;border-right:1px solid var(--line);background:color-mix(in srgb,var(--surface) 80%,transparent);backdrop-filter:blur(18px);overflow-y:auto}
+  .brand{padding:0 12px;font-size:1.5rem}
+  #navAdmin{flex-direction:column;flex-wrap:nowrap;gap:4px}
+  #navAdmin .tab{width:100%;padding:13px 16px;border-radius:16px;font-size:1rem}
+  #navAdmin .tab:hover:not([aria-pressed="true"]){background:color-mix(in srgb,var(--brand) 12%,transparent);transform:translateX(4px)}
+  #navAdmin .tab .sm{display:none}
+  #navAdmin .tab .ponto{margin-left:auto}
+  .user{margin-top:auto;flex-direction:column;align-items:stretch;gap:8px;padding-top:16px;border-top:1px solid var(--line)}
+  .user .linkbtn{max-width:none;text-align:left;font-size:1rem}
+  .user .btn{width:100%}
+}
+@media (max-width:899.98px){
+  .top{flex-wrap:nowrap;padding:10px 16px;backdrop-filter:none;background:none}
+  .top::before{content:"";position:absolute;inset:0;z-index:-1;backdrop-filter:blur(14px);background:color-mix(in srgb,var(--bg) 78%,transparent)}
+  .user{gap:6px}.user .linkbtn{max-width:96px}.user .btn{padding:6px 10px;min-height:36px}
+  #navAdmin{position:fixed;left:10px;right:10px;bottom:max(10px,env(safe-area-inset-bottom));z-index:60;display:flex;justify-content:space-around;gap:2px;padding:6px;border-radius:24px;border:1px solid var(--line);background:color-mix(in srgb,var(--surface) 90%,transparent);backdrop-filter:blur(16px);box-shadow:0 12px 32px rgba(20,10,80,.3)}
+  #navAdmin .tab{flex:1;min-width:0;flex-direction:column;justify-content:center;align-items:center;gap:3px;padding:8px 2px;border-radius:18px;font-size:.68rem;text-align:center}
+  #navAdmin .tab .ico{font-size:1.4rem}
+  #navAdmin .tab .lg{display:none}
+  #navAdmin .tab .ponto{position:absolute;top:6px;right:calc(50% - 22px);margin:0}
+  .nav-ind{border-radius:18px}
+  main{padding-bottom:130px}
+  .rodape{padding-bottom:110px}
+}
+@media (prefers-reduced-motion:reduce){body::before,.panel::after,.bar i,.vista-in,.vista-in *,#navAdmin .tab .ponto{animation:none!important}.nav-ind{transition:none}html{scroll-behavior:auto}}
+.mes{text-transform:none}
+.hero.tres .panel{min-width:0}.hero.tres .panel .num{font-size:clamp(1.5rem,2.6vw,2.3rem);overflow-wrap:anywhere}
+@media (max-width:899.98px){.brand{font-size:1.15rem;white-space:nowrap;flex:1;min-width:0}.user{flex:none}.user .linkbtn{max-width:84px}.hero.tres .panel .num{font-size:2rem}}
+#grLista li{flex-wrap:wrap;row-gap:4px;column-gap:10px}#grLista .desc{flex:1 1 110px;white-space:nowrap}#grLista .val{flex:0 0 auto}
 </style>
 </head>
 <body>
@@ -348,14 +428,15 @@ dialog{background:var(--surface);color:var(--ink);animation:abre .25s cubic-bezi
 <!-- App -->
 <div id="viewApp" hidden>
   <header class="top">
-    <div class="brand">Falta Pouco <small style="font-family:var(--body);font-weight:500;font-size:.7rem;color:var(--muted)">V12</small></div>
+    <div class="brand">Falta Pouco <small style="font-family:var(--body);font-weight:500;font-size:.7rem;color:var(--muted)">V14</small></div>
     <nav class="tabs" id="navAdmin" hidden aria-label="Áreas do app">
-      <button class="tab" data-vista="meu" aria-pressed="true">Meu painel</button>
-      <button class="tab" data-vista="cartoes" aria-pressed="false">Cartão de crédito</button>
-      <button class="tab" data-vista="contas" aria-pressed="false">Contas</button>
-      <button class="tab" data-vista="gastos" aria-pressed="false">Gastos</button>
-      <button class="tab" data-vista="salario" aria-pressed="false">Salário</button>
-      <button class="tab" id="tabAdmin" data-vista="admin" aria-pressed="false" hidden>Administração</button>
+      <span class="nav-ind" aria-hidden="true"></span>
+      <button class="tab" data-vista="meu" aria-pressed="true"><span class="ico">🏠</span><span class="lbl"><span class="lg">Meu painel</span><span class="sm">Painel</span></span></button>
+      <button class="tab" data-vista="cartoes" aria-pressed="false"><span class="ico">💳</span><span class="lbl"><span class="lg">Cartão de crédito</span><span class="sm">Cartão</span></span></button>
+      <button class="tab" data-vista="contas" aria-pressed="false"><span class="ico">🧾</span><span class="lbl"><span class="lg">Contas</span><span class="sm">Contas</span></span></button>
+      <button class="tab" data-vista="gastos" aria-pressed="false"><span class="ico">🛒</span><span class="lbl"><span class="lg">Gastos</span><span class="sm">Gastos</span></span></button>
+      <button class="tab" data-vista="salario" aria-pressed="false"><span class="ico">💰</span><span class="lbl"><span class="lg">Salário</span><span class="sm">Salário</span></span></button>
+      <button class="tab" id="tabAdmin" hidden data-vista="admin" aria-pressed="false"><span class="ico">🛡️</span><span class="lbl"><span class="lg">Administração</span><span class="sm">Admin</span></span></button>
     </nav>
     <div class="user"><button class="linkbtn" id="userEmail" type="button" title="Alterar nome"></button><button class="btn ghost small" id="btnTema" type="button" aria-label="Alternar tema claro/escuro">🌙</button><button class="btn ghost small" id="btnSair">Sair</button></div>
   </header>
@@ -394,8 +475,8 @@ dialog{background:var(--surface);color:var(--ink);animation:abre .25s cubic-bezi
         <div class="acoes"><button class="btn" data-rel type="button">Relatório do mês</button><button class="btn primary" data-novo="gastos" type="button">Novo gasto</button></div>
       </div>
       <div class="hero tres" data-resumo></div>
-      <div class="chips" id="chips_gastos"></div>
-      <ul class="hist biglist" id="lista_gastos"></ul>
+      <p class="help" id="dicaGastos"></p>
+      <div class="chips grupos" id="chips_gastos"></div>
     </section>
     <section id="vistaSalario" hidden aria-label="Salário e entradas">
       <div class="toolbar">
@@ -528,6 +609,11 @@ dialog{background:var(--surface);color:var(--ink);animation:abre .25s cubic-bezi
     <form class="inline-form" id="formConta" novalidate>
       <label class="field"><span>Vencimento</span><input name="venc" type="date" required></label>
       <label class="field"><span>Valor (R$, opcional)</span><input name="valor" inputmode="decimal" placeholder="0,00"></label>
+      <label class="field" id="campoConsumo"><span id="consumoRot">Consumo (kWh)</span><input name="consumo" inputmode="decimal" placeholder="0"></label>
+      <div class="field wide foto-box"><span>Foto da conta (opcional)</span>
+        <input name="foto" type="file" accept="image/*" id="fotoConta">
+        <div class="foto-acoes"><button type="button" class="btn small go" id="btnLer" hidden>Ler dados da foto ✨</button><button type="button" class="btn small ghost" id="btnTirarFoto" hidden>Remover foto</button></div>
+        <p class="help" id="fotoMsg"></p></div>
       <label class="field chk wide"><input type="checkbox" name="paga"><span>Esta conta já foi paga</span></label>
       <button class="btn primary" type="submit" id="btnConta">Lançar conta</button>
       <button class="btn ghost" type="button" id="btnContaCancel" hidden>Cancelar edição</button>
@@ -573,6 +659,22 @@ dialog{background:var(--surface);color:var(--ink);animation:abre .25s cubic-bezi
     <div class="dlg-foot"><button class="btn" id="fimRel" type="button">Ver relatório</button><button class="btn primary" id="fimOk" type="button">Fechar</button></div>
   </div>
 </div>
+
+<!-- Janela: foto da conta -->
+<dialog id="dlgFoto" aria-label="Foto da conta"><div class="dlg">
+  <div class="dlg-head"><h2>Foto da conta</h2><button type="button" class="x" data-fechar="dlgFoto" aria-label="Fechar">×</button></div>
+  <img id="fotoImg" alt="Foto da conta" style="max-width:100%;border-radius:12px">
+</div></dialog>
+
+<!-- Janela: lançamentos de um gasto (balão) -->
+<dialog id="dlgGrupo" aria-labelledby="grTitulo">
+  <div class="dlg">
+    <div class="dlg-head"><div><span class="tag meta" id="grMes"></span><h2 id="grTitulo"></h2></div><button type="button" class="x" data-fechar="dlgGrupo" aria-label="Fechar">×</button></div>
+    <p class="big-num" id="grTotal"></p>
+    <ul class="hist biglist" id="grLista"></ul>
+    <div class="dlg-foot"><button class="btn primary" id="grNovo" type="button">Novo lançamento</button></div>
+  </div>
+</dialog>
 
 <!-- Janela: nova senha (após link de recuperação) -->
 <dialog id="dlgResumo" aria-labelledby="rTitulo">
@@ -952,6 +1054,9 @@ function trocarVista(v) {
   $('#vistaSalario').hidden = v !== 'salario';
   $('#vistaAdmin').hidden = v !== 'admin';
   document.querySelectorAll('#navAdmin .tab').forEach(b => b.setAttribute('aria-pressed', b.dataset.vista === v));
+  requestAnimationFrame(moverInd);
+  const secao = $({ meu: '#vistaMeu', cartoes: '#vistaCartoes', contas: '#vistaContas', gastos: '#vistaGastos', salario: '#vistaSalario', admin: '#vistaAdmin' }[v]);
+  if (secao) { secao.classList.remove('vista-in'); void secao.offsetWidth; secao.classList.add('vista-in'); }
   if (v === 'admin' && ehAdmin) carregarAdmin();
   if (v === 'cartoes' && userId) carregarCartoes();
   if (v === 'contas' && userId) carregarContas();
@@ -1232,10 +1337,10 @@ const faturasDe = t => contasFat.filter(f => f.tipo === t);
 
 async function carregarContas() {
   const { data, error } = await sb.from('contas_faturas')
-    .select('id,tipo,vencimento,valor,paga,criado_em')
+    .select('id,tipo,vencimento,valor,paga,criado_em,consumo,consumo_unidade,foto_path')
     .eq('user_id', userId).order('vencimento', { ascending: false });
   if (error) { toast('Não foi possível carregar as contas. Tente de novo.', true); return; }
-  contasFat = data.map(f => ({ ...f, valor: f.valor == null ? null : Number(f.valor) }));
+  contasFat = data.map(f => ({ ...f, valor: f.valor == null ? null : Number(f.valor), consumo: f.consumo == null ? null : Number(f.consumo) }));
   renderContas(); marcarAbas();
   if (contaTipo) renderContaDet();
 }
@@ -1375,6 +1480,7 @@ function prepararFormConta(f) {
   const form = $('#formConta'); form.reset();
   $('#btnConta').textContent = f ? 'Salvar alterações' : 'Lançar conta';
   $('#btnContaCancel').hidden = !f;
+  ajustarFoto(f);
   if (f) { form.venc.value = f.vencimento; form.valor.value = f.valor == null ? '' : String(f.valor).replace('.', ','); form.paga.checked = f.paga; }
   else {
     const todas = faturasDe(contaTipo || ''), ult = todas[0];
@@ -1395,14 +1501,15 @@ function renderContaDet() {
   $('#ctResumo').innerHTML = comValor.length
     ? `<div class="facts"><div><b>${brl(comValor[0].valor)}</b>última conta</div><div><b>${brl(media)}</b>média das últimas ${Math.min(6, comValor.length)}</div>${p && p.k > 1 ? `<div><b>${brl(p.min)} a ${brl(p.max)}</b>faixa recente</div>` : ''}</div>`
     : '<p class="dica">Lance as últimas contas (com valor) para o app calcular a projeção.</p>';
+  $('#ctResumo').insertAdjacentHTML('beforeend', consumoHtml(todas));
   $('#ctProj').innerHTML = p && p.itens.length
     ? `<ul class="proj" style="--g1:${c.cor[0]}">${p.itens.map(x => `<li><span>${fmtData(x.venc)}</span><b>~ ${brl(x.valor)}</b></li>`).join('')}</ul><p class="dica">Estimativa com base em ${p.k} conta(s): ${c.dica}. O valor real pode variar.</p>`
     : '<p class="proj-vazio">Sem projeção ainda.</p>';
   $('#ctHist').innerHTML = todas.length ? todas.map(f => {
     const st = statusVenc(f);
-    return `<li><div class="desc">${fmtData(f.vencimento)}<small class="${st.cls}">${st.txt}</small>${st.nivel ? balaoHtml(st.nivel, st.balao) : ''}</div>
+    return `<li><div class="desc">${fmtData(f.vencimento)}<small class="${st.cls}">${st.txt}</small>${st.nivel ? balaoHtml(st.nivel, st.balao) : ''}${f.consumo != null ? `<small>Consumo: ${fmtNum(f.consumo)} ${esc(f.consumo_unidade || '')}</small>` : ''}</div>
       <span class="val">${f.valor == null ? 'sem valor' : brl(f.valor)}</span>
-      <span class="acoes"><button class="del" data-cpaga="${f.id}">${f.paga ? 'Reabrir' : 'Pagar'}</button><button class="del" data-cedit="${f.id}">Editar</button><button class="del" data-cdelf="${f.id}" aria-label="Excluir conta de ${fmtData(f.vencimento)}">Excluir</button></span></li>`;
+      <span class="acoes">${f.foto_path ? `<button class="del" data-cfoto="${f.id}">📷 Foto</button>` : ''}<button class="del" data-cpaga="${f.id}">${f.paga ? 'Reabrir' : 'Pagar'}</button><button class="del" data-cedit="${f.id}">Editar</button><button class="del" data-cdelf="${f.id}" aria-label="Excluir conta de ${fmtData(f.vencimento)}">Excluir</button></span></li>`;
   }).join('') : '<li class="hist-vazio">Nenhuma conta lançada ainda.</li>';
 }
 
@@ -1412,9 +1519,19 @@ $('#formConta').addEventListener('submit', async e => {
   if (!f.venc.value) return erro('Informe a data de vencimento.');
   const txt = f.valor.value.trim(), valor = txt ? parseMoney(txt) : null;
   if (txt && !(valor >= 0)) return erro('O valor não é válido. Use apenas números, como 185,40.');
-  const payload = { vencimento: f.venc.value, valor, paga: f.paga.checked };
+  const ctxt = f.consumo.value.trim(), consumo = ctxt ? parseMoney(ctxt) : null;
+  if (ctxt && !(consumo >= 0)) return erro('O consumo não é válido. Use apenas números, como 320.');
+  const payload = { vencimento: f.venc.value, valor, paga: f.paga.checked, consumo, consumo_unidade: consumo == null ? null : (contaTipo === 'agua' ? 'm³' : 'kWh') };
   const btn = $('#btnConta'); btn.disabled = true;
   try {
+    const fotoAntiga = faturaEdit ? (contasFat.find(x => x.id === faturaEdit) || {}).foto_path : null;
+    if (fotoBlob) {
+      const caminho = `${userId}/${crypto.randomUUID()}.jpg`;
+      const up = await sb.storage.from('contas-fotos').upload(caminho, fotoBlob, { contentType: 'image/jpeg' });
+      if (up.error) return erro('Não foi possível enviar a foto. Tente de novo.');
+      payload.foto_path = caminho;
+      if (fotoAntiga) sb.storage.from('contas-fotos').remove([fotoAntiga]);
+    }
     const { error } = faturaEdit
       ? await sb.from('contas_faturas').update(payload).eq('id', faturaEdit)
       : await sb.from('contas_faturas').insert({ ...payload, tipo: contaTipo });
@@ -1446,7 +1563,9 @@ $('#ctHist').addEventListener('click', async e => {
   }
   if (dl) {
     if (!confirm('Excluir esta conta?')) return;
+    const fx = contasFat.find(x => x.id === dl.dataset.cdelf);
     const { error } = await sb.from('contas_faturas').delete().eq('id', dl.dataset.cdelf);
+    if (!error && fx && fx.foto_path) sb.storage.from('contas-fotos').remove([fx.foto_path]);
     if (error) return toast('Não foi possível excluir. Tente de novo.', true);
     if (faturaEdit === dl.dataset.cdelf) { faturaEdit = null; prepararFormConta(); }
     toast('Conta excluída'); carregarContas();
@@ -1498,15 +1617,17 @@ function linhaLanc(x, mod) {
 }
 function renderMes() {
   const t = mesDados; if (!t) return;
-  document.querySelectorAll('[data-mes-label]').forEach(e => e.textContent = mesNome(mesSel));
+  document.querySelectorAll('[data-mes-label]').forEach(e => { const s = mesNome(mesSel); e.textContent = s.charAt(0).toUpperCase() + s.slice(1); });
   document.querySelectorAll('[data-resumo]').forEach(e => e.innerHTML = resumoHtml(t));
-  $('#lista_gastos').innerHTML = t.listaG.length ? t.listaG.map(x => linhaLanc(x, 'gastos')).join('') : '<li class="hist-vazio">Nenhum gasto neste mês. Toque em "Novo gasto" para lançar o primeiro.</li>';
   $('#lista_rendas').innerHTML = t.listaR.length ? t.listaR.map(x => linhaLanc(x, 'rendas')).join('') : '<li class="hist-vazio">Nenhuma entrada neste mês. Cadastre seu salário em "Nova entrada".</li>';
-  const gr = {}; t.listaG.forEach(x => { const k = x.descricao.trim().toLowerCase(); gr[k] = gr[k] || { n: x.descricao.trim(), v: 0 }; gr[k].v += Number(x.valor); });
-  $('#chips_gastos').innerHTML = Object.values(gr).sort((a, b) => b.v - a.v).map(g => `<span class="chip-btn" style="cursor:default">${esc(g.n)}: ${brl(g.v)}</span>`).join('');
+  const gr = gruposGastos(t), ks = Object.keys(gr).sort((a, b) => gr[b].v - gr[a].v);
+  $('#dicaGastos').textContent = ks.length ? 'Toque em um gasto para ver todos os lançamentos dele.' : '';
+  $('#chips_gastos').innerHTML = ks.length ? ks.map((k, i) => `<button type="button" class="chip-btn gasto-chip" data-grupo="${esc(k)}" style="--i:${i}"><b>${esc(gr[k].n)}</b><span>${brl(gr[k].v)}</span>${gr[k].l.length > 1 ? `<em>${gr[k].l.length}x</em>` : ''}</button>`).join('') : '<p class="hist-vazio">Nenhum gasto neste mês. Toque em "Novo gasto" para lançar o primeiro.</p>';
+  if (grupoKey) renderGrupo();
   contar();
 }
 document.addEventListener('click', e => {
+  const gc = e.target.closest('[data-grupo]'); if (gc) return abrirGrupo(gc.dataset.grupo);
   const n = e.target.closest('[data-mes]'); if (n) { mesSel = mesAdd(mesSel, Number(n.dataset.mes)); carregarMes(); return; }
   if (e.target.closest('[data-rel]')) return abrirRel();
   if (e.target.closest('[data-copiar]')) return copiarRendas();
@@ -1596,6 +1717,109 @@ async function verificarFechamento() {
   await sb.from('fechamentos').insert({ mes: pm, resultado: resultadoMes(t), saldo: t.saldo });
   mostrarFim(pm, t);
 }
+
+/* ---------- foto da conta: leitura automática ---------- */
+let fotoBlob = null;
+const fmtNum = n => Number(n).toLocaleString('pt-BR', { maximumFractionDigits: 1 });
+function consumoHtml(todas) {
+  const l = todas.filter(f => f.consumo != null); if (!l.length) return '';
+  const u = esc(l[0].consumo_unidade || ''), m = l.slice(0, 6).reduce((a, f) => a + f.consumo, 0) / Math.min(6, l.length);
+  let cmp = '';
+  if (l.length > 1 && l[1].consumo > 0) { const d = (l[0].consumo - l[1].consumo) / l[1].consumo * 100; cmp = `<div><b class="${d > 0 ? 'warn' : ''}">${d > 0 ? '▲' : d < 0 ? '▼' : '='} ${Math.abs(Math.round(d))}%</b>vs. conta anterior</div>`; }
+  return `<div class="facts"><div><b>${fmtNum(l[0].consumo)} ${u}</b>último consumo</div><div><b>${fmtNum(m)} ${u}</b>média do consumo</div>${cmp}</div>`;
+}
+function ajustarFoto(f) {
+  fotoBlob = null; $('#fotoConta').value = ''; $('#fotoMsg').textContent = '';
+  $('#btnLer').hidden = true; $('#btnTirarFoto').hidden = true;
+  const form = $('#formConta'), agua = contaTipo === 'agua';
+  $('#campoConsumo').hidden = contaTipo === 'internet';
+  $('#consumoRot').textContent = agua ? 'Consumo (m³)' : 'Consumo (kWh)';
+  form.consumo.value = f && f.consumo != null ? String(f.consumo).replace('.', ',') : '';
+  if (f && f.foto_path) $('#fotoMsg').textContent = 'Esta conta já tem uma foto salva. Anexar outra substitui a atual.';
+}
+async function comprimirImagem(file, max = 1600, q = 0.82) {
+  const bmp = await createImageBitmap(file, { imageOrientation: 'from-image' });
+  const k = Math.min(1, max / Math.max(bmp.width, bmp.height)), w = Math.round(bmp.width * k), hh = Math.round(bmp.height * k);
+  const cv = document.createElement('canvas'); cv.width = w; cv.height = hh;
+  cv.getContext('2d').drawImage(bmp, 0, 0, w, hh);
+  return await new Promise(res => cv.toBlob(res, 'image/jpeg', q));
+}
+$('#fotoConta').addEventListener('change', async e => {
+  const file = e.target.files[0]; fotoBlob = null; $('#btnLer').hidden = true; $('#btnTirarFoto').hidden = true;
+  if (!file) { $('#fotoMsg').textContent = ''; return; }
+  $('#fotoMsg').textContent = 'Preparando a foto...';
+  try {
+    fotoBlob = await comprimirImagem(file);
+    if (!fotoBlob) throw new Error('vazio');
+    $('#fotoMsg').textContent = `Foto pronta (${Math.round(fotoBlob.size / 1024)} KB). Toque em "Ler dados da foto" para preencher os campos.`;
+    $('#btnLer').hidden = false; $('#btnTirarFoto').hidden = false;
+  } catch (err) { $('#fotoMsg').textContent = 'Não foi possível abrir essa foto. Tente tirar de novo em formato JPG ou PNG.'; $('#fotoConta').value = ''; }
+});
+$('#btnTirarFoto').onclick = () => ajustarFoto(faturaEdit ? contasFat.find(x => x.id === faturaEdit) : null);
+$('#btnLer').onclick = async () => {
+  if (!fotoBlob) return;
+  const btn = $('#btnLer'), msg = t => $('#fotoMsg').textContent = t; btn.disabled = true; msg('Lendo a conta... isso leva alguns segundos.');
+  try {
+    const b64 = await new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(String(r.result).split(',')[1]); r.onerror = rej; r.readAsDataURL(fotoBlob); });
+    const { data, error } = await sb.functions.invoke('ler-conta', { body: { imagem: b64, tipo_midia: 'image/jpeg' } });
+    if (error) {
+      let m = 'Não foi possível ler a foto agora. Tente de novo.';
+      try { const j = await error.context.json(); if (j && j.erro) m = j.erro; } catch (e2) {}
+      return msg(m);
+    }
+    const d = data && data.dados; if (!d) return msg('Não consegui entender a foto. Tente uma foto mais nítida.');
+    const f = $('#formConta'), ok = [];
+    if (typeof d.vencimento === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(d.vencimento)) { f.venc.value = d.vencimento; f.venc.dispatchEvent(new Event('change')); ok.push('vencimento'); }
+    if (typeof d.valor_total === 'number' && d.valor_total >= 0) { f.valor.value = d.valor_total.toFixed(2).replace('.', ','); ok.push('valor'); }
+    if (typeof d.consumo === 'number' && d.consumo >= 0 && contaTipo !== 'internet') { f.consumo.value = String(d.consumo).replace('.', ','); ok.push('consumo'); }
+    const outro = d.tipo && ['luz', 'agua', 'internet'].includes(d.tipo) && d.tipo !== contaTipo ? ` Atenção: a foto parece ser de ${CONTAS[d.tipo].nome}, e você está em ${CONTAS[contaTipo].nome}.` : '';
+    const dud = d.confianca === 'baixa' ? ' A leitura teve baixa confiança, confira com cuidado.' : '';
+    msg(ok.length ? `Lido: ${ok.join(', ')}. Confira os dados antes de salvar.${dud}${outro}${d.observacao ? ' Obs.: ' + d.observacao : ''}` : 'Não encontrei dados legíveis. Tente uma foto mais nítida e inteira da conta.');
+  } catch (err) { msg('Não foi possível ler a foto agora. Tente de novo.'); }
+  finally { btn.disabled = false; }
+};
+$('#ctHist').addEventListener('click', async e => {
+  const b = e.target.closest('[data-cfoto]'); if (!b) return;
+  const f = contasFat.find(x => x.id === b.dataset.cfoto); if (!f || !f.foto_path) return;
+  const { data, error } = await sb.storage.from('contas-fotos').createSignedUrl(f.foto_path, 120);
+  if (error) return toast('Não foi possível abrir a foto.', true);
+  $('#fotoImg').src = data.signedUrl; $('#dlgFoto').showModal();
+});
+
+/* ---------- gastos agrupados em balões ---------- */
+let grupoKey = null;
+function gruposGastos(t) {
+  const gr = {};
+  t.listaG.forEach(x => { const k = x.descricao.trim().toLowerCase(); (gr[k] = gr[k] || { n: x.descricao.trim(), v: 0, l: [] }); gr[k].v += Number(x.valor); gr[k].l.push(x); });
+  return gr;
+}
+const linhaGrupo = x => `<li><div class="desc"><strong>${fmtData(x.data)}</strong></div><span class="val">− ${brl(Number(x.valor))}</span><button class="del" data-ed="gastos:${x.id}">Editar</button><button class="del" data-rm="gastos:${x.id}">Excluir</button></li>`;
+function abrirGrupo(k) { grupoKey = k; renderGrupo(); const d = $('#dlgGrupo'); if (!d.open) d.showModal(); }
+function renderGrupo() {
+  const g = mesDados && gruposGastos(mesDados)[grupoKey];
+  if (!g) { grupoKey = null; if ($('#dlgGrupo').open) $('#dlgGrupo').close(); return; }
+  $('#grMes').textContent = mesNome(mesSel); $('#grTitulo').textContent = g.n;
+  $('#grTotal').innerHTML = `${brl(g.v)} <span>em ${g.l.length} ${g.l.length === 1 ? 'lançamento' : 'lançamentos'}</span>`;
+  $('#grLista').innerHTML = g.l.map(linhaGrupo).join('');
+  $('#grNovo').textContent = `Novo lançamento de ${g.n}`;
+}
+$('#dlgGrupo').addEventListener('close', () => { grupoKey = null; });
+$('#grNovo').onclick = () => { const g = mesDados && gruposGastos(mesDados)[grupoKey]; abrirLanc('gastos'); if (g) { $('#formLanc').descricao.value = g.n; $('#formLanc').valor.focus(); } };
+
+/* ---------- barra lateral animada e efeitos ---------- */
+function moverInd() {
+  const nav = $('#navAdmin'), ind = nav.querySelector('.nav-ind'), b = nav.querySelector('.tab[aria-pressed="true"]');
+  if (!ind || !b || nav.hidden || b.hidden) return;
+  ind.style.left = b.offsetLeft + 'px'; ind.style.top = b.offsetTop + 'px'; ind.style.width = b.offsetWidth + 'px'; ind.style.height = b.offsetHeight + 'px';
+}
+addEventListener('resize', moverInd);
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(moverInd);
+document.addEventListener('pointerdown', e => {
+  const b = e.target.closest('.btn,.chip-btn,.tab'); if (!b || b.disabled || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const r = b.getBoundingClientRect(), s = Math.max(r.width, r.height) * 1.6, o = document.createElement('i');
+  o.className = 'ripple'; o.style.cssText = `width:${s}px;height:${s}px;left:${e.clientX - r.left - s / 2}px;top:${e.clientY - r.top - s / 2}px`;
+  b.appendChild(o); setTimeout(() => o.remove(), 650);
+});
 
 /* ---------- tema e atalhos ---------- */
 function aplicaTema(t) {
