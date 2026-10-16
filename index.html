@@ -424,9 +424,31 @@ body::before{content:"";position:fixed;inset:-25%;z-index:-1;pointer-events:none
 .mk.amex{font-size:clamp(.7rem,4.6cqw,1.2rem);font-weight:800;border:1.5px solid #fff;padding:2px 5px;border-radius:4px}
 .mk.hiper{font-size:clamp(.7rem,4.4cqw,1.1rem);font-weight:800}
 .mk.mc{display:inline-flex}.mk.mc i{width:1.45em;height:1.45em;border-radius:50%;background:#EB001B}.mk.mc i+i{background:rgba(247,158,27,.92);margin-left:-.55em}
-@keyframes cheioPulso{0%,100%{box-shadow:0 12px 28px rgba(20,10,60,.3),0 0 0 3px #FF3B4E,0 0 10px rgba(255,59,78,.45)}50%{box-shadow:0 12px 28px rgba(20,10,60,.3),0 0 0 3px #FF3B4E,0 0 24px rgba(255,59,78,.85)}}
-.vcard.cheio{animation:cheioPulso 1.8s ease-in-out infinite}
-@media (prefers-reduced-motion:reduce){.vcard.cheio{animation:none;box-shadow:0 12px 28px rgba(20,10,60,.3),0 0 0 3px #FF3B4E}}
+/* ===== alertas do cartão: ficam no topo, a faixa que sempre aparece na carteira empilhada ===== */
+.vc-alertas{display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex:none}
+.vc-alerta{display:inline-flex;align-items:center;gap:.4em;padding:.35em .75em;border-radius:99px;font:800 .66rem/1 var(--display);font-size:clamp(.6rem,3.3cqw,.8rem);letter-spacing:.05em;white-space:nowrap;color:#fff;background:#E5383B;box-shadow:0 2px 8px rgba(0,0,0,.35);animation:alertaPulsa 1.3s ease-out infinite}
+.vc-alerta b{display:inline-block;font-weight:400;transform-origin:50% 8%;animation:sino 1.4s ease-in-out infinite}
+.vc-alerta.venc{background:#FFB020;color:#2B1700;animation-name:avisoPulsa}
+.vc-alerta.venc.hoje{background:#FF5A1F;color:#fff}
+.vc-alerta.estouro b{animation:sirene .5s ease-in-out infinite alternate}
+@keyframes alertaPulsa{0%{box-shadow:0 2px 8px rgba(0,0,0,.35),0 0 0 0 rgba(255,255,255,.85)}70%,100%{box-shadow:0 2px 8px rgba(0,0,0,.35),0 0 0 11px rgba(255,255,255,0)}}
+@keyframes avisoPulsa{0%{box-shadow:0 2px 8px rgba(0,0,0,.35),0 0 0 0 rgba(255,176,32,.9)}70%,100%{box-shadow:0 2px 8px rgba(0,0,0,.35),0 0 0 11px rgba(255,176,32,0)}}
+@keyframes sino{0%,60%,100%{transform:rotate(0)}10%{transform:rotate(22deg)}20%{transform:rotate(-20deg)}30%{transform:rotate(16deg)}40%{transform:rotate(-12deg)}50%{transform:rotate(6deg)}}
+@keyframes sirene{from{transform:scale(.9) rotate(-12deg)}to{transform:scale(1.3) rotate(12deg)}}
+/* limite estourado: faixa de alerta correndo no topo + o cartão treme de tempos em tempos */
+.vcard>.vc-pavio{position:absolute;left:0;top:0;right:0;height:7px;z-index:2;overflow:visible;background:rgba(0,0,0,.22)}
+.vc-pavio i{position:absolute;left:0;top:0;bottom:0;width:var(--p,100%);background:linear-gradient(90deg,#FFE27A,#FF7A18);border-radius:0 4px 4px 0}
+.vc-pavio i::after{content:"";position:absolute;right:-7px;top:50%;width:14px;height:14px;margin-top:-7px;border-radius:50%;background:#fff;box-shadow:0 0 8px 3px #FFB020,0 0 18px 7px rgba(255,90,31,.7);animation:faisca .22s ease-in-out infinite alternate}
+@keyframes faisca{to{transform:scale(.55);opacity:.75}}
+.vcard.cheio>.vc-pavio{background:repeating-linear-gradient(-45deg,#E5383B 0 10px,#fff 10px 20px);background-size:28.3px 100%;animation:marcha .7s linear infinite}
+@keyframes marcha{to{background-position:28.3px 0}}
+.vcard.cheio{animation:alertaTreme 4s ease-in-out infinite}
+@keyframes alertaTreme{0%,86%,100%{transform:none}88%{transform:translateX(-5px) rotate(-.6deg)}90%{transform:translateX(5px) rotate(.6deg)}92%{transform:translateX(-4px)}94%{transform:translateX(3px)}96%{transform:translateX(-1px)}}
+/* vencimento chegando: feixe de luz varrendo o cartão */
+.vcard>.vc-brilho{position:absolute;inset:0;z-index:2;pointer-events:none;background:linear-gradient(105deg,transparent 38%,rgba(255,255,255,.5) 50%,transparent 62%);transform:translateX(-130%);animation:brilho 3.4s ease-in-out infinite}
+.vcard.hoje>.vc-brilho{animation-duration:1.7s}
+@keyframes brilho{0%,45%{transform:translateX(-130%)}100%{transform:translateX(130%)}}
+@media (prefers-reduced-motion:reduce){.vc-alerta,.vc-alerta b,.vc-pavio i::after,.vcard.cheio,.vcard.cheio>.vc-pavio,.vc-brilho{animation:none}.vc-brilho{display:none}}
 .vc-prev{position:sticky;top:0;z-index:3;background:var(--surface);padding:0 0 14px}
 .vc-prev .vcard{max-width:300px;margin:0 auto}
 .xfields{display:grid;grid-template-columns:1fr 1fr;gap:0 12px}
@@ -474,6 +496,15 @@ body::before{content:"";position:fixed;inset:-25%;z-index:-1;pointer-events:none
 </div>
 <script>
 (function () {
+  // Abertura só aparece quando o usuário NÃO está logado hoje (1º acesso do dia, ou depois de sair da conta)
+  try {
+    var _d = new Date(), _hoje = _d.getFullYear() + '-' + String(_d.getMonth() + 1).padStart(2, '0') + '-' + String(_d.getDate()).padStart(2, '0');
+    var _logado = Object.keys(localStorage).some(function (k) { return /^sb-.*-auth-token/.test(k); });
+    if (_logado && localStorage.getItem('diaLogin') === _hoje) {
+      var _i = document.getElementById('intro'); if (_i) _i.remove();
+      return;
+    }
+  } catch (e) {}
   var MS_POR_QUADRO = 1000 / 15;            // 15 quadros/s: encaixa certinho nos 30 Hz do modo economia
   var intro = document.getElementById('intro');
   var video = document.getElementById('introVideo');
@@ -1401,8 +1432,12 @@ const isoD = d => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '
 function cartaoHtml(c, k) {
   const tem = c.cor != null && c.cor !== '' && !isNaN(Number(c.cor)), i = tem ? Number(c.cor) : k, [g1, g2] = PALX[tem ? i % PALX.length : i % 4];
   const lim = Number(c.limite), dia = Number(c.dia_vencimento), fin = String(c.final || '').replace(/\D/g, '').slice(0, 4), cheio = lim > 0 && !!c.compras_cartao && usadoC(c) >= lim - 0.005;
-  return `<div class="vcard${cheio ? ' cheio' : ''}" style="--g1:${g1};--g2:${g2}">
-    <div class="vc-top"><span class="vc-nome">${esc(c.nome || 'Seu cartão')}</span><span class="vc-brand">${MARCAS[c.bandeira] || ''}</span></div>
+  let dv = null; try { if (c.compras_cartao && faturaC(c) > 0) { const d = proxVenc(dia).dias, ad = Number(c.alerta_dias) || 3; if (d <= ad) dv = { d, ad }; } } catch (e) {}
+  const hoje = !!dv && dv.d <= 0;
+  const alertas = (cheio ? '<span class="vc-alerta estouro"><b>🚨</b>LIMITE ESTOURADO</span>' : '') + (dv ? `<span class="vc-alerta venc${hoje ? ' hoje' : ''}"><b>${hoje ? '🔔' : '⏳'}</b>${hoje ? 'VENCE HOJE' : dv.d === 1 ? 'VENCE AMANHÃ' : 'VENCE EM ' + dv.d + ' DIAS'}</span>` : '');
+  const pavio = cheio ? '<span class="vc-pavio"></span>' : dv ? `<span class="vc-pavio"><i style="--p:${Math.max(6, Math.min(100, dv.d / dv.ad * 100))}%"></i></span>` : '';
+  return `<div class="vcard${cheio ? ' cheio' : ''}${dv ? ' venc' : ''}${hoje ? ' hoje' : ''}" style="--g1:${g1};--g2:${g2}">${pavio}${dv ? '<i class="vc-brilho"></i>' : ''}
+    <div class="vc-top"><span class="vc-nome">${esc(c.nome || 'Seu cartão')}</span>${alertas ? `<span class="vc-alertas">${alertas}</span>` : ''}<span class="vc-brand">${MARCAS[c.bandeira] || ''}</span></div>
     <i class="vc-chip"></i>
     <div class="vc-num">•••• •••• •••• ${esc((fin + '••••').slice(0, 4))}</div>
     <div class="vc-bot"><div><small>VENCE</small><b>${dia >= 1 && dia <= 31 ? 'dia ' + dia : '--'}</b></div><div><small>LIMITE</small><b>${lim > 0 ? brl(lim) : 'R$ ----'}</b></div></div></div>`;
@@ -2095,7 +2130,16 @@ aplicaTema(temaSalvo || (matchMedia('(prefers-color-scheme: dark)').matches ? 'd
 if ('serviceWorker' in navigator) addEventListener('load', () => navigator.serviceWorker.register('/sw.js').catch(() => {}));
 
 /* ---------- início ---------- */
-(function iniciar() {
+const hojeStr = () => { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
+const diaVencido = () => { try { const d = localStorage.getItem('diaLogin'); return !!d && d !== hojeStr(); } catch (e) { return false; } };
+let saindo = false;
+async function forcarSaida() {                 // desloga só este aparelho e volta para a tela de login
+  if (saindo) return; saindo = true;
+  try { await sb.auth.signOut({ scope: 'local' }); } catch (e) {}
+  try { Object.keys(localStorage).filter(k => /^sb-.*-auth-token/.test(k)).forEach(k => localStorage.removeItem(k)); localStorage.removeItem('diaLogin'); } catch (e) {}
+  saindo = false; mostrarAuth();
+}
+(async function iniciar() {
   if (SUPABASE_URL.startsWith('COLE_') || SUPABASE_ANON_KEY.startsWith('COLE_')) {
     $('#viewAuth').hidden = false;
     $('#authForm').hidden = true;
@@ -2103,10 +2147,21 @@ if ('serviceWorker' in navigator) addEventListener('load', () => navigator.servi
     return;
   }
   sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  if (diaVencido()) await forcarSaida();      // virou o dia desde o último login: exige entrar de novo
   sb.auth.onAuthStateChange((evento, session) => {
     if (evento === 'PASSWORD_RECOVERY') { setTimeout(() => $('#dlgSenha').showModal(), 0); }
-    if (session) setTimeout(() => entrar(session), 0); else mostrarAuth();
+    if (session) {
+      if (diaVencido()) { setTimeout(forcarSaida, 0); return; }
+      try { if (!localStorage.getItem('diaLogin')) localStorage.setItem('diaLogin', hojeStr()); } catch (e) {}
+      setTimeout(() => entrar(session), 0);
+    } else {
+      try { localStorage.removeItem('diaLogin'); } catch (e) {}
+      mostrarAuth();
+    }
   });
+  // app aberto durante a virada do dia
+  document.addEventListener('visibilitychange', () => { if (!document.hidden && diaVencido()) forcarSaida(); });
+  setInterval(() => { if (diaVencido()) forcarSaida(); }, 60000);
   sb.auth.getSession().then(({ data }) => { if (!data.session) mostrarAuth(); });
 })();
 </script>
