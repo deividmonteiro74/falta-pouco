@@ -531,7 +531,17 @@ body::before{content:"";position:fixed;inset:-25%;z-index:-1;pointer-events:none
 .bv-p.est{color:#fff;background:none;text-shadow:0 0 10px #FFA64D,0 0 20px #FF4D8D}
 @keyframes bvVoa{0%{transform:translateY(0) rotate(0) scale(.6);opacity:0}12%{opacity:1}100%{transform:translateY(-115vh) rotate(420deg) scale(1);opacity:0}}
 @media (prefers-reduced-motion:reduce){#boasVindas{animation:none;opacity:1}.bv-mao,.bv-lin,.bv-sub,.bv-nome span{animation:none;opacity:1;transform:none}.bv-p{display:none}}
+/* ===== caixa: informado só em novembro, meses seguintes automáticos ===== */
+.caixa-box{display:flex;align-items:center;gap:14px;flex-wrap:wrap;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px 18px;margin:0 0 14px}
+.caixa-box .cx-txt{flex:1 1 240px;min-width:0}
+.caixa-box h3{font-size:1.02rem}
+.caixa-box small{display:block;color:var(--muted);font-size:.86rem;line-height:1.4;margin-top:2px}
+.caixa-box .cx-campo{display:flex;align-items:center;gap:8px;font-weight:600}
+.caixa-box input{width:150px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;min-height:44px;background:var(--surface);color:var(--ink);font-weight:600}
+.caixa-box input:disabled{background:var(--bg);color:var(--muted);cursor:not-allowed;opacity:.85}
+.caixa-box input:not(:disabled){border-color:var(--meta)}
 </style>
+
 </head>
 <body>
 
@@ -807,6 +817,7 @@ window.somBrilho = function (grande, aguardar) {
         <div class="mesnav"><button class="btn small" data-mes="-1" aria-label="Mês anterior">‹</button><strong class="mes" data-mes-label></strong><button class="btn small" data-mes="1" aria-label="Próximo mês">›</button></div>
         <div class="acoes"><button class="btn" data-rel type="button">Relatório do mês</button><button class="btn primary" data-novo="gastos" type="button">Novo gasto</button></div>
       </div>
+      <div data-caixa-box></div>
       <div class="hero tres" data-resumo></div>
       <p class="help" id="dicaGastos"></p>
       <div class="chips grupos" id="chips_gastos"></div>
@@ -816,6 +827,7 @@ window.somBrilho = function (grande, aguardar) {
         <div class="mesnav"><button class="btn small" data-mes="-1" aria-label="Mês anterior">‹</button><strong class="mes" data-mes-label></strong><button class="btn small" data-mes="1" aria-label="Próximo mês">›</button></div>
         <div class="acoes"><button class="btn" data-copiar type="button">Copiar do mês anterior</button><button class="btn" data-rel type="button">Relatório do mês</button><button class="btn primary" data-novo="rendas" type="button">Nova entrada</button></div>
       </div>
+      <div data-caixa-box></div>
       <div class="hero tres" data-resumo></div>
       <div class="chips" id="chips_rendas"></div>
       <ul class="hist biglist" id="lista_rendas"></ul>
@@ -1066,6 +1078,7 @@ function parseMoney(txt) {
 }
 
 let sb = null, itens = [], filtro = 'todos', detalheId = null, editId = null, modoCadastro = false, userId = null;
+var caixaManual = null;   // { mes:'2026-11', valor:N } guardado no perfil do usuário (sincroniza entre aparelhos)
 let ehAdmin = false, vista = 'meu', usuarios = [], perfilNome = '', emailUser = '';
 
 /* ---------- avisos ---------- */
@@ -1110,7 +1123,7 @@ function setModo(cad) {
   $('#campoNome').hidden = !cad;
   authMsg('');
 }
-function mostrarAuth() { $('#viewApp').hidden = true; $('#viewAuth').hidden = false; userId = null; itens = []; usuarios = []; contasFat = []; ehAdmin = false; fechChecado = false; $('#navAdmin').hidden = true; trocarVista('meu'); }
+function mostrarAuth() { $('#viewApp').hidden = true; $('#viewAuth').hidden = false; userId = null; caixaManual = null; itens = []; usuarios = []; contasFat = []; ehAdmin = false; fechChecado = false; $('#navAdmin').hidden = true; trocarVista('meu'); }
 
 $('#toggleModo').onclick = () => setModo(!modoCadastro);
 $('#authForm').addEventListener('submit', async e => {
@@ -1154,6 +1167,7 @@ async function entrar(session) {
   userId = session.user.id;
   $('#viewAuth').hidden = true; $('#viewApp').hidden = false;
   perfilNome = (session.user.user_metadata && session.user.user_metadata.nome) || '';
+  caixaManual = (session.user.user_metadata && session.user.user_metadata.caixa_inicial) || null;
   emailUser = session.user.email;
   if (window.vemDoLogin) { window.vemDoLogin = false; boasVindas(perfilNome); }
   $('#userEmail').textContent = perfilNome || emailUser; $('#userEmail').dataset.ini = ((perfilNome || emailUser || '?').trim()[0] || '?').toUpperCase();
@@ -2043,23 +2057,30 @@ async function totaisMes(m) {
   t.despesas = t.gastos + t.contas + t.cartao + t.dividas; t.saldo = t.renda - t.despesas;
   return t;
 }
+const MES_CAIXA = '2026-11';   // único mês em que o caixa é digitado; dos seguintes em diante o app calcula
 async function caixaInicial(m) {
   const { data, error } = await sb.rpc('resumo_mensal');
   if (error) throw new Error('falha');
   const net = {}; (data || []).forEach(x => { net[x.mes] = Number(x.entradas) - Number(x.despesas); });
+  const man = caixaManual && caixaManual.mes === MES_CAIXA && Number.isFinite(Number(caixaManual.valor)) ? caixaManual : null;
+  if (man && m >= man.mes) {   // parte do valor informado em novembro e acumula mês a mês
+    let caixa = Math.max(0, Number(man.valor)), mm = man.mes;
+    while (mm < m) { caixa = Math.max(0, caixa + (net[mm] || 0)); mm = mesAdd(mm, 1); }
+    return Math.round(caixa * 100) / 100;
+  }
   const ms = Object.keys(net).sort(); if (!ms.length || ms[0] >= m) return 0;
   let caixa = 0, mm = ms[0];
   while (mm < m) { caixa = Math.max(0, caixa + (net[mm] || 0)); mm = mesAdd(mm, 1); }   // só a sobra passa para o mês seguinte
   return Math.round(caixa * 100) / 100;
 }
 async function carregarMes() {
-  try { const [a, b, cx] = await Promise.all([totaisMes(mesSel), totaisMes(mesAdd(mesSel, -1)), caixaInicial(mesSel)]); mesDados = { ...a, ant: b, caixa: cx }; }
+  try { const [a, b, cx] = await Promise.all([totaisMes(mesSel), totaisMes(mesAdd(mesSel, -1)), caixaInicial(mesSel)]); mesDados = { ...a, ant: b, caixa: cx, manual: !!(caixaManual && caixaManual.mes === mesSel && mesSel === MES_CAIXA) }; }
   catch (e) { toast('Não foi possível carregar o mês. Tente de novo.', true); return; }
   renderMes();
 }
 function resumoHtml(t) {
   const cx = t.caixa || 0, ent = t.renda + cx, disp = ent - t.despesas, neg = disp < 0;
-  return `<div class="panel"><h2>Entrou</h2><p class="num" data-count="${ent}">${brl(ent)}</p><p class="of">${cx > 0 ? `inclui ${brl(cx)} de caixa do mês anterior` : 'salário e outras entradas'}</p></div>
+  return `<div class="panel"><h2>Entrou</h2><p class="num" data-count="${ent}">${brl(ent)}</p><p class="of">${cx > 0 ? `inclui ${brl(cx)} de ${t.manual ? 'caixa inicial' : 'caixa do mês anterior'}` : 'salário e outras entradas'}</p></div>
   <div class="panel divida"><h2>Saiu</h2><p class="num" data-count="${t.despesas}">${brl(t.despesas)}</p><p class="of">todas as despesas do mês</p></div>
   <div class="panel ${neg ? 'neg' : 'meta'}"><h2>${neg ? 'No vermelho' : 'Sobrou'}</h2><p class="num" data-count="${Math.abs(disp)}">${brl(Math.abs(disp))}</p><p class="of">${!ent ? 'cadastre seu salário' : neg ? 'a mais do que você tinha' : 'fica em caixa para o próximo mês 💚'}</p></div>`;
 }
@@ -2067,11 +2088,36 @@ function linhaLanc(x, mod) {
   const r = mod === 'rendas';
   return `<li><div class="desc"><strong>${esc(x.descricao)}</strong><small>${fmtData(x.data)}</small></div><span class="val ${r ? 'pos' : ''}">${r ? '+' : '−'} ${brl(Number(x.valor))}</span><button class="del" data-ed="${mod}:${x.id}">Editar</button><button class="del" data-rm="${mod}:${x.id}">Excluir</button></li>`;
 }
+/* ---------- campo de caixa (editável só em novembro; depois é automático) ---------- */
+const fmtCx = n => Number(n || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+function caixaBoxHtml(t) {
+  const edita = mesSel === MES_CAIXA, tem = !!(caixaManual && caixaManual.mes === MES_CAIXA);
+  const v = edita ? (tem ? Number(caixaManual.valor) : (t.caixa || 0)) : (t.caixa || 0);
+  const dica = edita ? `Digite só neste mês quanto você tem em caixa no início de ${mesNome(MES_CAIXA)}. Dos meses seguintes em diante o app calcula sozinho.`
+    : mesSel < MES_CAIXA ? `O caixa inicial é informado em ${mesNome(MES_CAIXA)}.`
+    : 'Calculado automaticamente: é o que sobrou do mês anterior.';
+  return `<div class="caixa-box"><div class="cx-txt"><h3>💼 Caixa</h3><small>${dica}</small></div>
+    <label class="cx-campo"><span>R$</span><input type="text" inputmode="decimal" autocomplete="off" data-caixa-input value="${edita && !tem && !v ? '' : fmtCx(v)}" placeholder="0,00" aria-label="Caixa de ${mesNome(mesSel)}" ${edita ? '' : 'disabled'}></label>
+    ${edita ? '<button class="btn primary small" type="button" data-caixa-salvar>Salvar caixa</button>' : ''}</div>`;
+}
+async function salvarCaixa(box) {
+  const inp = box.querySelector('[data-caixa-input]'), btn = box.querySelector('[data-caixa-salvar]'), n = parseMoney(inp.value);
+  if (!(n >= 0)) return toast('Informe o valor do caixa (use 0 se não tiver nada).', true);
+  btn.disabled = true;
+  const novo = { mes: MES_CAIXA, valor: n };
+  const { error } = await sb.auth.updateUser({ data: { caixa_inicial: novo } });
+  btn.disabled = false;
+  if (error) return toast('Não foi possível salvar o caixa. Tente de novo.', true);
+  caixaManual = novo; toast('Caixa salvo 💚'); carregarMes();
+}
+document.addEventListener('click', e => { const b = e.target.closest('[data-caixa-salvar]'); if (b) salvarCaixa(b.closest('[data-caixa-box]')); });
+document.addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.matches('[data-caixa-input]') && !e.target.disabled) { e.preventDefault(); salvarCaixa(e.target.closest('[data-caixa-box]')); } });
 function renderMes() {
   const t = mesDados; if (!t) return;
   document.querySelectorAll('[data-mes-label]').forEach(e => { const s = mesNome(mesSel); e.textContent = s.charAt(0).toUpperCase() + s.slice(1); });
   document.querySelectorAll('[data-resumo]').forEach(e => e.innerHTML = resumoHtml(t));
-  const cxLi = (t.caixa || 0) > 0 ? `<li class="caixa-li"><div class="desc"><strong>💼 Caixa do mês anterior</strong><small>o que sobrou e ficou guardado</small></div><span class="val pos">+ ${brl(t.caixa)}</span></li>` : '';
+  document.querySelectorAll('[data-caixa-box]').forEach(e => e.innerHTML = caixaBoxHtml(t));
+  const cxLi = (t.caixa || 0) > 0 ? `<li class="caixa-li"><div class="desc"><strong>${t.manual ? '💼 Caixa inicial' : '💼 Caixa do mês anterior'}</strong><small>${t.manual ? 'valor que você informou' : 'o que sobrou e ficou guardado'}</small></div><span class="val pos">+ ${brl(t.caixa)}</span></li>` : '';
   $('#lista_rendas').innerHTML = cxLi + (t.listaR.length ? t.listaR.map(x => linhaLanc(x, 'rendas')).join('') : '<li class="hist-vazio">Nenhuma entrada neste mês. Cadastre seu salário em "Nova entrada".</li>');
   const gr = gruposGastos(t), ks = Object.keys(gr).sort((a, b) => gr[b].v - gr[a].v);
   $('#dicaGastos').textContent = ks.length ? 'Toque em um gasto para ver todos os lançamentos dele.' : '';
