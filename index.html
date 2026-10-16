@@ -408,28 +408,28 @@ body::before{content:"";position:fixed;inset:-25%;z-index:-1;pointer-events:none
 </head>
 <body>
 
-<!-- Abertura: toca vídeo; se o iPhone bloquear (modo economia), troca por imagem animada. Some quando termina E o app está pronto -->
+<!-- Abertura: toca vídeo; se o iPhone bloquear (modo economia), desenha a animação quadro a quadro. Some quando termina E o app está pronto -->
 <style>
 #intro{position:fixed;inset:0;z-index:99999;background:#0D0A27;transition:opacity .3s ease;will-change:opacity}
 #intro.saindo{opacity:0;pointer-events:none}
-#intro video,#intro img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block;background:#0D0A27}
-#intro img{display:none}
+#intro video,#intro canvas{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block;background:#0D0A27}
+#intro canvas{display:none}
 #intro.anim video{display:none}
-#intro.anim img{display:block}
+#intro.anim canvas{display:block}
 </style>
 <div id="intro" role="presentation">
   <video id="introVideo" muted playsinline webkit-playsinline preload="auto" aria-hidden="true"></video>
-  <img id="introImg" alt="" aria-hidden="true">
+  <canvas id="introCanvas" aria-hidden="true"></canvas>
 </div>
 <script>
 (function () {
-  var DURACAO = 5650;                       // duração da animação em ms
+  var MS_POR_QUADRO = 50;                   // 20 quadros por segundo
   var intro = document.getElementById('intro');
   var video = document.getElementById('introVideo');
-  var img = document.getElementById('introImg');
+  var canvas = document.getElementById('introCanvas');
   var retrato = window.matchMedia('(orientation: portrait)').matches;
   var nome = retrato ? '/abertura_vertical' : '/abertura_horizontal';
-  var fechado = false, acabou = false, modoImagem = false;
+  var fechado = false, acabou = false, modoQuadros = false, videoTocou = false;
 
   function fechar() {
     if (fechado) return;
@@ -447,7 +447,7 @@ body::before{content:"";position:fixed;inset:-25%;z-index:-1;pointer-events:none
     if (acabou) return;
     acabou = true;
     tentarFechar();
-    setTimeout(fechar, 4000);                // se o app demorar, não prende o usuário
+    setTimeout(fechar, 4000);               // se o app demorar, não prende o usuário
   }
 
   // quando o app mostrar a tela de login ou o app, avisa a abertura
@@ -460,28 +460,84 @@ body::before{content:"";position:fixed;inset:-25%;z-index:-1;pointer-events:none
     tentarFechar();
   });
 
-  // Plano B: imagem animada (iPhone em modo economia de energia bloqueia vídeo, mas não imagem)
-  function usarImagem() {
-    if (modoImagem || fechado) return;
-    modoImagem = true;
-    try { video.pause(); } catch (e) {}
-    intro.classList.add('anim');
-    img.onload = function () { setTimeout(terminou, DURACAO); };   // toca uma vez
-    img.onerror = fechar;
-    img.src = nome + '.webp?v=' + Date.now();                      // reinicia a animação do começo
+  // ---------- Plano B: quadros desenhados num canvas (o modo economia do iPhone não bloqueia isso) ----------
+  function decodificar(blob) {
+    var p = window.createImageBitmap ? createImageBitmap(blob) : Promise.reject();
+    return p.catch(function () {
+      return new Promise(function (ok, erro) {
+        var im = new Image(), u = URL.createObjectURL(blob);
+        im.onload = function () { URL.revokeObjectURL(u); ok(im); };
+        im.onerror = erro;
+        im.src = u;
+      });
+    });
   }
 
-  // Plano A: vídeo
+  function iniciarQuadros(buf) {
+    var dv = new DataView(buf), n = dv.getUint32(0, true), pos = 4 + 4 * n, blobs = [], i;
+    for (i = 0; i < n; i++) {
+      var tam = dv.getUint32(4 + 4 * i, true);
+      blobs.push(new Blob([buf.slice(pos, pos + tam)], { type: 'image/webp' }));
+      pos += tam;
+    }
+    var ctx = canvas.getContext('2d');
+    var quadros = [], pedidos = 0, desenhado = -1, t0 = null;
+
+    function pedir(ate) {                    // decodifica poucos quadros à frente (economiza memória)
+      while (pedidos <= ate && pedidos < n) {
+        (function (k) {
+          decodificar(blobs[k]).then(function (q) { quadros[k] = q; }, function () {});
+        })(pedidos++);
+      }
+    }
+    function passo(agora) {
+      if (fechado) return;
+      if (t0 === null) {
+        if (!quadros[0]) { pedir(8); return requestAnimationFrame(passo); }
+        canvas.width = quadros[0].width; canvas.height = quadros[0].height;
+        t0 = agora;
+      }
+      var idx = Math.min(n - 1, Math.floor((agora - t0) / MS_POR_QUADRO));
+      pedir(idx + 8);
+      for (var j = idx; j > desenhado; j--) {          // desenha o quadro mais recente que já ficou pronto
+        if (quadros[j]) {
+          ctx.drawImage(quadros[j], 0, 0, canvas.width, canvas.height);
+          for (var k = Math.max(0, desenhado); k < j; k++) {   // libera os antigos
+            if (quadros[k] && quadros[k].close) quadros[k].close();
+            quadros[k] = null;
+          }
+          desenhado = j;
+          break;
+        }
+      }
+      if (agora - t0 >= n * MS_POR_QUADRO) return terminou();
+      requestAnimationFrame(passo);
+    }
+    requestAnimationFrame(passo);
+  }
+
+  function usarQuadros() {
+    if (modoQuadros || fechado) return;
+    modoQuadros = true;
+    try { video.pause(); } catch (e) {}
+    intro.classList.add('anim');
+    fetch(nome + '.bin')
+      .then(function (r) { if (!r.ok) throw new Error('bin'); return r.arrayBuffer(); })
+      .then(iniciarQuadros)
+      .catch(fechar);
+  }
+
+  // ---------- Plano A: vídeo ----------
   video.src = nome + '.mp4';
   video.muted = true;
-  video.addEventListener('ended', function () { if (!modoImagem) terminou(); });
-  video.addEventListener('error', usarImagem);
+  video.addEventListener('timeupdate', function () { if (video.currentTime > 0) videoTocou = true; });
+  video.addEventListener('ended', function () { if (!modoQuadros) terminou(); });
+  video.addEventListener('error', usarQuadros);
   var p = video.play();
-  if (p && p.catch) p.catch(usarImagem);                           // autoplay bloqueado
-  setTimeout(function () { if (!modoImagem && video.paused && !fechado) usarImagem(); }, 1200);
+  if (p && p.catch) p.catch(usarQuadros);                       // autoplay bloqueado
+  setTimeout(function () { if (!videoTocou) usarQuadros(); }, 1500);   // vídeo não andou: usa os quadros
 
-  setTimeout(function () { if (!modoImagem && !video.currentTime) usarImagem(); }, 6000);  // vídeo travado
-  setTimeout(fechar, 20000);                                       // limite absoluto
+  setTimeout(fechar, 25000);                                    // limite absoluto
 })();
 </script>
 

@@ -41,7 +41,7 @@
       ]
     },
     {
-      "source": "/(abertura_vertical|abertura_horizontal).(mp4|webp)",
+      "source": "/(abertura_vertical|abertura_horizontal).(mp4|bin)",
       "headers": [
         {
           "key": "Cache-Control",
