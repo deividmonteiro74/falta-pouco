@@ -810,6 +810,7 @@ body::before{content:"";position:fixed;inset:-25%;z-index:-1;pointer-events:none
     </div>
     <label class="field"><span>Limite (R$)</span><input name="limite" inputmode="decimal" placeholder="0,00" required></label>
     <label class="field"><span>Dia do vencimento da fatura (1 a 31)</span><input name="dia" type="number" min="1" max="31" required></label>
+    <label class="field" id="fechaCampo"><span>Dia que fecha a fatura (1 a 31) — opcional</span><input name="fecha" type="number" min="1" max="31"></label>
     <label class="field"><span>Avisar por e-mail quantos dias antes do vencimento</span><input name="adias" type="number" min="0" max="15" value="3" required></label>
     <label class="field"><span>Avisar quando usar este % do limite</span><input name="alim" type="number" min="1" max="100" value="80" required></label>
     <p class="msg" id="cartaoMsg" role="alert"></p>
@@ -1417,9 +1418,10 @@ function proxVenc(dia) {
 let cartX = true;   // vira false se as colunas bandeira/final/cor ainda não existirem no banco
 async function carregarCartoes() {
   const REL = ',compras_cartao(id,valor,data,descricao,paga,criado_em,parcela_num,parcelas_total,grupo_id),pagamentos_cartao(id,valor,data,nota,aplicado)';
-  const q = x => sb.from('cartoes').select('id,nome,limite,dia_vencimento,alerta_dias,alerta_limite' + (x ? ',bandeira,final,cor' : '') + REL).eq('user_id', userId).order('criado_em');
-  let r = await q(cartX);
-  if (r.error && cartX && (r.error.code === '42703' || /column|bandeira|does not exist/i.test(r.error.message || ''))) { cartX = false; r = await q(false); }
+  const q = (x, fx) => sb.from('cartoes').select('id,nome,limite,dia_vencimento,alerta_dias,alerta_limite' + (x ? ',bandeira,final,cor' : '') + (fx ? ',dia_fechamento' : '') + REL).eq('user_id', userId).order('criado_em');
+  let r = await q(cartX, fechX);
+  if (r.error && fechX && /dia_fechamento/i.test(r.error.message || '')) { fechX = false; r = await q(cartX, false); }
+  if (r.error && cartX && (r.error.code === '42703' || /column|bandeira|does not exist/i.test(r.error.message || ''))) { cartX = false; r = await q(false, fechX); }
   const { data, error } = r;
   if (error) { toast('Não foi possível carregar os cartões. Tente de novo.', true); return; }
   cartoes = data; renderCartoes(); marcarAbas();
@@ -1427,7 +1429,7 @@ async function carregarCartoes() {
 }
 const PALX = [['#6C4DFF', '#3D8BFF'], ['#FF4D8D', '#FF7A59'], ['#00B8A3', '#2BD98B'], ['#8A5CFF', '#C45CFF'], ['#1E1E2C', '#4A4A63'], ['#F59E0B', '#EF4444']];
 const MARCAS = { visa: '<b class="mk visa">VISA</b>', master: '<span class="mk mc"><i></i><i></i></span>', elo: '<b class="mk elo">elo</b>', amex: '<b class="mk amex">AMEX</b>', hiper: '<b class="mk hiper">Hipercard</b>' };
-let walletSel = null;
+let walletSel = null, fechX = true;   // fechX: a coluna dia_fechamento existe no banco?
 const isoD = d => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
 function cartaoHtml(c, k) {
   const tem = c.cor != null && c.cor !== '' && !isNaN(Number(c.cor)), i = tem ? Number(c.cor) : k, [g1, g2] = PALX[tem ? i % PALX.length : i % 4];
@@ -1440,7 +1442,7 @@ function cartaoHtml(c, k) {
     <div class="vc-top"><span class="vc-nome">${esc(c.nome || 'Seu cartão')}</span>${alertas ? `<span class="vc-alertas">${alertas}</span>` : ''}<span class="vc-brand">${MARCAS[c.bandeira] || ''}</span></div>
     <i class="vc-chip"></i>
     <div class="vc-num">•••• •••• •••• ${esc((fin + '••••').slice(0, 4))}</div>
-    <div class="vc-bot"><div><small>VENCE</small><b>${dia >= 1 && dia <= 31 ? 'dia ' + dia : '--'}</b></div><div><small>LIMITE</small><b>${lim > 0 ? brl(lim) : 'R$ ----'}</b></div></div></div>`;
+    <div class="vc-bot"><div><small>VENCE</small><b>${dia >= 1 && dia <= 31 ? 'dia ' + dia : '--'}</b></div><div><small>LIMITE</small><b>${lim > 0 ? brl(lim) : 'R$ ----'}</b></div>${Number(c.dia_fechamento) >= 1 ? `<div><small>FECHA</small><b>dia ${Number(c.dia_fechamento)}</b></div>` : ''}</div></div>`;
 }
 function walletDetalhe(c) {
   const k = cartoes.indexOf(c), u = usadoC(c), lim = Number(c.limite), pct = Math.min(100, u / lim * 100), v = proxVenc(c.dia_vencimento), fat = faturaC(c), est = u > lim + 0.001;
@@ -1451,6 +1453,7 @@ function walletDetalhe(c) {
     <div class="wpanel"><div class="wgrid">
       <div><span>Limite</span><b>${brl(lim)}</b></div><div><span>Disponível</span><b>${brl(Math.max(0, lim - u))}</b></div>
       <div><span>Fatura atual</span><b>${brl(fat)}</b></div>
+      ${Number(c.dia_fechamento) >= 1 ? (() => { const f = proxVenc(c.dia_fechamento); return `<div><span>Fecha a fatura</span><b>Dia ${c.dia_fechamento}</b><small>${f.dias === 0 ? 'fecha hoje' : 'em ' + f.dias + ' dia(s)'} · ${fmtData(isoD(f.d))}</small></div>`; })() : ''}
       <div><span>Vencimento</span><b>Dia ${c.dia_vencimento}</b><small>${v.dias === 0 ? 'vence hoje' : 'em ' + v.dias + ' dia(s)'} · ${fmtData(isoD(v.d))}</small></div></div>
       <div class="bar big"><i style="width:${pct}%;background:${est ? '#E5383B' : pct >= c.alerta_limite ? 'var(--divida)' : 'var(--brand)'}"></i></div>
       <p class="prazo" style="margin:8px 0 0">${aviso}${fat > 0 && v.dias <= c.alerta_dias ? ` · <span class="warn">fatura vence ${v.dias === 0 ? 'hoje' : 'em ' + v.dias + ' dia(s)'}</span>` : ''}</p>
@@ -1477,7 +1480,7 @@ $('#cartoesLista').addEventListener('click', e => {
 /* cartão virtual no formulário: atualiza enquanto você digita */
 function atualizaPrev() {
   const f = $('#formCartao');
-  $('#vcPrev').innerHTML = cartaoHtml({ nome: f.nome.value.trim(), final: f.final.value, bandeira: f.bandeira.value, dia_vencimento: f.dia.value, limite: parseMoney(f.limite.value), cor: f.cor.value }, 0);
+  $('#vcPrev').innerHTML = cartaoHtml({ nome: f.nome.value.trim(), final: f.final.value, bandeira: f.bandeira.value, dia_vencimento: f.dia.value, dia_fechamento: f.fecha.value, limite: parseMoney(f.limite.value), cor: f.cor.value }, 0);
 }
 function prevCor() { document.querySelectorAll('#cores .sw').forEach(b => { const on = b.dataset.cor === $('#formCartao').cor.value; b.classList.toggle('on', on); b.setAttribute('aria-pressed', on); }); }
 $('#cores').innerHTML = PALX.map((p, i) => `<button type="button" class="sw" data-cor="${i}" style="--g1:${p[0]};--g2:${p[1]}" aria-label="Cor ${i + 1}"></button>`).join('');
@@ -1489,9 +1492,9 @@ function abrirCartaoForm(c) {
   cartaoEdit = c ? c.id : null;
   const f = $('#formCartao'); f.reset(); $('#cartaoMsg').textContent = '';
   $('#cartaoTitulo').textContent = c ? 'Editar cartão' : 'Novo cartão';
-  if (c) { f.nome.value = c.nome; f.limite.value = String(c.limite).replace('.', ','); f.dia.value = c.dia_vencimento; f.adias.value = c.alerta_dias; f.alim.value = c.alerta_limite; f.bandeira.value = c.bandeira || ''; f.final.value = c.final || ''; }
+  if (c) { f.nome.value = c.nome; f.limite.value = String(c.limite).replace('.', ','); f.dia.value = c.dia_vencimento; f.fecha.value = c.dia_fechamento || ''; f.adias.value = c.alerta_dias; f.alim.value = c.alerta_limite; f.bandeira.value = c.bandeira || ''; f.final.value = c.final || ''; }
   f.cor.value = c && c.cor != null ? c.cor : (c ? cartoes.indexOf(c) % 4 : cartoes.length % 4);
-  f.classList.toggle('semx', !cartX); prevCor(); atualizaPrev();
+  f.classList.toggle('semx', !cartX); $('#fechaCampo').hidden = !fechX; prevCor(); atualizaPrev();
   $('#dlgCartao').showModal(); f.nome.focus();
 }
 $('#formCartao').addEventListener('submit', async e => {
@@ -1501,9 +1504,12 @@ $('#formCartao').addEventListener('submit', async e => {
   if (!nome) return erro('Dê um nome ao cartão.');
   if (!(limite > 0)) return erro('Informe o limite do cartão.');
   if (!(dia >= 1 && dia <= 31)) return erro('O dia do vencimento deve ser de 1 a 31.');
+  const fecha = f.fecha.value ? Number(f.fecha.value) : null;
+  if (fecha !== null && !(fecha >= 1 && fecha <= 31)) return erro('O dia de fechamento deve ser de 1 a 31.');
   if (!(adias >= 0 && adias <= 15) || !(alim >= 1 && alim <= 100)) return erro('Confira os avisos: de 0 a 15 dias e de 1% a 100%.');
   if (cartX && f.final.value && f.final.value.length !== 4) return erro('Informe os 4 últimos dígitos ou deixe em branco.');
   const payload = { nome, limite, dia_vencimento: dia, alerta_dias: adias, alerta_limite: alim };
+  if (fechX) payload.dia_fechamento = fecha;
   if (cartX) { payload.bandeira = f.bandeira.value || null; payload.final = f.final.value || null; payload.cor = Number(f.cor.value) || 0; }
   const { error } = cartaoEdit ? await sb.from('cartoes').update(payload).eq('id', cartaoEdit) : await sb.from('cartoes').insert(payload);
   if (error) return erro('Não foi possível salvar. Tente de novo.');
@@ -1514,6 +1520,19 @@ function abrirCartao(id, foco) {
   renderCartaoDet(); const d = $('#dlgCartaoDet'); if (!d.open) d.showModal(); if (foco) f.valor.focus();
 }
 $('#dlgCartaoDet').addEventListener('close', () => { cartaoId = null; });
+/* clicar fora fecha: detalhe do cartão na carteira e janelas só de consulta */
+document.addEventListener('click', e => {
+  if (!walletSel || !$('#cartoesLista').offsetParent) return;
+  if (e.target.closest('.wsel,.wpanel,button,a,input,select,textarea,label,dialog,header,nav,[data-cnovo],#toast')) return;
+  walletSel = null; renderCartoes();
+});
+['dlgCartaoDet', 'dlgDetalhe', 'dlgResumo', 'dlgGrupo', 'dlgRel'].forEach(id => {
+  const d = document.getElementById(id); if (!d) return;
+  d.addEventListener('click', e => {
+    const r = d.getBoundingClientRect();
+    if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) d.close();
+  });
+});
 function renderCartaoDet() {
   const c = cartoes.find(x => x.id === cartaoId); if (!c) return;
   const u = usadoC(c), lim = Number(c.limite), pct = Math.min(100, u / lim * 100), v = proxVenc(c.dia_vencimento), fat = faturaC(c), pago = pagoC(c), fut = futurasC(c), corte = corteC(c);
