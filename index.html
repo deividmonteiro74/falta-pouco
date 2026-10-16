@@ -513,6 +513,26 @@ body::before{content:"";position:fixed;inset:-25%;z-index:-1;pointer-events:none
 @media (prefers-reduced-motion:reduce){.top,#viewApp{transition:none!important}}
 /* ===== V15: barra lateral dinâmica, conta em destaque, caixa ===== */
 .rodape .atualizado{display:block;margin-top:6px;text-align:right;font-size:.6rem;letter-spacing:.02em;opacity:.28;transition:opacity .2s}.rodape .atualizado:hover{opacity:.75}
+/* ===== boas-vindas depois do login ===== */
+#boasVindas{position:fixed;inset:0;z-index:9000;display:grid;place-items:center;text-align:center;padding:24px;overflow:hidden;cursor:pointer;color:#fff;background:radial-gradient(ellipse at 50% 38%,#33267F 0%,#0E0B2B 62%);opacity:0;animation:bvIn .45s ease forwards}
+#boasVindas.saindo{animation:bvOut .5s ease forwards;pointer-events:none}
+@keyframes bvIn{to{opacity:1}}@keyframes bvOut{from{opacity:1}to{opacity:0}}
+.bv-centro{position:relative;z-index:1}
+.bv-mao{display:inline-block;font-size:clamp(3.5rem,16vw,6rem);transform-origin:70% 80%;animation:bvAcena 1.5s ease-in-out .5s 2}
+@keyframes bvAcena{0%,100%{transform:rotate(0)}15%{transform:rotate(16deg)}30%{transform:rotate(-10deg)}45%{transform:rotate(14deg)}60%{transform:rotate(-6deg)}75%{transform:rotate(8deg)}}
+.bv-lin{margin-top:6px;font-weight:700;letter-spacing:.22em;text-transform:uppercase;font-size:.85rem;color:#C9C4FF;opacity:0;animation:bvSobe .6s ease .35s forwards}
+.bv-nome{margin:.18em 0 .12em;font-weight:800;font-size:clamp(2.4rem,10vw,4.6rem);line-height:1.1;letter-spacing:-.01em;text-shadow:0 6px 30px rgba(255,77,141,.35)}
+.bv-nome span{display:inline-block;opacity:0;transform:translateY(26px) scale(.7);animation:bvLetra .55s cubic-bezier(.2,1.5,.4,1) forwards}
+.bv-sub{color:#D9D5FF;font-size:1.05rem;opacity:0;animation:bvSobe .6s ease 1.3s forwards}
+@keyframes bvLetra{to{opacity:1;transform:none}}
+@keyframes bvSobe{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+.bv-p{position:absolute;bottom:-50px;display:grid;place-items:center;border-radius:50%;pointer-events:none;font-style:normal;font-weight:800;animation:bvVoa linear forwards}
+.bv-p.moeda{color:#7A4E00;background:radial-gradient(circle at 35% 30%,#FFF1A8,#FFC531 55%,#D58A00);box-shadow:0 0 14px rgba(255,197,49,.65)}
+.bv-p.est{color:#fff;background:none;text-shadow:0 0 10px #FFA64D,0 0 20px #FF4D8D}
+@keyframes bvVoa{0%{transform:translateY(0) rotate(0) scale(.6);opacity:0}12%{opacity:1}100%{transform:translateY(-115vh) rotate(420deg) scale(1);opacity:0}}
+@media (prefers-reduced-motion:reduce){#boasVindas{animation:none;opacity:1}.bv-mao,.bv-lin,.bv-sub,.bv-nome span{animation:none;opacity:1;transform:none}.bv-p{display:none}}
+</style>
+</head>
 <body>
 
 <!-- Abertura: toca vídeo; se o iPhone bloquear (modo economia), desenha a animação quadro a quadro. Some quando termina E o app está pronto -->
@@ -528,6 +548,35 @@ body::before{content:"";position:fixed;inset:-25%;z-index:-1;pointer-events:none
   <video id="introVideo" muted playsinline webkit-playsinline preload="auto" aria-hidden="true"></video>
   <canvas id="introCanvas" aria-hidden="true"></canvas>
 </div>
+<script>
+/* som de brilho feito na hora (sem arquivo de áudio). Devolve true se tocou; navegadores só liberam som depois de um toque */
+window.somBrilho = function (grande, aguardar) {
+  try {
+    var AC = window.AudioContext || window.webkitAudioContext; if (!AC) return false;
+    var c = window._ac || (window._ac = new AC());
+    var tocar = function () {
+      var t0 = c.currentTime + 0.03, out = c.createGain(); out.gain.value = 0.55; out.connect(c.destination);
+      var notas = grande ? [1318.5, 1568, 2093, 2637, 3136, 4186] : [1568, 2093, 2637, 3136];
+      notas.forEach(function (f, i) {
+        var t = t0 + i * 0.08, o = c.createOscillator(), g = c.createGain(), o2 = c.createOscillator(), g2 = c.createGain();
+        o.type = 'sine'; o.frequency.value = f; o2.type = 'triangle'; o2.frequency.value = f * 2.76;
+        g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.26, t + 0.008); g.gain.exponentialRampToValueAtTime(0.0001, t + (grande ? 1.2 : 0.8));
+        g2.gain.setValueAtTime(0.0001, t); g2.gain.exponentialRampToValueAtTime(0.07, t + 0.005); g2.gain.exponentialRampToValueAtTime(0.0001, t + 0.3);
+        o.connect(g); g.connect(out); o2.connect(g2); g2.connect(out);
+        o.start(t); o.stop(t + 1.3); o2.start(t); o2.stop(t + 0.4);
+      });
+      var n = Math.floor(c.sampleRate * 0.35), b = c.createBuffer(1, n, c.sampleRate), d = b.getChannelData(0);
+      for (var k = 0; k < n; k++) d[k] = (Math.random() * 2 - 1) * Math.pow(1 - k / n, 3);
+      var r = c.createBufferSource(), hp = c.createBiquadFilter(), gr = c.createGain();
+      r.buffer = b; hp.type = 'highpass'; hp.frequency.value = 6500; gr.gain.value = 0.18;
+      r.connect(hp); hp.connect(gr); gr.connect(out); r.start(t0);
+    };
+    if (c.state === 'running') { tocar(); return true; }
+    if (aguardar) { c.resume().then(function () { if (c.state === 'running') tocar(); }).catch(function () {}); return true; }
+    c.resume().catch(function () {}); return false;
+  } catch (e) { return false; }
+};
+</script>
 <script>
 (function () {
   // Abertura só aparece quando o usuário NÃO está logado hoje (1º acesso do dia, ou depois de sair da conta)
@@ -545,7 +594,18 @@ body::before{content:"";position:fixed;inset:-25%;z-index:-1;pointer-events:none
   var canvas = document.getElementById('introCanvas');
   var retrato = window.matchMedia('(orientation: portrait)').matches;
   var nome = retrato ? '/abertura_vertical' : '/abertura_horizontal';
-  var fechado = false, acabou = false, modoQuadros = false, videoTocou = false;
+  var fechado = false, acabou = false, modoQuadros = false, videoTocou = false, somTocado = false, somOk = false;
+  var SOM_ATRASO = 700;                      // ms depois que a animação começa; ajuste para casar com o brilho do vídeo
+  function iniciouVisual() {
+    if (somTocado) return; somTocado = true;
+    setTimeout(function () { if (!fechado && window.somBrilho) somOk = window.somBrilho(true); }, SOM_ATRASO);
+  }
+  ['pointerdown', 'keydown', 'touchstart'].forEach(function (ev) {   // som bloqueado? toca no primeiro toque, se a abertura ainda estiver na tela
+    document.addEventListener(ev, function uma() {
+      document.removeEventListener(ev, uma, true);
+      if (!fechado && !somOk && window.somBrilho) somOk = window.somBrilho(true, true);
+    }, true);
+  });
 
   function fechar() {
     if (fechado) return;
@@ -626,7 +686,7 @@ body::before{content:"";position:fixed;inset:-25%;z-index:-1;pointer-events:none
         }
         if (!quadros[0]) return fechar();
         canvas.width = quadros[0].width; canvas.height = quadros[0].height;
-        t0 = agora;
+        t0 = agora; iniciouVisual();
       }
       var pos = (agora - t0) / MS_POR_QUADRO;
       var idx = Math.min(n - 1, Math.floor(pos));
@@ -664,7 +724,7 @@ body::before{content:"";position:fixed;inset:-25%;z-index:-1;pointer-events:none
   // ---------- Plano A: vídeo ----------
   video.src = nome + '.mp4';
   video.muted = true;
-  video.addEventListener('timeupdate', function () { if (video.currentTime > 0) videoTocou = true; });
+  video.addEventListener('timeupdate', function () { if (video.currentTime > 0) { videoTocou = true; iniciouVisual(); } });
   video.addEventListener('ended', function () { if (!modoQuadros) terminou(); });
   video.addEventListener('error', usarQuadros);
   var p = video.play();
@@ -1060,14 +1120,16 @@ $('#authForm').addEventListener('submit', async e => {
   if (modoCadastro && !nomeCad) return authMsg('Informe o seu nome.');
   if (!email || senha.length < 6) return authMsg('Informe o e-mail e uma senha com 6 ou mais caracteres.');
   const btn = $('#authBtn'); btn.disabled = true; authMsg('');
+  window.vemDoLogin = true;                    // a animação de boas-vindas só toca depois de entrar pelo login
   try {
     if (modoCadastro) {
       const { data, error } = await sb.auth.signUp({ email, password: senha, options: { data: { nome: nomeCad } } });
-      if (error) return authMsg(traduz(error.message));
+      if (error) { window.vemDoLogin = false; return authMsg(traduz(error.message)); }
+      if (!data.session) window.vemDoLogin = false;
       if (!data.session) authMsg('Conta criada. Abra o link enviado ao seu e-mail e depois entre.', true);
     } else {
       const { error } = await sb.auth.signInWithPassword({ email, password: senha });
-      if (error) authMsg(traduz(error.message));
+      if (error) { window.vemDoLogin = false; authMsg(traduz(error.message)); }
     }
   } finally { btn.disabled = false; }
 });
@@ -1093,6 +1155,7 @@ async function entrar(session) {
   $('#viewAuth').hidden = true; $('#viewApp').hidden = false;
   perfilNome = (session.user.user_metadata && session.user.user_metadata.nome) || '';
   emailUser = session.user.email;
+  if (window.vemDoLogin) { window.vemDoLogin = false; boasVindas(perfilNome); }
   $('#userEmail').textContent = perfilNome || emailUser; $('#userEmail').dataset.ini = ((perfilNome || emailUser || '?').trim()[0] || '?').toUpperCase();
   await checarAdmin();
   await carregar();
@@ -1163,6 +1226,28 @@ function render() {
     $('#lista').innerHTML = `<div class="vazio"><div class="vz">🚀</div><p>${vazio}</p>${filtro === 'todos' ? '<button class="btn primary" data-novo>Cadastrar primeiro item</button>' : ''}</div>`;
   } else $('#lista').innerHTML = l.map((i, k) => linha(i, k)).join('');
   saudar(); contar();
+}
+function boasVindas(nome) {
+  if (document.getElementById('boasVindas')) return;
+  const h = new Date().getHours(), per = h < 5 ? 'Boa madrugada' : h < 12 ? 'Bom dia' : h < 18 ? 'Boa tarde' : 'Boa noite';
+  const prim = String(nome || '').trim().split(/\s+/)[0] || '';
+  const txt = prim || 'Bem-vindo(a)!';
+  const mix = (a, b, t) => Math.round(a + (b - a) * t), cor = t => t < .5 ? `rgb(${mix(138, 255, t * 2)},${mix(116, 77, t * 2)},${mix(255, 141, t * 2)})` : `rgb(255,${mix(77, 166, (t - .5) * 2)},${mix(141, 77, (t - .5) * 2)})`;
+  const letras = [...txt].map((ch, i, a) => `<span style="color:${cor(a.length > 1 ? i / (a.length - 1) : .5)};animation-delay:${(0.7 + i * 0.07).toFixed(2)}s">${ch === ' ' ? '&nbsp;' : esc(ch)}</span>`).join('');
+  let part = '';
+  for (let i = 0; i < 28; i++) {
+    const t = Math.random(), tam = 14 + Math.random() * 22, moeda = t < .55;
+    part += `<i class="bv-p ${moeda ? 'moeda' : 'est'}" style="left:${(Math.random() * 100).toFixed(1)}%;width:${tam}px;height:${tam}px;font-size:${(tam * .62).toFixed(0)}px;animation-duration:${(2.4 + Math.random() * 1.6).toFixed(2)}s;animation-delay:${(Math.random() * 1.2).toFixed(2)}s">${moeda ? '$' : '✦'}</i>`;
+  }
+  const el = document.createElement('div');
+  el.id = 'boasVindas'; el.setAttribute('role', 'status');
+  el.innerHTML = `${part}<div class="bv-centro"><div class="bv-mao" aria-hidden="true">👋</div><div class="bv-lin">${per}</div><div class="bv-nome">${letras}</div><div class="bv-sub">Que bom ter você por aqui ✨</div></div>`;
+  document.body.appendChild(el);
+  if (window.somBrilho) setTimeout(() => window.somBrilho(true, true), 450);
+  let fim = false;
+  const sai = () => { if (fim) return; fim = true; el.classList.add('saindo'); setTimeout(() => el.remove(), 550); };
+  el.addEventListener('click', sai);
+  setTimeout(sai, 3800);
 }
 function saudar() {
   const tot = itens.reduce((a, i) => a + i.valor_total, 0), ok = itens.reduce((a, i) => a + Math.min(soma(i), i.valor_total), 0);
