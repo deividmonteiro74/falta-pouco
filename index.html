@@ -423,7 +423,7 @@ body::before{content:"";position:fixed;inset:-25%;z-index:-1;pointer-events:none
 </div>
 <script>
 (function () {
-  var MS_POR_QUADRO = 50;                   // 20 quadros por segundo
+  var MS_POR_QUADRO = 1000 / 15;            // 15 quadros/s: encaixa certinho nos 30 Hz do modo economia
   var intro = document.getElementById('intro');
   var video = document.getElementById('introVideo');
   var canvas = document.getElementById('introCanvas');
@@ -481,36 +481,54 @@ body::before{content:"";position:fixed;inset:-25%;z-index:-1;pointer-events:none
       pos += tam;
     }
     var ctx = canvas.getContext('2d');
-    var quadros = [], pedidos = 0, desenhado = -1, t0 = null;
+    var quadros = [], proximo = 0, emVoo = 0, alvo = -1, t0 = null, espera = null;
 
-    function pedir(ate) {                    // decodifica poucos quadros à frente (economiza memória)
-      while (pedidos <= ate && pedidos < n) {
+    function bombear() {                     // decodifica em ordem, 2 por vez, sempre à frente do que está na tela
+      while (emVoo < 2 && proximo <= alvo && proximo < n) {
         (function (k) {
-          decodificar(blobs[k]).then(function (q) { quadros[k] = q; }, function () {});
-        })(pedidos++);
+          emVoo++;
+          decodificar(blobs[k]).then(function (q) { quadros[k] = q; }, function () {})
+            .then(function () { emVoo--; bombear(); });
+        })(proximo++);
       }
     }
+    function pedir(ate) { if (ate > alvo) alvo = Math.min(n - 1, ate); bombear(); }
+    function liberar(ate) {                  // solta da memória os quadros que já passaram
+      for (var k = 0; k < ate; k++) {
+        if (quadros[k] && quadros[k].close) quadros[k].close();
+        quadros[k] = null;
+      }
+    }
+
     function passo(agora) {
       if (fechado) return;
-      if (t0 === null) {
-        if (!quadros[0]) { pedir(8); return requestAnimationFrame(passo); }
+      if (t0 === null) {                     // enche um pequeno estoque antes de começar
+        pedir(8);
+        if (!(quadros[0] && quadros[1] && quadros[2] && quadros[3] && quadros[4]) && !(espera && agora - espera > 2500)) {
+          if (espera === null) espera = agora;
+          return requestAnimationFrame(passo);
+        }
+        if (!quadros[0]) return fechar();
         canvas.width = quadros[0].width; canvas.height = quadros[0].height;
         t0 = agora;
       }
-      var idx = Math.min(n - 1, Math.floor((agora - t0) / MS_POR_QUADRO));
-      pedir(idx + 8);
-      for (var j = idx; j > desenhado; j--) {          // desenha o quadro mais recente que já ficou pronto
-        if (quadros[j]) {
-          ctx.drawImage(quadros[j], 0, 0, canvas.width, canvas.height);
-          for (var k = Math.max(0, desenhado); k < j; k++) {   // libera os antigos
-            if (quadros[k] && quadros[k].close) quadros[k].close();
-            quadros[k] = null;
-          }
-          desenhado = j;
-          break;
+      var pos = (agora - t0) / MS_POR_QUADRO;
+      var idx = Math.min(n - 1, Math.floor(pos));
+      pedir(idx + 12);
+      var base = idx;
+      while (base > 0 && !quadros[base]) base--;          // se o quadro atual não ficou pronto, mantém o anterior
+      if (quadros[base]) {
+        ctx.globalAlpha = 1;
+        ctx.drawImage(quadros[base], 0, 0, canvas.width, canvas.height);
+        var frac = pos - idx;                              // mistura com o próximo quadro: movimento mais suave
+        if (base === idx && idx + 1 < n && quadros[idx + 1] && frac > 0.03) {
+          ctx.globalAlpha = frac;
+          ctx.drawImage(quadros[idx + 1], 0, 0, canvas.width, canvas.height);
+          ctx.globalAlpha = 1;
         }
+        liberar(base);
       }
-      if (agora - t0 >= n * MS_POR_QUADRO) return terminou();
+      if (pos >= n) return terminou();
       requestAnimationFrame(passo);
     }
     requestAnimationFrame(passo);
