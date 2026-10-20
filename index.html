@@ -150,8 +150,8 @@ dialog::backdrop{background:rgba(15,25,40,.45)}
 .fat-card .hist{max-height:none}
 .fat-card .hist .aberto{color:var(--muted);font-size:.78rem}
 .fat-card .btn{width:100%;margin-top:10px}
-.parc-box{margin:6px 0 14px;border-top:1px solid var(--line);padding-top:10px}
-.parc-box>summary{cursor:pointer;color:var(--muted);font-size:.92rem}
+.fat-card .pg-k{display:flex;gap:8px;align-items:stretch}
+.fat-card .pg-k .btn{width:auto;margin-top:0;white-space:nowrap}
 .fat-res{padding:2px 0 10px}
 .fat-res .tot{font-size:1.5rem;font-weight:700}
 .fat-res .tot span{font-size:.85rem;font-weight:500;color:var(--muted)}
@@ -979,20 +979,9 @@ window.somBrilho = function (grande, aguardar) {
     </form>
     <p class="msg" id="cMsg" role="alert"></p>
     <h3>Faturas</h3>
-    <p class="help" style="margin:0 0 10px">Cada fatura mostra as compras e parcelas dela. Marque ✓ o que você pagou. Para antecipar uma parcela de qualquer mês, abra a fatura dela e marque.</p>
+    <p class="help" style="margin:0 0 10px">Cada fatura mostra as compras e parcelas dela. Marque ✓ para pagar uma parcela inteira, ou use <b>Pagar um valor</b> dentro da fatura para pagar só uma parte (ex.: R$ 50 de uma parcela). Vale para qualquer mês, inclusive antecipando.</p>
     <div id="cFaturas"></div>
-    <details class="parc-box" id="detParcial">
-      <summary>Pagou só um valor da fatura? Registre aqui</summary>
-      <p class="help" style="margin:8px 0">Use para um valor avulso (ex.: pagou R$ 80 da fatura atual). Para pagar parcelas específicas, marque o ✓ nas faturas acima.</p>
-      <form class="inline-form" id="formPag" novalidate style="margin-top:6px;padding-top:12px">
-      <label class="field"><span>Valor pago agora (R$)</span><input name="valor" inputmode="decimal" placeholder="0,00" required></label>
-      <label class="field"><span>Data do pagamento</span><input name="data" type="date" required></label>
-      <button class="btn" type="submit" id="btnPag">Registrar pagamento parcial</button>
-    </form>
-      <p class="msg" id="pMsg" role="alert"></p>
-      <h4 id="cPagsT" hidden style="margin:14px 0 2px;font-size:.9rem;color:var(--muted);font-weight:600">Pagamentos lançados</h4>
-      <ul class="hist" id="cPags"></ul>
-    </details>
+
     <div class="dlg-foot"><button class="btn go" id="cPaga" type="button">Quitar fatura</button><button class="btn" id="cEditar" type="button">Editar cartão</button><button class="btn danger" id="cExcluir" type="button">Excluir</button></div>
   </div>
 </dialog>
@@ -1581,7 +1570,14 @@ const corteC = c => {
   let k = mk(D.getFullYear(), D.getMonth()); if (k >= D) k = mk(D.getFullYear(), D.getMonth() - 1);
   return isoD(k);
 };
-const pagoC = c => somaC((c.pagamentos_cartao || []).filter(p => !p.aplicado));
+/* pagamento de valor avulso: guarda em qual fatura (mês de vencimento) ele foi feito, em nota = 'F:AAAA-MM'. Sem marca = fatura atual */
+const chaveVenc = d => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+const chaveAtualC = c => chaveVenc(proxVenc(c.dia_vencimento).d);
+const tagPagC = (c, p) => { const m = /^F:(\d{4}-\d{2})$/.exec(p.nota || ''), at = chaveAtualC(c); return !m || m[1] < at ? at : m[1]; };
+const pagsNaoAplicC = c => (c.pagamentos_cartao || []).filter(p => !p.aplicado);
+const pagoFatC = (c, chave) => somaC(pagsNaoAplicC(c).filter(p => tagPagC(c, p) === chave));
+const pagoC = c => pagoFatC(c, chaveAtualC(c));
+const pagoTodosC = c => somaC(pagsNaoAplicC(c));
 /* fatura atual = tudo até o fechamento que ainda está em aberto + o que já foi marcado como pago neste ciclo; próxima = o ciclo seguinte */
 const faturaItensC = c => { const corte = corteC(c), ini = addMesISO(corte, -1); return c.compras_cartao.filter(x => x.data <= corte && (!x.paga || x.data > ini)); };
 const proxItensC = c => { const corte = corteC(c), fim = addMesISO(corte, 1); return c.compras_cartao.filter(x => x.data > corte && x.data <= fim); };
@@ -1598,12 +1594,19 @@ const vencProxC = c => { const D = proxVenc(c.dia_vencimento).d, dia = Number(c.
 const faturaBrutaC = c => somaC(abertasC(c).filter(x => x.data <= corteC(c)));
 const faturaC = c => Math.max(0, faturaBrutaC(c) - pagoC(c));
 const futurasC = c => somaC(abertasC(c).filter(x => x.data > corteC(c)));
-const usadoC = c => Math.max(0, somaC(abertasC(c)) - pagoC(c));
+const usadoC = c => Math.max(0, somaC(abertasC(c)) - pagoTodosC(c));
 const addMesISO = (iso, n) => { const [y, m, d] = iso.split('-').map(Number), al = new Date(y, m - 1 + n, 1), ult = new Date(al.getFullYear(), al.getMonth() + 1, 0).getDate(); return al.getFullYear() + '-' + String(al.getMonth() + 1).padStart(2, '0') + '-' + String(Math.min(d, ult)).padStart(2, '0'); };
+async function aplicarPagosQuitadas(c) {   // faturas com todas as compras pagas: os valores avulsos dela já foram absorvidos
+  const ids = [];
+  faturasC(c).forEach(f => { if (f.itens.length && f.itens.every(x => x.paga)) { const ch = chaveVenc(f.venc); pagsNaoAplicC(c).filter(p => tagPagC(c, p) === ch).forEach(p => ids.push(p.id)); } });
+  if (ids.length) await sb.from('pagamentos_cartao').update({ aplicado: true }).in('id', ids);
+  return ids.length;
+}
 async function quitarFatura(c) {
   const corte = corteC(c);
   const a = await sb.from('compras_cartao').update({ paga: true }).eq('cartao_id', c.id).eq('paga', false).lte('data', corte);
-  const b = await sb.from('pagamentos_cartao').update({ aplicado: true }).eq('cartao_id', c.id).eq('aplicado', false);
+  const ids = pagsNaoAplicC(c).filter(p => tagPagC(c, p) === chaveAtualC(c)).map(p => p.id);
+  const b = ids.length ? await sb.from('pagamentos_cartao').update({ aplicado: true }).in('id', ids) : {};
   return !a.error && !b.error;
 }
 function proxVenc(dia) {
@@ -1732,7 +1735,7 @@ $('#formCartao').addEventListener('submit', async e => {
   $('#dlgCartao').close(); toast(cartaoEdit ? 'Cartão atualizado' : 'Cartão cadastrado'); carregarCartoes();
 });
 function abrirCartao(id, foco) {
-  cartaoId = id; const f = $('#formCompra'); f.reset(); f.data.value = hojeISO(); $('#formPag').reset(); $('#formPag').data.value = hojeISO(); $('#pMsg').textContent = ''; $('#parcPrev').textContent = ''; $('#cMsg').textContent = '';
+  cartaoId = id; const f = $('#formCompra'); f.reset(); f.data.value = hojeISO(); $('#parcPrev').textContent = ''; $('#cMsg').textContent = '';
   renderCartaoDet(); const d = $('#dlgCartaoDet'); if (!d.open) d.showModal(); if (foco) f.valor.focus();
 }
 $('#dlgCartaoDet').addEventListener('close', () => { cartaoId = null; });
@@ -1764,16 +1767,14 @@ function renderCartaoDet() {
   const abertos = manter ? new Set([...cont.querySelectorAll('details[open]')].map(d => d.dataset.k)) : new Set(['0', '1']);
   cont.dataset.cid = String(c.id);
   cont.innerHTML = faturasC(c).map(f => {
-    const its = f.itens.slice().sort(ordena), total = somaC(its), falta = f.k === 0 ? faturaC(c) : somaC(its.filter(x => !x.paga)), pago = Math.max(0, total - falta);
+    const its = f.itens.slice().sort(ordena), total = somaC(its), chave = chaveVenc(f.venc), falta = Math.max(0, somaC(its.filter(x => !x.paga)) - pagoFatC(c, chave)), pago = Math.max(0, total - falta), pgs = pagsNaoAplicC(c).filter(p => tagPagC(c, p) === chave).sort((a, b) => b.data.localeCompare(a.data));
     const est = !its.length ? 'vazia' : falta <= 0.001 ? 'paga' : pago > 0.001 ? 'parcial' : (f.k === 0 ? 'aberta' : 'futura');
     const rot = { vazia: 'Sem compras', paga: '✓ Paga', parcial: 'Parcial · falta ' + brl(falta), aberta: 'Em aberto', futura: 'A vencer' }[est];
     const nome = f.k === 0 ? 'Fatura atual' : f.k === 1 ? 'Próxima fatura' : 'Fatura de ' + f.venc.toLocaleDateString('pt-BR', { month: 'long' });
     const sub = 'vence ' + dm(f.venc) + (f.k === 0 ? ` · em ${v.dias} dia(s)` : '');
-    return `<details class="fat-card st-${est}" data-k="${f.k}"${abertos.has(String(f.k)) ? ' open' : ''}><summary><div class="fc-t">${nome}<small>${sub}</small></div><div class="fc-v">${brl(total)}<small>${rot}</small></div></summary><div class="fc-body">${its.length ? `<div class="bar"><i style="width:${total > 0 ? Math.min(100, pago / total * 100) : 0}%;background:var(--meta)"></i></div><p class="st">Pago <b>${brl(pago)}</b> de ${brl(total)} · Falta <b>${brl(falta)}</b></p>` : ''}<p class="help" style="margin:6px 0">${f.k === 0 ? 'Marque ✓ o que você já pagou.' : 'Quer antecipar? Marque ✓ as parcelas que vai pagar antes do vencimento.'}</p>${its.length ? `<ul class="hist fat-itens">${its.map(x => li(x, f.k === 0)).join('')}</ul>` : '<p class="hist-vazio">Nenhuma compra nesta fatura.</p>'}${its.length && falta > 0.001 ? `<button type="button" class="btn go" data-quitark="${f.k}">${f.k === 0 ? 'Quitar esta fatura' : 'Antecipar a fatura inteira'}</button>` : ''}</div></details>`;
+    return `<details class="fat-card st-${est}" data-k="${f.k}"${abertos.has(String(f.k)) ? ' open' : ''}><summary><div class="fc-t">${nome}<small>${sub}</small></div><div class="fc-v">${brl(total)}<small>${rot}</small></div></summary><div class="fc-body">${its.length ? `<div class="bar"><i style="width:${total > 0 ? Math.min(100, pago / total * 100) : 0}%;background:var(--meta)"></i></div><p class="st">Pago <b>${brl(pago)}</b> de ${brl(total)} · Falta <b>${brl(falta)}</b></p>` : ''}<p class="help" style="margin:6px 0">${f.k === 0 ? 'Marque ✓ o que você já pagou.' : 'Quer antecipar? Marque ✓ as parcelas que vai pagar antes do vencimento.'}</p>${its.length ? `<ul class="hist fat-itens">${its.map(x => li(x, f.k === 0)).join('')}</ul>` : '<p class="hist-vazio">Nenhuma compra nesta fatura.</p>'}${pgs.length ? `<p class="help" style="margin:10px 0 0"><b>Pagamentos de valor lançados nesta fatura</b></p><ul class="hist">${pgs.map(p => `<li><div class="desc"><span class="pago">✓ Pago</span> em ${fmtData(p.data)}<small>pagamento de valor</small></div><span class="val pg-val">${brl(Number(p.valor))}</span><button class="del" data-pdel="${p.id}">Excluir</button></li>`).join('')}</ul>` : ''}${its.length && falta > 0.001 ? `<p class="help" style="margin:12px 0 4px">Pagar só uma parte desta fatura (ex.: R$ 50 de uma parcela):</p><form class="pg-k" data-pk="${f.k}" novalidate><label class="field" style="flex:1;margin:0"><input name="valor" inputmode="decimal" placeholder="Valor (R$)" aria-label="Valor a pagar desta fatura"></label><button class="btn" type="submit">Pagar um valor</button></form>` : ''}${its.length && falta > 0.001 ? `<button type="button" class="btn go" data-quitark="${f.k}">${f.k === 0 ? 'Quitar esta fatura' : 'Antecipar a fatura inteira'}</button>` : ''}</div></details>`;
   }).join('');
-  const ps = (c.pagamentos_cartao || []).filter(p => !p.aplicado).sort((a, b) => b.data.localeCompare(a.data));
-  $('#cPagsT').hidden = !ps.length;
-  $('#cPags').innerHTML = ps.map(p => `<li><div class="desc"><span class="pago">✓ Pago</span> em ${fmtData(p.data)}<small>pagamento parcial da fatura</small></div><span class="val pg-val">${brl(Number(p.valor))}</span><button class="del" data-pdel="${p.id}">Excluir</button></li>`).join('');
+
 }
 $('#formCompra').addEventListener('submit', async e => {
   e.preventDefault();
@@ -1810,6 +1811,8 @@ async function quitarK(e) {
   if (!confirm(`Antecipar esta fatura (${brl(somaC(ab))}, vence ${fmtData(isoD(f.venc))})? As compras dela serão marcadas como pagas e o limite é liberado.`)) return;
   const { error } = await sb.from('compras_cartao').update({ paga: true }).in('id', ab.map(x => x.id));
   if (error) return toast('Não foi possível concluir. Tente de novo.', true);
+  const ids = pagsNaoAplicC(c).filter(p => tagPagC(c, p) === chaveVenc(f.venc)).map(p => p.id);
+  if (ids.length) await sb.from('pagamentos_cartao').update({ aplicado: true }).in('id', ids);
   confete(); toast('Fatura antecipada! Limite liberado 🎉'); carregarCartoes();
 }
 $('#cFaturas').addEventListener('click', e => e.target.closest('[data-quitark]') ? quitarK(e) : onCdel(e));
@@ -1820,9 +1823,10 @@ async function onCheckC(e) {
   if (error) { i.checked = !marcou; i.disabled = false; return toast('Não foi possível atualizar. Tente de novo.', true); }
   await carregarCartoes();
   const c = cartoes.find(x => x.id === cartaoId);
-  if (marcou && atual && c && faturaBrutaC(c) <= 0.001 && faturaItensC(c).length) {
-    if (pagoC(c) > 0) await quitarFatura(c);   // pagamentos parciais soltos já foram absorvidos pela fatura
-    confete(); toast('Fatura quitada! Limite liberado 🎉'); carregarCartoes();
+  if (c) {
+    const aplicou = await aplicarPagosQuitadas(c);
+    if (marcou && atual && faturaBrutaC(c) <= 0.001 && faturaItensC(c).length) { confete(); toast('Fatura quitada! Limite liberado 🎉'); }
+    if (aplicou) carregarCartoes();
   }
 }
 $('#cFaturas').addEventListener('change', onCheckC);
@@ -1833,29 +1837,31 @@ $('#cPaga').onclick = async () => {
   if (!(await quitarFatura(c))) return toast('Não foi possível concluir. Tente de novo.', true);
   confete(); toast('Fatura quitada! Limite liberado 🎉'); carregarCartoes();
 };
-$('#formPag').addEventListener('submit', async e => {
-  e.preventDefault();
-  const f = e.target, erro = t => $('#pMsg').textContent = t; erro('');
+$('#cFaturas').addEventListener('submit', async e => {
+  const f = e.target.closest('form[data-pk]'); if (!f) return; e.preventDefault();
   const c = cartoes.find(x => x.id === cartaoId); if (!c) return;
-  const valor = parseMoney(f.valor.value), fat = faturaC(c);
-  if (!(valor > 0)) return erro('Informe o valor pago.');
-  if (!f.data.value) return erro('Informe a data do pagamento.');
-  if (!(fat > 0)) return erro('Não há fatura atual a pagar.');
-  if (valor > fat + 0.001) return erro(`O valor passa da fatura atual (${brl(fat)}).`);
-  const btn = $('#btnPag'); btn.disabled = true;
+  const fat = faturasC(c).find(x => x.k === Number(f.dataset.pk)); if (!fat) return;
+  const chave = chaveVenc(fat.venc), valor = parseMoney(f.valor.value), falta = Math.max(0, somaC(fat.itens.filter(x => !x.paga)) - pagoFatC(c, chave));
+  if (!(valor > 0)) return toast('Informe o valor que você vai pagar.', true);
+  if (!(falta > 0)) return toast('Esta fatura já está paga.', true);
+  if (valor > falta + 0.001) return toast(`O valor passa do que falta nesta fatura (${brl(falta)}).`, true);
+  const btn = f.querySelector('button'); btn.disabled = true;
   try {
-    const { error } = await sb.from('pagamentos_cartao').insert({ cartao_id: c.id, valor, data: f.data.value });
-    if (error) return erro('Não foi possível registrar. Tente de novo.');
-    f.valor.value = '';
-    if (valor >= fat - 0.001) {
+    const { error } = await sb.from('pagamentos_cartao').insert({ cartao_id: c.id, valor, data: hojeISO(), nota: 'F:' + chave });
+    if (error) return toast('Não foi possível registrar. Tente de novo.', true);
+    await carregarCartoes();
+    const c2 = cartoes.find(x => x.id === cartaoId), f2 = c2 && faturasC(c2).find(x => chaveVenc(x.venc) === chave);
+    if (f2 && valor >= falta - 0.001) {
+      const ab = f2.itens.filter(x => !x.paga);
+      if (ab.length) await sb.from('compras_cartao').update({ paga: true }).in('id', ab.map(x => x.id));
       await carregarCartoes();
-      const c2 = cartoes.find(x => x.id === cartaoId);
-      if (c2 && await quitarFatura(c2)) { confete(); toast('Fatura quitada! Limite liberado 🎉'); }
-    } else toast(`Pagamento de ${brl(valor)} registrado. Ainda falta ${brl(fat - valor)} 💚`);
+      const c3 = cartoes.find(x => x.id === cartaoId); if (c3) await aplicarPagosQuitadas(c3);
+      confete(); toast('Fatura paga! Limite liberado 🎉');
+    } else toast(`Pagamento de ${brl(valor)} registrado. Ainda falta ${brl(falta - valor)} 💚`);
     carregarCartoes();
   } finally { btn.disabled = false; }
 });
-$('#cPags').addEventListener('click', async e => {
+$('#cFaturas').addEventListener('click', async e => {
   const b = e.target.closest('[data-pdel]'); if (!b) return;
   if (!confirm('Excluir este pagamento parcial? O valor volta para a fatura.')) return;
   const { error } = await sb.from('pagamentos_cartao').delete().eq('id', b.dataset.pdel);
@@ -2478,7 +2484,7 @@ if (ladoSalvo === '1') document.body.classList.add('lado-fechado'), $('#btnLado'
 
 /* ---------- data e hora da última atualização do app ---------- */
 const DEPLOY_EM = '__DEPLOY__';   // o vercel.json troca isto pela data/hora de cada publicação
-const ATUALIZADO_EM = /^\d{4}-/.test(DEPLOY_EM) ? DEPLOY_EM : '2026-10-20T15:43:00-03:00';
+const ATUALIZADO_EM = /^\d{4}-/.test(DEPLOY_EM) ? DEPLOY_EM : '2026-10-20T15:52:00-03:00';
 (function () {
   const d = new Date(ATUALIZADO_EM), o = { timeZone: 'America/Sao_Paulo' };
   const dia = d.toLocaleDateString('pt-BR', { ...o, day: '2-digit', month: '2-digit', year: 'numeric' }), hora = d.toLocaleTimeString('pt-BR', { ...o, hour: '2-digit', minute: '2-digit' });
