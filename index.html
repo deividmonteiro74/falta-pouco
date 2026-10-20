@@ -281,6 +281,7 @@ dialog{background:var(--surface);color:var(--ink);animation:abre .25s cubic-bezi
 .proj b{font-family:var(--display)}
 .proj-vazio{color:var(--muted);font-size:.9rem;margin:0 0 16px}
 .field.chk{display:flex;align-items:center;gap:10px}
+.field[hidden]{display:none!important}
 .field.chk input{width:auto;min-height:0}
 .field.chk span{margin:0}
 .hist .acoes{display:flex;gap:2px;flex-wrap:wrap;justify-content:flex-end}
@@ -512,7 +513,7 @@ body::before{content:"";position:fixed;inset:-25%;z-index:-1;pointer-events:none
 }
 @media (prefers-reduced-motion:reduce){.top,#viewApp{transition:none!important}}
 /* ===== V15: barra lateral dinâmica, conta em destaque, caixa ===== */
-.rodape .atualizado{display:block;margin-top:6px;text-align:right;font-size:.6rem;letter-spacing:.02em;opacity:.28;transition:opacity .2s}.rodape .atualizado:hover{opacity:.75}
+.rodape .atualizado{display:block;margin-top:6px;text-align:center;font-size:.72rem;letter-spacing:.02em;opacity:.6}
 /* ===== boas-vindas depois do login ===== */
 #boasVindas{position:fixed;inset:0;z-index:9000;display:grid;place-items:center;text-align:center;padding:24px;overflow:hidden;cursor:pointer;color:#fff;background:radial-gradient(ellipse at 50% 38%,#33267F 0%,#0E0B2B 62%);opacity:0;animation:bvIn .45s ease forwards}
 #boasVindas.saindo{animation:bvOut .5s ease forwards;pointer-events:none}
@@ -920,6 +921,8 @@ window.somBrilho = function (grande, aguardar) {
     <label class="field"><span>Dia do vencimento da fatura (1 a 31)</span><input name="dia" type="number" min="1" max="31" required placeholder="Ex.: 15"></label>
     <p class="xhint" id="fechaHint">Compras feitas depois do dia do fechamento entram na fatura do mês seguinte. Ex.: fecha dia 5, compra no dia 6 → vai para a próxima fatura.</p>
     <label class="field"><span>Avisar por e-mail quantos dias antes do vencimento</span><input name="adias" type="number" min="0" max="15" value="3" required></label>
+    <label class="field chk"><input type="checkbox" name="zap"><span>Avisar também por WhatsApp (antes do vencimento, no dia e se vencer sem pagar)</span></label>
+    <label class="field" id="zapCampo" hidden><span>Seu WhatsApp (com DDD)</span><input name="zapnum" type="tel" inputmode="tel" autocomplete="tel" maxlength="20" placeholder="(21) 99999-9999"></label>
     <label class="field"><span>Avisar quando usar este % do limite</span><input name="alim" type="number" min="1" max="100" value="80" required></label>
     <p class="msg" id="cartaoMsg" role="alert"></p>
     <div class="dlg-foot"><button type="button" class="btn ghost" data-fechar="dlgCartao">Cancelar</button><button type="submit" class="btn primary">Salvar cartão</button></div>
@@ -1557,11 +1560,13 @@ function proxVenc(dia) {
   let d = mk(h.getFullYear(), h.getMonth()); if (d < h) d = mk(h.getFullYear(), h.getMonth() + 1);
   return { d, dias: Math.round((d - h) / 86400000) };
 }
+let zapX = true;    // vira false se as colunas alerta_whatsapp/whatsapp ainda não existirem no banco
 let cartX = true;   // vira false se as colunas bandeira/final/cor ainda não existirem no banco
 async function carregarCartoes() {
   const REL = ',compras_cartao(id,valor,data,descricao,paga,criado_em,parcela_num,parcelas_total,grupo_id),pagamentos_cartao(id,valor,data,nota,aplicado)';
-  const q = (x, fx) => sb.from('cartoes').select('id,nome,limite,dia_vencimento,alerta_dias,alerta_limite' + (x ? ',bandeira,final,cor' : '') + (fx ? ',dia_fechamento' : '') + REL).eq('user_id', userId).order('criado_em');
+  const q = (x, fx) => sb.from('cartoes').select('id,nome,limite,dia_vencimento,alerta_dias,alerta_limite' + (x ? ',bandeira,final,cor' : '') + (fx ? ',dia_fechamento' : '') + (zapX ? ',alerta_whatsapp,whatsapp' : '') + REL).eq('user_id', userId).order('criado_em');
   let r = await q(cartX, fechX);
+  if (r.error && zapX && /alerta_whatsapp|whatsapp/i.test(r.error.message || '')) { zapX = false; r = await q(cartX, fechX); }
   if (r.error && fechX && /dia_fechamento/i.test(r.error.message || '')) { fechX = false; r = await q(cartX, false); }
   if (r.error && cartX && (r.error.code === '42703' || /column|bandeira|does not exist/i.test(r.error.message || ''))) { cartX = false; r = await q(false, fechX); }
   const { data, error } = r;
@@ -1639,9 +1644,16 @@ function abrirCartaoForm(c) {
   $('#cartaoTitulo').textContent = c ? 'Editar cartão' : 'Novo cartão';
   if (c) { f.nome.value = c.nome; f.limite.value = String(c.limite).replace('.', ','); f.dia.value = c.dia_vencimento; f.fecha.value = c.dia_fechamento || ''; f.adias.value = c.alerta_dias; f.alim.value = c.alerta_limite; f.bandeira.value = c.bandeira || ''; f.final.value = c.final || ''; }
   f.cor.value = c && c.cor != null ? c.cor : (c ? cartoes.indexOf(c) % 4 : cartoes.length % 4);
+  f.zap.checked = !!(c && c.alerta_whatsapp); f.zapnum.value = (c && c.whatsapp) ? fmtZap(c.whatsapp) : (ultimoZap() || ''); f.zap.closest('label').hidden = !zapX; $('#zapCampo').hidden = !zapX || !f.zap.checked;
   f.classList.toggle('semx', !cartX); $('#fechaHint').dataset.local = fechX ? '' : '1'; prevCor(); atualizaPrev();
   $('#dlgCartao').showModal(); f.nome.focus();
 }
+/* WhatsApp: guardamos só dígitos com 55 na frente (ex.: 5521999999999) */
+const zapDigitos = t => { let d = String(t || '').replace(/\D/g, ''); if (d.length === 10 || d.length === 11) d = '55' + d; return d; };
+const fmtZap = d => { d = String(d || '').replace(/^55/, ''); return d.length === 11 ? `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}` : d.length === 10 ? `(${d.slice(0, 2)}) ${d.slice(2, 6)}-${d.slice(6)}` : d; };
+const ultimoZap = () => { try { return localStorage.getItem('ultimoZap') || ''; } catch (e) { return ''; } };
+const guardaUltimoZap = n => { try { localStorage.setItem('ultimoZap', fmtZap(n)); } catch (e) {} };
+$('#formCartao').addEventListener('change', e => { if (e.target.name === 'zap') { $('#zapCampo').hidden = !e.target.checked; if (e.target.checked) e.target.form.zapnum.focus(); } });
 $('#formCartao').addEventListener('submit', async e => {
   e.preventDefault();
   const f = e.target, erro = t => $('#cartaoMsg').textContent = t;
@@ -1654,6 +1666,12 @@ $('#formCartao').addEventListener('submit', async e => {
   if (!(adias >= 0 && adias <= 15) || !(alim >= 1 && alim <= 100)) return erro('Confira os avisos: de 0 a 15 dias e de 1% a 100%.');
   if (cartX && f.final.value && f.final.value.length !== 4) return erro('Informe os 4 últimos dígitos ou deixe em branco.');
   const payload = { nome, limite, dia_vencimento: dia, alerta_dias: adias, alerta_limite: alim };
+  if (zapX) {
+    const num = zapDigitos(f.zapnum.value);
+    if (f.zap.checked && !(num.length === 12 || num.length === 13)) return erro('Informe o WhatsApp com DDD, por exemplo (21) 99999-9999.');
+    payload.alerta_whatsapp = f.zap.checked; payload.whatsapp = f.zap.checked ? num : null;
+    if (f.zap.checked) guardaUltimoZap(num);
+  } else if (f.zap.checked) return erro('O aviso por WhatsApp ainda não está ativado no banco. Rode o SQL de atualização e tente de novo.');
   if (fechX) payload.dia_fechamento = fecha;
   if (cartX) { payload.bandeira = f.bandeira.value || null; payload.final = f.final.value || null; payload.cor = Number(f.cor.value) || 0; }
   const { data: novo, error } = cartaoEdit ? await sb.from('cartoes').update(payload).eq('id', cartaoEdit) : await sb.from('cartoes').insert(payload).select('id').single();
@@ -2371,7 +2389,8 @@ let ladoSalvo; try { ladoSalvo = localStorage.getItem('ladoFechado'); } catch (e
 if (ladoSalvo === '1') document.body.classList.add('lado-fechado'), $('#btnLado').textContent = '»';
 
 /* ---------- data e hora da última atualização do app ---------- */
-const ATUALIZADO_EM = '2026-10-16T20:02:00-03:00';
+const DEPLOY_EM = '__DEPLOY__';   // o vercel.json troca isto pela data/hora de cada publicação
+const ATUALIZADO_EM = /^\d{4}-/.test(DEPLOY_EM) ? DEPLOY_EM : '2026-10-20T15:24:00-03:00';
 (function () {
   const d = new Date(ATUALIZADO_EM), o = { timeZone: 'America/Sao_Paulo' };
   const dia = d.toLocaleDateString('pt-BR', { ...o, day: '2-digit', month: '2-digit', year: 'numeric' }), hora = d.toLocaleTimeString('pt-BR', { ...o, hour: '2-digit', minute: '2-digit' });
