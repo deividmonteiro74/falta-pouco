@@ -575,6 +575,18 @@ body::before{content:"";position:fixed;inset:-25%;z-index:-1;pointer-events:none
 .caixa-box input{width:150px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;min-height:44px;background:var(--surface);color:var(--ink);font-weight:600}
 .caixa-box input:disabled{background:var(--bg);color:var(--muted);cursor:not-allowed;opacity:.85}
 .caixa-box input:not(:disabled){border-color:var(--meta)}
+
+/* ===== planejamento ===== */
+.sec-t{margin:30px 0 10px;font-size:1.15rem;font-weight:800}
+.orc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:14px;margin-top:10px}
+.orc{background:var(--surface);border-radius:18px;padding:16px 18px;box-shadow:var(--shadow);cursor:pointer;transition:transform .2s,box-shadow .2s;animation:pop .5s cubic-bezier(.2,.8,.2,1) backwards;animation-delay:calc(var(--i,0)*50ms)}
+.orc:hover{transform:translateY(-3px)}
+.orc-top{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:10px}
+.orc .bar i{background:var(--meta)}.orc.perto .bar i{background:#FFC83D}.orc.estoura .bar i{background:#E5383B}
+.orc.estoura{box-shadow:0 0 0 2px #E5383B,var(--shadow)}
+.orc-amts{display:flex;justify-content:space-between;gap:8px;margin-top:8px;font-size:.9rem;color:var(--muted)}.orc-amts b{color:var(--ink)}
+.gasto-chip.pesada{box-shadow:0 0 0 2px #E5383B}
+#orcSug,#planoParcelas,#agendaSemanas{margin-top:10px}
 </style>
 
 </head>
@@ -814,6 +826,7 @@ window.somBrilho = function (grande, aguardar) {
       <button class="tab" data-vista="contas" aria-pressed="false"><span class="ico">🧾</span><span class="lbl"><span class="lg">Contas</span><span class="sm">Contas</span></span></button>
       <button class="tab" data-vista="gastos" aria-pressed="false"><span class="ico">🛒</span><span class="lbl"><span class="lg">Gastos</span><span class="sm">Gastos</span></span></button>
       <button class="tab" data-vista="salario" aria-pressed="false"><span class="ico">💰</span><span class="lbl"><span class="lg">Salário</span><span class="sm">Salário</span></span></button>
+      <button class="tab" data-vista="plano" aria-pressed="false"><span class="ico">🎯</span><span class="lbl"><span class="lg">Planejamento</span><span class="sm">Planejar</span></span></button>
       <button class="tab" id="tabAdmin" hidden data-vista="admin" aria-pressed="false"><span class="ico">🛡️</span><span class="lbl"><span class="lg">Administração</span><span class="sm">Admin</span></span></button>
     </nav>
     <div class="user"><button class="linkbtn" id="userEmail" type="button" title="Alterar nome"></button><button class="btn ghost small" id="btnTema" type="button" aria-label="Alternar tema claro/escuro">🌙</button><button class="btn ghost small" id="btnSair">Sair</button></div>
@@ -866,6 +879,20 @@ window.somBrilho = function (grande, aguardar) {
       <div class="hero tres" data-resumo></div>
       <div class="chips" id="chips_rendas"></div>
       <ul class="hist biglist" id="lista_rendas"></ul>
+    </section>
+    <section id="vistaPlano" hidden aria-label="Planejamento">
+      <div class="toolbar"><div><h2 class="vt">Planejamento do mês</h2><p class="sub">Veja quanto ainda pode gastar, como o mês deve fechar e o que vence nos próximos dias.</p></div></div>
+      <div class="hero tres" id="planoResumo"></div>
+      <p class="help">A previsão usa o seu ritmo atual de gastos avulsos. Contas, parcelas e faturas já lançadas entram pelo valor cheio.</p>
+      <h3 class="sec-t">Orçamento por categoria</h3>
+      <div class="toolbar"><p class="sub" style="margin:0">Defina um teto para cada tipo de gasto e acompanhe durante o mês.</p><button class="btn primary" id="btnNovoOrc" type="button">Novo orçamento</button></div>
+      <div id="orcLista" class="orc-grid"></div>
+      <div class="chips" id="orcSug" aria-label="Sugestões de orçamento"></div>
+      <h3 class="sec-t">Parcelas já comprometidas</h3>
+      <div class="chips" id="planoParcelas"></div>
+      <h3 class="sec-t">Agenda dos próximos 30 dias</h3>
+      <div class="chips" id="agendaSemanas"></div>
+      <ul class="hist biglist" id="agendaLista"></ul>
     </section>
     <section id="vistaAdmin" hidden aria-label="Administração">
       <div class="hero tres" id="adminKpis"></div>
@@ -982,7 +1009,7 @@ window.somBrilho = function (grande, aguardar) {
     <p class="help" style="margin:0 0 10px">Cada fatura mostra as compras e parcelas dela. Marque ✓ para pagar uma parcela inteira, ou use <b>Pagar um valor</b> dentro da fatura para pagar só uma parte (ex.: R$ 50 de uma parcela). Vale para qualquer mês, inclusive antecipando.</p>
     <div id="cFaturas"></div>
 
-    <div class="dlg-foot"><button class="btn go" id="cPaga" type="button">Quitar fatura</button><button class="btn" id="cEditar" type="button">Editar cartão</button><button class="btn danger" id="cExcluir" type="button">Excluir</button></div>
+    <div class="dlg-foot"><button class="btn go" id="cPaga" type="button">Quitar fatura</button><button class="btn" id="cTeste" type="button">Enviar aviso de teste</button><button class="btn" id="cEditar" type="button">Editar cartão</button><button class="btn danger" id="cExcluir" type="button">Excluir</button></div>
   </div>
 </dialog>
 
@@ -1059,6 +1086,17 @@ window.somBrilho = function (grande, aguardar) {
     <ul class="hist biglist" id="grLista"></ul>
     <div class="dlg-foot"><button class="btn primary" id="grNovo" type="button">Novo lançamento</button></div>
   </div>
+</dialog>
+
+<!-- Janela: orçamento por categoria -->
+<dialog id="dlgOrc" aria-labelledby="orcTitulo">
+  <form class="dlg" id="formOrc" novalidate>
+    <div class="dlg-head"><h2 id="orcTitulo">Novo orçamento</h2><button type="button" class="x" data-fechar="dlgOrc" aria-label="Fechar">×</button></div>
+    <label class="field"><span>Categoria (o mesmo nome usado nos gastos)</span><input name="categoria" list="orcCats" maxlength="60" placeholder="Ex.: Mercado" required></label><datalist id="orcCats"></datalist>
+    <label class="field"><span>Teto do mês (R$)</span><input name="limite" inputmode="decimal" placeholder="0,00" required></label>
+    <p class="msg" id="orcMsg" role="alert"></p>
+    <div class="dlg-foot"><button type="button" class="btn danger" id="orcExcluir" hidden>Excluir</button><button type="button" class="btn ghost" data-fechar="dlgOrc">Cancelar</button><button type="submit" class="btn primary">Salvar</button></div>
+  </form>
 </dialog>
 
 <!-- Janela: nova senha (após link de recuperação) -->
@@ -1464,14 +1502,16 @@ function trocarVista(v) {
   $('#vistaContas').hidden = v !== 'contas';
   $('#vistaGastos').hidden = v !== 'gastos';
   $('#vistaSalario').hidden = v !== 'salario';
+  $('#vistaPlano').hidden = v !== 'plano';
   $('#vistaAdmin').hidden = v !== 'admin';
   document.querySelectorAll('#navAdmin .tab').forEach(b => b.setAttribute('aria-pressed', b.dataset.vista === v));
   requestAnimationFrame(moverInd);
-  const secao = $({ meu: '#vistaMeu', cartoes: '#vistaCartoes', contas: '#vistaContas', gastos: '#vistaGastos', salario: '#vistaSalario', admin: '#vistaAdmin' }[v]);
+  const secao = $({ meu: '#vistaMeu', cartoes: '#vistaCartoes', contas: '#vistaContas', gastos: '#vistaGastos', salario: '#vistaSalario', plano: '#vistaPlano', admin: '#vistaAdmin' }[v]);
   if (secao) { secao.classList.remove('vista-in'); void secao.offsetWidth; secao.classList.add('vista-in'); }
   if (v === 'admin' && ehAdmin) carregarAdmin();
   if (v === 'cartoes' && userId) carregarCartoes();
   if (v === 'contas' && userId) carregarContas();
+  if (v === 'plano' && userId) carregarPlano();
   if ((v === 'gastos' || v === 'salario') && userId) carregarMes();
 }
 $('#navAdmin').addEventListener('click', e => { const b = e.target.closest('[data-vista]'); if (b) trocarVista(b.dataset.vista); });
@@ -2268,7 +2308,8 @@ $('#formLanc').addEventListener('submit', async e => {
   const row = { descricao: desc, valor, data: f.data.value }, t = MESES[lancMod].tab;
   const { error } = lancEdit ? await sb.from(t).update(row).eq('id', lancEdit) : await sb.from(t).insert(row);
   if (error) return erro('Não foi possível salvar. Tente de novo.');
-  $('#dlgLanc').close(); toast(lancMod === 'rendas' ? 'Entrada salva 💚' : 'Gasto salvo ✨'); carregarMes();
+  const modo0 = lancMod; $('#dlgLanc').close(); toast(modo0 === 'rendas' ? 'Entrada salva 💚' : 'Gasto salvo ✨'); await carregarMes();
+  if (modo0 === 'gastos') checarOrcamento(desc);
 });
 async function excluirLanc(mod, id) {
   if (!confirm('Excluir este lançamento?')) return;
@@ -2490,6 +2531,115 @@ const ATUALIZADO_EM = /^\d{4}-/.test(DEPLOY_EM) ? DEPLOY_EM : '2026-10-20T15:52:
   const dia = d.toLocaleDateString('pt-BR', { ...o, day: '2-digit', month: '2-digit', year: 'numeric' }), hora = d.toLocaleTimeString('pt-BR', { ...o, hour: '2-digit', minute: '2-digit' });
   document.querySelectorAll('[data-atualizado]').forEach(e => { e.textContent = `Atualizado em ${dia} às ${hora}`; });
 })();
+
+/* ---------- planejamento: por dia, previsão, orçamentos e agenda ---------- */
+let planoDados = null, orcs = [], orcsOk = false, orcEdit = null;
+const plCap = s => s.charAt(0).toUpperCase() + s.slice(1);
+const plAdd = (iso, n) => { const d = new Date(iso + 'T00:00:00'); d.setDate(d.getDate() + n); return d.toLocaleDateString('sv-SE'); };
+const plDias = iso => Math.round((new Date(iso + 'T00:00:00') - new Date(hojeISO() + 'T00:00:00')) / 86400000);
+const plCurto = iso => iso.slice(8) + '/' + iso.slice(5, 7);
+async function carregarOrcs() {
+  const r = await sb.from('orcamentos').select('id,categoria,limite').eq('user_id', userId).order('categoria');
+  if (r.error) throw new Error('falha');
+  orcs = r.data.map(x => ({ ...x, limite: Number(x.limite) })); orcsOk = true;
+}
+async function carregarPlano() {
+  const mes = hojeISO().slice(0, 7);
+  try { const [t, cx] = await Promise.all([totaisMes(mes), caixaInicial(mes), carregarOrcs()]); planoDados = { ...t, caixa: cx, mes }; }
+  catch (e) { toast('Não foi possível carregar o planejamento. Tente de novo.', true); return; }
+  await Promise.all([carregarCartoes(), carregarContas()]);
+  renderPlano();
+}
+function agendaItens() {
+  const it = [];
+  contasFat.filter(f => !f.paga && plDias(f.vencimento) <= 30).forEach(f => { const c = CONTAS[f.tipo] || { nome: f.tipo, emoji: '🧾' }; it.push({ d: f.vencimento, ico: c.emoji, t: `Conta de ${c.nome}`, v: f.valor }); });
+  cartoes.forEach(c => { const v = proxVenc(c.dia_vencimento), fat = faturaC(c); if (fat > 0 && v.dias <= 30) it.push({ d: isoD(v.d), ico: '💳', t: `Fatura ${c.nome}`, v: fat }); });
+  return it.sort((a, b) => a.d.localeCompare(b.d));
+}
+function renderPlano() {
+  const t = planoDados; if (!t) return;
+  const hj = new Date(), dm = new Date(hj.getFullYear(), hj.getMonth() + 1, 0).getDate(), dia = hj.getDate(), restam = dm - dia + 1;
+  const total = t.renda + t.caixa, livre = total - t.despesas, porDia = livre > 0 ? livre / restam : 0;
+  const ritmo = t.gastos / dia, saldoPrev = total - ((t.despesas - t.gastos) + ritmo * dm);
+  $('#planoResumo').innerHTML =
+    `<div class="panel ${!total ? '' : livre > 0 ? 'meta' : 'neg'}"><h2>Pode gastar por dia</h2><p class="num" data-count="${porDia}">${brl(porDia)}</p><p class="of">${!total ? 'cadastre seu salário na aba Salário' : livre > 0 ? `${brl(livre)} livres para ${restam} dia(s) até o fim do mês` : 'o mês já está comprometido: evite novos gastos'}</p></div>
+     <div class="panel ${!total ? '' : saldoPrev >= 0 ? 'meta' : 'neg'}"><h2>${saldoPrev >= 0 ? 'Previsão: sobra' : 'Previsão: falta'}</h2><p class="num" data-count="${Math.abs(saldoPrev)}">${brl(Math.abs(saldoPrev))}</p><p class="of">${!total ? 'sem salário cadastrado' : `mantendo ${brl(ritmo)} por dia em gastos avulsos`}</p></div>
+     <div class="panel"><h2>Já comprometido</h2><p class="num" data-count="${t.despesas}">${brl(t.despesas)}</p><p class="of">${total ? `${Math.min(999, Math.round(t.despesas / total * 100))}% do que você tem este mês` : 'despesas do mês'}</p></div>`;
+  // orçamentos
+  const gc = {}; t.listaG.forEach(x => { const k = x.descricao.trim().toLowerCase(); gc[k] = (gc[k] || 0) + Number(x.valor); });
+  $('#orcLista').innerHTML = orcs.length ? orcs.map((o, i) => {
+    const g = gc[o.categoria.trim().toLowerCase()] || 0, pct = g / o.limite * 100, cls = pct >= 100 ? 'estoura' : pct >= 80 ? 'perto' : '';
+    return `<article class="orc ${cls}" style="--i:${i}" data-orc="${o.id}" tabindex="0" role="button" aria-label="Editar orçamento ${esc(o.categoria)}"><div class="orc-top"><strong>${esc(o.categoria)}</strong>${cls ? balaoHtml(pct >= 100 ? 'vermelho' : 'amarelo', pct >= 100 ? 'Estourou' : 'Perto do teto') : ''}</div><div class="bar"><i style="width:${Math.min(100, pct)}%"></i></div><div class="orc-amts"><span><b>${brl(g)}</b> de ${brl(o.limite)}</span><span>${pct >= 100 ? `${brl(g - o.limite)} acima` : `faltam ${brl(o.limite - g)}`}</span></div></article>`;
+  }).join('') : '<p class="hist-vazio">Nenhum orçamento ainda. Defina um teto para um gasto (por exemplo, Mercado) e acompanhe aqui.</p>';
+  const gr = gruposGastos(t), sug = Object.keys(gr).filter(k => !orcs.some(o => o.categoria.trim().toLowerCase() === k)).sort((a, b) => gr[b].v - gr[a].v).slice(0, 4);
+  $('#orcSug').innerHTML = sug.length ? '<span class="help" style="width:100%;margin:6px 0 0">Sugestões a partir dos seus gastos:</span>' + sug.map((k, i) => `<button type="button" class="chip-btn gasto-chip" style="--i:${i}" data-sugorc="${esc(gr[k].n)}"><b>${esc(gr[k].n)}</b><span>${brl(gr[k].v)} no mês</span></button>`).join('') : '';
+  // parcelas futuras
+  const fimMes = t.mes + '-31', porMes = {};
+  cartoes.forEach(c => abertasC(c).forEach(x => { if (x.data > fimMes) { const m = x.data.slice(0, 7); porMes[m] = (porMes[m] || 0) + Number(x.valor); } }));
+  const ms = Object.keys(porMes).sort().slice(0, 6);
+  $('#planoParcelas').innerHTML = ms.length ? ms.map((m, i) => `<span class="chip-btn gasto-chip" style="--i:${i};cursor:default"><b>${plCap(mesNome(m))}</b><span>${brl(porMes[m])}</span></span>`).join('') : '<p class="hist-vazio">Nenhuma parcela futura no cartão.</p>';
+  // agenda
+  const ag = agendaItens(), hojeI = hojeISO(), sem = [0, 0, 0, 0];
+  ag.forEach(x => { if (x.v != null) sem[Math.max(0, Math.min(3, Math.floor(plDias(x.d) / 7)))] += Number(x.v); });
+  const maior = Math.max(...sem);
+  $('#agendaSemanas').innerHTML = maior > 0 ? sem.map((v, i) => `<span class="chip-btn gasto-chip${v === maior ? ' pesada' : ''}" style="--i:${i};cursor:default"><b>${plCurto(plAdd(hojeI, i * 7))} a ${plCurto(plAdd(hojeI, i * 7 + 6))}</b><span>${brl(v)}</span>${v === maior ? '<em>mais pesada</em>' : ''}</span>`).join('') : '';
+  $('#agendaLista').innerHTML = ag.length ? ag.map(x => {
+    const dd = plDias(x.d), niv = nivelVenc(dd, 3), txt = dd < 0 ? `Vencida há ${-dd} dia(s)` : dd === 0 ? 'Vence hoje' : dd === 1 ? 'Vence amanhã' : `Em ${dd} dias`;
+    return `<li><div class="desc"><strong>${x.ico} ${esc(x.t)}</strong><small>${fmtData(x.d)} ${niv ? balaoHtml(niv, txt) : '(' + txt.toLowerCase() + ')'}</small></div><span class="val">${x.v == null ? 'sem valor' : brl(Number(x.v))}</span></li>`;
+  }).join('') : '<li class="hist-vazio">Nada vence nos próximos 30 dias. 🎉</li>';
+  contar();
+}
+function abrirOrc(o, nome) {
+  orcEdit = o ? o.id : null;
+  const f = $('#formOrc'); f.reset(); $('#orcMsg').textContent = '';
+  $('#orcTitulo').textContent = o ? 'Editar orçamento' : 'Novo orçamento'; $('#orcExcluir').hidden = !o;
+  $('#orcCats').innerHTML = [...new Set((planoDados ? planoDados.listaG : []).map(x => x.descricao.trim()))].map(n => `<option value="${esc(n)}">`).join('');
+  if (o) { f.categoria.value = o.categoria; f.limite.value = String(o.limite).replace('.', ','); } else if (nome) f.categoria.value = nome;
+  $('#dlgOrc').showModal(); (o || nome ? f.limite : f.categoria).focus();
+}
+$('#btnNovoOrc').onclick = () => abrirOrc();
+$('#orcLista').addEventListener('click', e => { const a = e.target.closest('[data-orc]'); if (a) abrirOrc(orcs.find(o => o.id === a.dataset.orc)); });
+$('#orcLista').addEventListener('keydown', e => { if (e.key !== 'Enter' && e.key !== ' ') return; const a = e.target.closest('[data-orc]'); if (a) { e.preventDefault(); abrirOrc(orcs.find(o => o.id === a.dataset.orc)); } });
+$('#orcSug').addEventListener('click', e => { const b = e.target.closest('[data-sugorc]'); if (b) abrirOrc(null, b.dataset.sugorc); });
+$('#formOrc').addEventListener('submit', async e => {
+  e.preventDefault();
+  const f = e.target, erro = t => $('#orcMsg').textContent = t, cat = f.categoria.value.trim(), lim = parseMoney(f.limite.value);
+  if (!cat) return erro('Informe a categoria.');
+  if (!(lim > 0)) return erro('Informe um teto maior que zero.');
+  const row = { categoria: cat, limite: lim };
+  const { error } = orcEdit ? await sb.from('orcamentos').update(row).eq('id', orcEdit) : await sb.from('orcamentos').insert(row);
+  if (error) return erro(error.code === '23505' ? 'Já existe um orçamento para esta categoria.' : 'Não foi possível salvar. Tente de novo.');
+  $('#dlgOrc').close(); toast('Orçamento salvo ✅'); carregarPlano();
+});
+$('#orcExcluir').onclick = async () => {
+  if (!orcEdit || !confirm('Excluir este orçamento?')) return;
+  const { error } = await sb.from('orcamentos').delete().eq('id', orcEdit);
+  if (error) return toast('Não foi possível excluir. Tente de novo.', true);
+  $('#dlgOrc').close(); toast('Orçamento excluído'); carregarPlano();
+};
+async function checarOrcamento(desc) {   // depois de lançar um gasto: avisa se chegou perto ou passou do teto
+  try {
+    if (!orcsOk) await carregarOrcs();
+    const k = desc.trim().toLowerCase(), o = orcs.find(x => x.categoria.trim().toLowerCase() === k);
+    if (!o || !mesDados || mesSel !== hojeISO().slice(0, 7)) return;
+    const g = gruposGastos(mesDados)[k]; if (!g) return;
+    const pct = g.v / o.limite * 100;
+    if (pct >= 100) toast(`Atenção: ${g.n} passou do orçamento de ${brl(o.limite)} (${brl(g.v - o.limite)} acima) 🚨`, true);
+    else if (pct >= 80) toast(`${g.n} já usou ${Math.floor(pct)}% do orçamento de ${brl(o.limite)} ⚠️`);
+  } catch (e) { /* sem orçamento carregado: segue sem aviso */ }
+}
+
+/* ---------- aviso de teste do cartão ---------- */
+$('#cTeste').onclick = async () => {
+  const c = cartoes.find(x => x.id === cartaoId); if (!c) return;
+  const b = $('#cTeste'), rot = b.textContent; b.disabled = true; b.textContent = 'Enviando...';
+  const msg = (t, erro) => { toast(t, erro); clearTimeout(toastTimer); toastTimer = setTimeout(() => { $('#toast').className = ''; }, 7000); };
+  try {
+    const { data, error } = await sb.functions.invoke('avisos-cartao', { body: { teste: true, cartao_id: c.id } });
+    if (error) { let m = 'Não foi possível enviar o teste agora.'; try { const j = await error.context.json(); if (j && j.erro) m = j.erro; } catch (e2) {} return msg(m, true); }
+    msg((data && data.mensagem) || 'Teste enviado ✅');
+  } finally { b.disabled = false; b.textContent = rot; }
+};
 
 /* ---------- tema e atalhos ---------- */
 function aplicaTema(t) {
