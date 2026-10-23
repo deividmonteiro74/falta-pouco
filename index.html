@@ -634,6 +634,39 @@ body::before{content:"";position:fixed;inset:-25%;z-index:-1;pointer-events:none
   .dia .dv{display:none}.dia .dd{font-size:1.15rem}.dia .dn{font-size:.66rem}
   .dia.hoje .dn::after{content:"";}
 }
+
+.row.card.feito-d{box-shadow:0 0 0 2px #22C55E,0 14px 32px rgba(34,197,94,.35)}.row.card.feito-d::before{background:linear-gradient(90deg,#22C55E,#2BD98B)}.row.feito-d .bar i{background:#22C55E}
+.row.feito-d .selo{background:#22C55E;color:#fff}.row.feito-d .rt{fill:#22C55E}
+/* ===== agenda do mês por período + projeção ===== */
+.per-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:10px 0 18px}
+.per{position:relative;display:flex;flex-direction:column;gap:4px;text-align:left;padding:14px 16px;border:1px solid var(--line);border-radius:16px;background:var(--surface);color:var(--ink);cursor:pointer;font:inherit;font-variant-numeric:tabular-nums;box-shadow:var(--shadow);transition:transform .2s}
+.per:hover{transform:translateY(-2px)}
+.per .pn{font-size:.85rem;font-weight:700;color:var(--muted)}.per b{font-family:var(--display);font-size:1.3rem;font-weight:800;line-height:1.15}.per small{color:var(--muted);font-size:.82rem}
+.per.pesada{border-color:#E5383B}
+.per em,.proj-top em{position:absolute;top:-10px;right:12px;font-style:normal;font-size:.72rem;font-weight:800;padding:2px 10px;border-radius:99px;background:#E5383B;color:#fff}
+.per.sel{background:linear-gradient(135deg,#6C4DFF,#FF4D8D);border-color:transparent;color:#fff;box-shadow:0 10px 24px rgba(108,77,255,.4)}
+.per.sel .pn,.per.sel small{color:rgba(255,255,255,.85)}
+.ag-grupo{margin-top:14px}
+.ag-dia-cab{display:flex;justify-content:space-between;gap:8px;font-variant-numeric:tabular-nums;margin:0 2px 4px;font-weight:700}
+.ag-dia-cab .sub{font-weight:400}
+.ag-grupo.hoje .ag-dia-cab strong{color:var(--brand)}
+.proj-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:14px;margin-top:12px}
+.proj-card{position:relative;display:flex;flex-direction:column;gap:10px;background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:18px 20px;box-shadow:var(--shadow);font-variant-numeric:tabular-nums;animation:pop .5s cubic-bezier(.2,.8,.2,1) backwards;animation-delay:calc(var(--i,0)*50ms)}
+.proj-card.pesada{border-color:#E5383B;box-shadow:0 0 0 1px #E5383B,var(--shadow)}
+.proj-top{display:flex;justify-content:space-between;align-items:center}.proj-top small{color:var(--muted);font-weight:600}
+.proj-tot{font-family:var(--display);font-size:1.6rem;font-weight:800;line-height:1.1}
+.proj-card .bar{height:8px}.proj-card .bar i{background:var(--brand)}.proj-card.pesada .bar i{background:#E5383B}
+.proj-lin{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.proj-lin li{display:flex;justify-content:space-between;gap:8px;font-size:.92rem;color:var(--muted)}.proj-lin li b{color:var(--ink);font-weight:700}.proj-lin small{font-style:italic}
+@media (max-width:720px){.per-grid{grid-template-columns:repeat(2,minmax(0,1fr));row-gap:18px}}
+
+/* ===== ajustes: texto sobreposto, cores dos balões, sem piscar ===== */
+.hero+.help,.hero.tres+.help{margin-top:18px}
+.hero .panel:not(.meta):not(.divida):not(.neg):nth-child(2){background:linear-gradient(135deg,#8A5CFF,#C45CFF)}
+.hero .panel:not(.meta):not(.divida):not(.neg):nth-child(3){background:linear-gradient(135deg,#FF7A3D,#FFA64D)}
+.hero .panel:not(.meta):not(.divida):not(.neg):nth-child(4){background:linear-gradient(135deg,#00A6D6,#35E0C9)}
+.hero .panel.neg{background:linear-gradient(135deg,#E5383B,#FF6B6B)}
+.vista-in,.vista-in .panel,.vista-in .chips>*,.vista-in .urow,.vista-in .biglist>li,.vista-in .mes-grid>*,.vista-in .sem-grid>*,.orc,.proj-card,.rg,.row.card{animation:none!important}
 </style>
 
 </head>
@@ -874,6 +907,7 @@ window.somBrilho = function (grande, aguardar) {
       <button class="tab" data-vista="gastos" aria-pressed="false"><span class="ico">🛒</span><span class="lbl"><span class="lg">Gastos</span><span class="sm">Gastos</span></span></button>
       <button class="tab" data-vista="salario" aria-pressed="false"><span class="ico">💰</span><span class="lbl"><span class="lg">Salário</span><span class="sm">Salário</span></span></button>
       <button class="tab" data-vista="plano" aria-pressed="false"><span class="ico">🎯</span><span class="lbl"><span class="lg">Planejamento</span><span class="sm">Planejar</span></span></button>
+      <button class="tab" data-vista="projecao" aria-pressed="false"><span class="ico">📈</span><span class="lbl"><span class="lg">Projeção</span><span class="sm">Projeção</span></span></button>
       <button class="tab" id="tabAdmin" hidden data-vista="admin" aria-pressed="false"><span class="ico">🛡️</span><span class="lbl"><span class="lg">Administração</span><span class="sm">Admin</span></span></button>
     </nav>
     <div class="user"><button class="linkbtn" id="userEmail" type="button" title="Alterar nome"></button><button class="btn ghost small" id="btnTema" type="button" aria-label="Alternar tema claro/escuro">🌙</button><button class="btn ghost small" id="btnSair">Sair</button></div>
@@ -928,7 +962,8 @@ window.somBrilho = function (grande, aguardar) {
       <ul class="hist biglist" id="lista_rendas"></ul>
     </section>
     <section id="vistaPlano" hidden aria-label="Planejamento">
-      <div class="toolbar"><div><h2 class="vt">Planejamento do mês</h2><p class="sub">Veja quanto ainda pode gastar, como o mês deve fechar e o que vence nos próximos dias.</p></div></div>
+      <div class="toolbar"><div><h2 class="vt">Planejamento do mês</h2><p class="sub">Veja quanto ainda pode gastar, como o mês deve fechar e o que vence nos próximos dias.</p></div>
+        <div class="mesnav"><button class="btn small" type="button" data-plm="-1" aria-label="Mês anterior">‹</button><strong class="mes" id="planMesLabel"></strong><button class="btn small" type="button" data-plm="1" aria-label="Próximo mês">›</button></div></div>
       <div class="hero tres" id="planoResumo"></div>
       <p class="help">A previsão usa o seu ritmo atual de gastos avulsos. Contas, parcelas e faturas já lançadas entram pelo valor cheio.</p>
       <section class="plano-bloco" aria-labelledby="tOrc">
@@ -936,17 +971,19 @@ window.somBrilho = function (grande, aguardar) {
         <div id="orcLista" class="orc-grid"></div>
         <div class="chips" id="orcSug" aria-label="Sugestões de orçamento"></div>
       </section>
-      <section class="plano-bloco" aria-labelledby="tParc">
-        <div class="plano-cab"><div><h3 class="sec-t" id="tParc">Parcelas já comprometidas</h3><p class="sub">O que já está parcelado no cartão para os próximos meses.</p></div></div>
-        <div class="mes-grid" id="planoParcelas"></div>
-      </section>
       <section class="plano-bloco" aria-labelledby="tAg">
-        <div class="plano-cab"><div><h3 class="sec-t" id="tAg">Agenda da semana</h3><p class="sub">De segunda a domingo. Toque em um dia para ver o que você tem que pagar.</p></div>
-          <div class="mesnav"><button class="btn small" type="button" data-sem="-1" aria-label="Semana anterior">‹</button><strong class="mes" id="semLabel"></strong><button class="btn small" type="button" data-sem="1" aria-label="Próxima semana">›</button><button class="btn small ghost" type="button" data-sem="0">Hoje</button></div></div>
+        <div class="plano-cab"><div><h3 class="sec-t" id="tAg">Agenda do mês</h3><p class="sub">Escolha o período e veja o que vence, dia a dia. Inclui contas da casa e faturas do cartão (com as parcelas).</p></div>
+          <div class="mesnav"><button class="btn small" type="button" data-agm="-1" aria-label="Mês anterior">‹</button><strong class="mes" id="agMesLabel"></strong><button class="btn small" type="button" data-agm="1" aria-label="Próximo mês">›</button><button class="btn small ghost" type="button" data-agm="0">Hoje</button></div></div>
         <div id="agendaAviso"></div>
-        <div class="semana" id="agendaSemana" role="group" aria-label="Dias da semana"></div>
-        <div id="agendaDia" aria-live="polite"></div>
+        <div class="per-grid" id="agendaPeriodos" role="group" aria-label="Períodos do mês"></div>
+        <div id="agendaLista" aria-live="polite"></div>
       </section>
+    </section>
+    <section id="vistaProj" hidden aria-label="Projeção">
+      <div class="toolbar"><div><h2 class="vt">Projeção dos próximos meses</h2><p class="sub">O que já está comprometido no cartão e o que as contas da casa devem custar, mês a mês.</p></div></div>
+      <div class="hero tres" id="projResumo"></div>
+      <p class="help">Luz e água usam a estimativa pela média das contas anteriores; internet repete a última. Não inclui gastos avulsos nem salário.</p>
+      <div class="proj-grid" id="projLista"></div>
     </section>
     <section id="vistaAdmin" hidden aria-label="Administração">
       <div class="hero tres" id="adminKpis"></div>
@@ -1342,10 +1379,10 @@ function prazoTxt(i) {
   return vencido ? `<span class="warn">Prazo vencido em ${fmtData(i.data_limite)}</span>` : `Até ${fmtData(i.data_limite)}`;
 }
 function linha(i, k = 0) {
-  const s = soma(i), pct = Math.min(100, s / i.valor_total * 100), ok = feito(i), [g1, g2] = corItem(i);
+  const s = soma(i), pct = Math.min(100, s / i.valor_total * 100), ok = feito(i), verde = ok && i.tipo === 'divida', [g1, g2] = verde ? ['#00B87A', '#2BD98B'] : corItem(i);
   const sl = ok ? 'Concluída 🏆' : pct >= 90 ? 'Quase lá! 🔥' : pct >= 50 ? 'Passou da metade' : '';
   const acao = ok ? '' : `<button class="btn small go" data-add="${i.id}">${i.tipo === 'meta' ? 'Guardar valor' : 'Registrar pagamento'}</button>`;
-  return `<article class="row card${ok ? ' feito' : ''}" style="--g1:${g1};--g2:${g2};animation-delay:${Math.min(k, 12) * 60}ms" data-id="${i.id}">
+  return `<article class="row card${ok ? ' feito' : ''}${verde ? ' feito-d' : ''}" style="--g1:${g1};--g2:${g2};animation-delay:${Math.min(k, 12) * 60}ms" data-id="${i.id}">
     <div class="ctop"><span class="tag ${i.tipo}">${i.tipo === 'meta' ? 'Meta' : 'Dívida'}</span>${sl ? `<span class="selo">${sl}</span>` : ''}</div>
     <div class="cmid"><div class="cinfo"><button class="nome" data-open="${i.id}">${esc(i.nome)}</button><div class="prazo">${prazoTxt(i)}</div></div>${ring(pct, '', 84, 10)}</div>
     <div class="camts"><strong>${brl(Math.min(s, i.valor_total))}</strong><span>de ${brl(i.valor_total)}</span></div>
@@ -1356,11 +1393,11 @@ function render() {
   $('#hero').innerHTML = painel('meta') + painel('divida');
   let l = itens.slice();
   if (filtro === 'meta' || filtro === 'divida') l = l.filter(i => i.tipo === filtro);
-  if (filtro === 'feito') l = l.filter(feito);
+  if (filtro === 'feito') l = l.filter(feito); else l = l.filter(i => !(i.tipo === 'divida' && feito(i)));   // dívida quitada só aparece em Concluídos
   l.sort((a, b) => feito(a) - feito(b));
   if (!l.length) {
-    const vazio = filtro === 'todos' ? 'Você ainda não cadastrou nada. Comece com a primeira meta ou dívida.' : 'Nenhum item nesta lista.';
-    $('#lista').innerHTML = `<div class="vazio"><div class="vz">🚀</div><p>${vazio}</p>${filtro === 'todos' ? '<button class="btn primary" data-novo>Cadastrar primeiro item</button>' : ''}</div>`;
+    const vazio = !itens.length ? 'Você ainda não cadastrou nada. Comece com a primeira meta ou dívida.' : filtro === 'feito' ? 'Nenhum item concluído ainda.' : 'Nada pendente aqui. As dívidas quitadas ficam em Concluídos 🎉';
+    $('#lista').innerHTML = `<div class="vazio"><div class="vz">🚀</div><p>${vazio}</p>${!itens.length ? '<button class="btn primary" data-novo>Cadastrar primeiro item</button>' : ''}</div>`;
   } else $('#lista').innerHTML = l.map((i, k) => linha(i, k)).join('');
   saudar(); contar();
 }
@@ -1393,8 +1430,10 @@ function saudar() {
   $('#saudacao').innerHTML = !itens.length ? `<h1>Olá${nm}! 👋</h1><p>Cadastre sua primeira meta ou dívida e veja o progresso crescer.</p>`
     : `<h1>Olá${nm}! 👋</h1><p>Você já avançou <b>${p}%</b> do caminho${c ? ` e concluiu <b>${c}</b> ${c === 1 ? 'item' : 'itens'} 🎉` : ''}. Continue assim!</p>`;
 }
-function contar() {
-  const calmo = matchMedia('(prefers-reduced-motion: reduce)').matches;
+let contouUmaVez = false;
+function contar() {   // a contagem animada roda só na primeira vez; depois os valores já aparecem prontos (sem piscar)
+  const calmo = contouUmaVez || matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (document.querySelector('[data-count]')) contouUmaVez = true;
   document.querySelectorAll('[data-count]').forEach(el => {
     const to = Number(el.dataset.count); if (calmo) return;
     const t0 = performance.now();
@@ -1557,15 +1596,17 @@ function trocarVista(v) {
   $('#vistaGastos').hidden = v !== 'gastos';
   $('#vistaSalario').hidden = v !== 'salario';
   $('#vistaPlano').hidden = v !== 'plano';
+  $('#vistaProj').hidden = v !== 'projecao';
   $('#vistaAdmin').hidden = v !== 'admin';
   document.querySelectorAll('#navAdmin .tab').forEach(b => b.setAttribute('aria-pressed', b.dataset.vista === v));
   requestAnimationFrame(moverInd);
-  const secao = $({ meu: '#vistaMeu', cartoes: '#vistaCartoes', contas: '#vistaContas', gastos: '#vistaGastos', salario: '#vistaSalario', plano: '#vistaPlano', admin: '#vistaAdmin' }[v]);
+  const secao = $({ meu: '#vistaMeu', cartoes: '#vistaCartoes', contas: '#vistaContas', gastos: '#vistaGastos', salario: '#vistaSalario', plano: '#vistaPlano', projecao: '#vistaProj', admin: '#vistaAdmin' }[v]);
   if (secao) { secao.classList.remove('vista-in'); void secao.offsetWidth; secao.classList.add('vista-in'); }
   if (v === 'admin' && ehAdmin) carregarAdmin();
   if (v === 'cartoes' && userId) carregarCartoes();
   if (v === 'contas' && userId) carregarContas();
-  if (v === 'plano' && userId) carregarPlano();
+  if (v === 'plano' && userId) { planMes = mesSel; carregarPlano(); }
+  if (v === 'projecao' && userId) carregarProj();
   if ((v === 'gastos' || v === 'salario') && userId) carregarMes();
 }
 $('#navAdmin').addEventListener('click', e => { const b = e.target.closest('[data-vista]'); if (b) trocarVista(b.dataset.vista); });
@@ -1721,7 +1762,7 @@ async function carregarCartoes() {
   const { data, error } = r;
   if (error) { toast('Não foi possível carregar os cartões. Tente de novo.', true); return; }
   cartoes = data; if (!fechX) { const m = fechaLocal(); cartoes.forEach(c => { c.dia_fechamento = m[c.id] || null; }); }
-  renderCartoes(); marcarAbas(); if (vista === 'plano') renderAgenda();
+  renderCartoes(); marcarAbas(); if (vista === 'plano') renderAgenda(); if (vista === 'projecao') renderProj();
   if (cartaoId) { cartoes.some(c => c.id === cartaoId) ? renderCartaoDet() : $('#dlgCartaoDet').close(); }
 }
 const PALX = [['#6C4DFF', '#3D8BFF'], ['#FF4D8D', '#FF7A59'], ['#00B8A3', '#2BD98B'], ['#8A5CFF', '#C45CFF'], ['#1E1E2C', '#4A4A63'], ['#F59E0B', '#EF4444']];
@@ -2004,7 +2045,7 @@ async function carregarContas() {
     .eq('user_id', userId).order('vencimento', { ascending: false });
   if (error) { toast('Não foi possível carregar as contas. Tente de novo.', true); return; }
   contasFat = data.map(f => ({ ...f, valor: f.valor == null ? null : Number(f.valor), consumo: f.consumo == null ? null : Number(f.consumo) }));
-  renderContas(); marcarAbas(); if (vista === 'plano') renderAgenda();
+  renderContas(); marcarAbas(); if (vista === 'plano') renderAgenda(); if (vista === 'projecao') renderProj();
   if (contaTipo) renderContaDet();
 }
 
@@ -2587,7 +2628,8 @@ const ATUALIZADO_EM = /^\d{4}-/.test(DEPLOY_EM) ? DEPLOY_EM : '2026-10-20T15:52:
 })();
 
 /* ---------- planejamento: por dia, previsão, orçamentos e agenda ---------- */
-let planoDados = null, orcs = [], orcsOk = false, orcEdit = null;
+let planMes = null, planoDados = null, orcs = [], orcsOk = false, orcEdit = null;
+const plNz = s => String(s).normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toLowerCase();
 const plCap = s => s.charAt(0).toUpperCase() + s.slice(1);
 const plAdd = (iso, n) => { const d = new Date(iso + 'T00:00:00'); d.setDate(d.getDate() + n); return d.toLocaleDateString('sv-SE'); };
 const plDias = iso => Math.round((new Date(iso + 'T00:00:00') - new Date(hojeISO() + 'T00:00:00')) / 86400000);
@@ -2598,8 +2640,8 @@ async function carregarOrcs() {
   orcs = r.data.map(x => ({ ...x, limite: Number(x.limite) })); orcsOk = true;
 }
 async function carregarPlano() {
-  semIni = null; diaSel = null;
-  const mes = hojeISO().slice(0, 7);
+  semIni = null; diaSel = null; agPer = null;
+  const mes = planMes || hojeISO().slice(0, 7); agMes = mes;
   try { const [t, cx] = await Promise.all([totaisMes(mes), caixaInicial(mes), carregarOrcs()]); planoDados = { ...t, caixa: cx, mes }; }
   catch (e) { toast('Não foi possível carregar o planejamento. Tente de novo.', true); return; }
   await Promise.all([carregarCartoes(), carregarContas()]);
@@ -2622,64 +2664,87 @@ function agendaItens() {   // tudo que ainda precisa ser pago: contas da casa e 
   });
   return it;
 }
+let agMes = null, agPer = null;
+const PERIODOS = [{ k: 'todo', n: 'Mês todo' }, { k: '1', n: 'Dias 1 a 10', a: 1, b: 10 }, { k: '2', n: 'Dias 11 a 20', a: 11, b: 20 }, { k: '3', n: 'Dia 21 em diante', a: 21, b: 31 }];
+const plSoma = l => l.reduce((a, x) => a + Number(x.v || 0), 0);
+const plNoPer = (l, p) => p.a ? l.filter(x => { const n = Number(x.d.slice(8)); return n >= p.a && n <= p.b; }) : l;
+const plPerDe = iso => { const n = Number(iso.slice(8)); return n <= 10 ? '1' : n <= 20 ? '2' : '3'; };
 function renderAgenda() {
-  const box = $('#agendaSemana'); if (!box) return;
-  const hoje = hojeISO();
-  if (!semIni) semIni = segundaDe(hoje);
-  const dias = Array.from({ length: 7 }, (_, i) => plAdd(semIni, i));
-  if (!diaSel || !dias.includes(diaSel)) diaSel = dias.includes(hoje) ? hoje : dias[0];
-  const todos = agendaItens(), porDia = {};
-  todos.forEach(x => (porDia[x.d] = porDia[x.d] || []).push(x));
-  const tot = l => l.reduce((a, x) => a + Number(x.v || 0), 0);
-  $('#semLabel').textContent = `${plCurto(dias[0])} a ${plCurto(dias[6])}`;
-  box.innerHTML = dias.map((d, i) => {
-    const l = porDia[d] || [], atraso = d < hoje && l.length;
-    return `<button type="button" class="dia${d === hoje ? ' hoje' : ''}${d === diaSel ? ' sel' : ''}${l.length ? ' tem' : ''}${atraso ? ' atraso' : ''}" data-dia="${d}" aria-pressed="${d === diaSel}" aria-label="${DIAS_LONGO[i]}, ${fmtData(d)}: ${l.length ? l.length + ' a pagar, ' + brl(tot(l)) : 'nada a pagar'}"><span class="dn">${DIAS_SEM[i]}</span><span class="dd">${d.slice(8)}</span><span class="dp">${'<i></i>'.repeat(Math.min(3, l.length))}</span><span class="dv">${l.length ? brl(tot(l)) : '—'}</span></button>`;
+  const box = $('#agendaPeriodos'); if (!box) return;
+  const hoje = hojeISO(), mesHoje = hoje.slice(0, 7);
+  if (!agMes) agMes = mesHoje;
+  if (!agPer) agPer = agMes === mesHoje ? plPerDe(hoje) : 'todo';
+  const todos = agendaItens(), doMes = todos.filter(x => x.d.slice(0, 7) === agMes);
+  $('#agMesLabel').textContent = plCap(mesNome(agMes));
+  const tots = PERIODOS.slice(1).map(p => plSoma(plNoPer(doMes, p))), mx = Math.max(...tots);
+  box.innerHTML = PERIODOS.map((p, i) => {
+    const l = plNoPer(doMes, p), t = plSoma(l), pesada = i > 0 && mx > 0 && t === mx, agora = agMes === mesHoje && i > 0 && p.k === plPerDe(hoje);
+    return `<button type="button" class="per${p.k === agPer ? ' sel' : ''}${pesada ? ' pesada' : ''}" style="--i:${i}" data-per="${p.k}" aria-pressed="${p.k === agPer}"><span class="pn">${p.n}${agora ? ' · agora' : ''}</span><b>${brl(t)}</b><small>${l.length ? `${l.length} ${l.length === 1 ? 'pagamento' : 'pagamentos'}` : 'nada a pagar'}</small>${pesada ? '<em>mais pesado</em>' : ''}</button>`;
   }).join('');
-  // aviso: total da semana e contas vencidas em semanas anteriores
-  const semTot = dias.reduce((a, d) => a + tot(porDia[d] || []), 0), semQtd = dias.reduce((a, d) => a + (porDia[d] || []).length, 0);
-  const venc = todos.filter(x => x.d < hoje).sort((a, b) => a.d.localeCompare(b.d)), antes = venc.filter(x => x.d < semIni);
-  $('#agendaAviso').innerHTML = `<div class="ag-aviso"><span>${semQtd ? `Nesta semana: <b>${brl(semTot)}</b> em ${semQtd} ${semQtd === 1 ? 'pagamento' : 'pagamentos'}` : 'Nada a pagar nesta semana 🎉'}</span></div>`
-    + (antes.length ? `<div class="ag-aviso atraso"><span>⚠️ ${antes.length} ${antes.length === 1 ? 'pagamento vencido' : 'pagamentos vencidos'} em semanas anteriores</span><button type="button" class="btn small" data-atraso="${antes[0].d}">Ver</button></div>` : '');
-  // detalhe do dia clicado
-  const l = (porDia[diaSel] || []).slice().sort((a, b) => a.t.localeCompare(b.t)), dd = plDias(diaSel), rel = dd === 0 ? 'hoje' : dd === 1 ? 'amanhã' : dd === -1 ? 'ontem' : dd > 0 ? `em ${dd} dias` : `há ${-dd} dias`;
-  const st = x => { if (dd < 0) return balaoHtml('vermelho', `Vencida há ${-dd} dia(s)`); if (dd === 0) return balaoHtml('vermelho', 'Vence hoje'); const n = nivelVenc(dd, 3); return n ? balaoHtml(n, dd === 1 ? 'Vence amanhã' : `Vence em ${dd} dias`) : ''; };
-  $('#agendaDia').innerHTML = `<h4 class="ag-dia-t">${DIAS_LONGO[dias.indexOf(diaSel)]}, ${fmtData(diaSel)} <span class="sub" style="font-weight:400">(${rel})</span></h4>`
-    + (l.length ? `<div class="rtotal"><span>A pagar neste dia</span><b>${brl(tot(l))}</b></div>` : '')
-    + `<ul class="hist biglist">${l.length ? l.map(x => `<li><div class="desc"><strong>${x.ico} ${esc(x.t)}</strong><small>${st(x)}</small></div><span class="val">${x.v == null ? 'sem valor' : brl(Number(x.v))}</span><button class="del" type="button" data-go="${esc(x.go)}">Abrir</button></li>`).join('') : '<li class="hist-vazio">Nada para pagar neste dia. 🎉</li>'}</ul>`;
+  const fora = todos.filter(x => x.d < hoje && x.d.slice(0, 7) !== agMes).sort((a, b) => a.d.localeCompare(b.d));
+  $('#agendaAviso').innerHTML = fora.length ? `<div class="ag-aviso atraso"><span>⚠️ ${fora.length} ${fora.length === 1 ? 'pagamento vencido' : 'pagamentos vencidos'} em outros meses</span><button type="button" class="btn small" data-atraso="${fora[0].d}">Ver</button></div>` : '';
+  const per = PERIODOS.find(p => p.k === agPer) || PERIODOS[0];
+  const l = plNoPer(doMes, per).sort((a, b) => a.d.localeCompare(b.d) || a.t.localeCompare(b.t)), porDia = {};
+  l.forEach(x => (porDia[x.d] = porDia[x.d] || []).push(x));
+  const st = (x, dd) => { if (dd < 0) return balaoHtml('vermelho', `Vencida há ${-dd} dia(s)`); if (dd === 0) return balaoHtml('vermelho', 'Vence hoje'); const n = nivelVenc(dd, 3); return n ? balaoHtml(n, dd === 1 ? 'Vence amanhã' : `Vence em ${dd} dias`) : ''; };
+  const SEM = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+  $('#agendaLista').innerHTML = `<div class="rtotal"><span>${per.n} · a pagar</span><b>${brl(plSoma(l))}</b></div>` + (l.length ? Object.keys(porDia).map(d => {
+    const dd = plDias(d), rel = dd === 0 ? 'hoje' : dd === 1 ? 'amanhã' : dd === -1 ? 'ontem' : dd > 0 ? `em ${dd} dias` : `há ${-dd} dias`;
+    return `<div class="ag-grupo${d === hoje ? ' hoje' : ''}"><div class="ag-dia-cab"><strong>${SEM[new Date(d + 'T00:00:00').getDay()]}, ${plCurto(d)} <span class="sub">(${rel})</span></strong><span>${brl(plSoma(porDia[d]))}</span></div><ul class="hist biglist">${porDia[d].map(x => `<li><div class="desc"><strong>${x.ico} ${esc(x.t)}</strong><small>${st(x, dd)}</small></div><span class="val">${x.v == null ? 'sem valor' : brl(Number(x.v))}</span><button class="del" type="button" data-go="${esc(x.go)}">Abrir</button></li>`).join('')}</ul></div>`;
+  }).join('') : '<p class="hist-vazio">Nada para pagar neste período. 🎉</p>');
 }
 $('#vistaPlano').addEventListener('click', e => {
-  const s = e.target.closest('[data-sem]');
-  if (s) { const n = Number(s.dataset.sem); if (n === 0) { semIni = segundaDe(hojeISO()); diaSel = hojeISO(); } else semIni = plAdd(semIni || segundaDe(hojeISO()), n * 7); return renderAgenda(); }
-  const d = e.target.closest('[data-dia]');
-  if (d) { diaSel = d.dataset.dia; renderAgenda(); const b = $('#agendaSemana .dia.sel'); if (b) b.focus({ preventScroll: true }); return; }
+  const pm = e.target.closest('[data-plm]');
+  if (pm) { planMes = mesAdd(planMes || hojeISO().slice(0, 7), Number(pm.dataset.plm)); return carregarPlano(); }
+  const m = e.target.closest('[data-agm]');
+  if (m) { const n = Number(m.dataset.agm); agMes = n === 0 ? hojeISO().slice(0, 7) : addMeses(agMes + '-01', n, 1).slice(0, 7); agPer = agMes === hojeISO().slice(0, 7) ? plPerDe(hojeISO()) : 'todo'; return renderAgenda(); }
+  const p = e.target.closest('[data-per]');
+  if (p) { agPer = p.dataset.per; return renderAgenda(); }
   const a = e.target.closest('[data-atraso]');
-  if (a) { semIni = segundaDe(a.dataset.atraso); diaSel = a.dataset.atraso; return renderAgenda(); }
+  if (a) { agMes = a.dataset.atraso.slice(0, 7); agPer = plPerDe(a.dataset.atraso); return renderAgenda(); }
   const g = e.target.closest('[data-go]');
   if (g) { const [k, id] = g.dataset.go.split(':'); return k === 'cartao' ? abrirCartao(id) : abrirConta(id); }
 });
+/* ---------- aba Projeção: próximos 6 meses ---------- */
+async function carregarProj() { await Promise.all([carregarCartoes(), carregarContas()]); renderProj(); }
+function renderProj() {
+  if (!$('#projLista')) return;
+  const mes0 = hojeISO().slice(0, 7), ms = Array.from({ length: 6 }, (_, i) => addMeses(mes0 + '-01', i, 1).slice(0, 7));
+  const M = {}; ms.forEach(m => M[m] = { cartao: 0, lanc: 0, est: {} });
+  cartoes.forEach(c => abertasC(c).forEach(x => { const m = x.data.slice(0, 7); if (M[m]) M[m].cartao += Number(x.valor); }));
+  Object.keys(CONTAS).forEach(t => {
+    contasFat.filter(f => f.tipo === t && !f.paga).forEach(f => { const m = f.vencimento.slice(0, 7); if (M[m]) M[m].lanc += Number(f.valor || 0); });
+    const p = projetar(t, 8);
+    if (p) p.itens.forEach(it => { const m = it.venc.slice(0, 7); if (M[m] && !contasFat.some(f => f.tipo === t && !f.paga && f.vencimento.slice(0, 7) === m)) M[m].est[t] = (M[m].est[t] || 0) + it.valor; });
+  });
+  const tot = m => M[m].cartao + M[m].lanc + Object.values(M[m].est).reduce((a, b) => a + b, 0), tt = ms.map(tot), soma = tt.reduce((a, b) => a + b, 0), mx = Math.max(...tt), im = tt.indexOf(mx);
+  $('#projResumo').innerHTML = `<div class="panel"><h2>Próximos 6 meses</h2><p class="num">${brl(soma)}</p><p class="of">cartão e contas da casa</p></div><div class="panel ${mx > 0 ? 'neg' : ''}"><h2>Mês mais pesado</h2><p class="num">${mx > 0 ? plCap(mesNome(ms[im])) : '—'}</p><p class="of">${mx > 0 ? brl(mx) : 'nada comprometido ainda'}</p></div><div class="panel"><h2>Média por mês</h2><p class="num">${brl(soma / 6)}</p><p class="of">nos próximos 6 meses</p></div>`;
+  $('#projLista').innerHTML = ms.map((m, i) => {
+    const d = M[m], linhas = [];
+    if (d.cartao > 0) linhas.push(['💳', 'Cartão (parcelas e compras)', d.cartao, '']);
+    if (d.lanc > 0) linhas.push(['🧾', 'Contas da casa lançadas', d.lanc, '']);
+    Object.keys(d.est).forEach(t => linhas.push([CONTAS[t].emoji, CONTAS[t].nome, d.est[t], 'estimada']));
+    return `<article class="proj-card${i === im && mx > 0 ? ' pesada' : ''}" style="--i:${i}"><div class="proj-top"><strong>${plCap(mesNome(m))}${i === 0 ? ' <small>· este mês</small>' : ''}</strong>${i === im && mx > 0 ? '<em>mais pesado</em>' : ''}</div><b class="proj-tot">${brl(tt[i])}</b><div class="bar"><i style="width:${mx ? tt[i] / mx * 100 : 0}%"></i></div><ul class="proj-lin">${linhas.length ? linhas.map(l => `<li><span>${l[0]} ${l[1]}${l[3] ? ` <small>${l[3]}</small>` : ''}</span><b>${brl(l[2])}</b></li>`).join('') : '<li class="hist-vazio">Nada comprometido.</li>'}</ul></article>`;
+  }).join('');
+}
 function renderPlano() {
   const t = planoDados; if (!t) return;
-  const hj = new Date(), dm = new Date(hj.getFullYear(), hj.getMonth() + 1, 0).getDate(), dia = hj.getDate(), restam = dm - dia + 1;
-  const total = t.renda + t.caixa, livre = total - t.despesas, porDia = livre > 0 ? livre / restam : 0;
-  const ritmo = t.gastos / dia, saldoPrev = total - ((t.despesas - t.gastos) + ritmo * dm);
+  $('#planMesLabel').textContent = plCap(mesNome(t.mes));
+  const hj = new Date(), atual = hojeISO().slice(0, 7), [py, pm] = t.mes.split('-').map(Number), dm = new Date(py, pm, 0).getDate(), dia = t.mes === atual ? hj.getDate() : t.mes < atual ? dm : 0, restam = t.mes === atual ? dm - dia + 1 : t.mes > atual ? dm : 0;
+  const total = t.renda + t.caixa, livre = total - t.despesas, porDia = livre > 0 && restam ? livre / restam : 0;
+  const ritmo = t.gastos / (dia || dm), saldoPrev = total - ((t.despesas - t.gastos) + ritmo * dm);
   $('#planoResumo').innerHTML =
-    `<div class="panel ${!total ? '' : livre > 0 ? 'meta' : 'neg'}"><h2>Pode gastar por dia</h2><p class="num" data-count="${porDia}">${brl(porDia)}</p><p class="of">${!total ? 'cadastre seu salário na aba Salário' : livre > 0 ? `${brl(livre)} livres para ${restam} dia(s) até o fim do mês` : 'o mês já está comprometido: evite novos gastos'}</p></div>
-     <div class="panel ${!total ? '' : saldoPrev >= 0 ? 'meta' : 'neg'}"><h2>${saldoPrev >= 0 ? 'Previsão: sobra' : 'Previsão: falta'}</h2><p class="num" data-count="${Math.abs(saldoPrev)}">${brl(Math.abs(saldoPrev))}</p><p class="of">${!total ? 'sem salário cadastrado' : `mantendo ${brl(ritmo)} por dia em gastos avulsos`}</p></div>
+    `<div class="panel ${!total ? '' : livre > 0 ? 'meta' : 'neg'}"><h2>Pode gastar por dia</h2><p class="num" data-count="${porDia}">${brl(porDia)}</p><p class="of">${!total ? 'cadastre seu salário na aba Salário' : !restam ? 'mês encerrado' : livre > 0 ? `${brl(livre)} livres para ${restam} dia(s) até o fim do mês` : 'o mês já está comprometido: evite novos gastos'}</p></div>
+     <div class="panel ${!total ? '' : saldoPrev >= 0 ? '' : 'neg'}"><h2>${saldoPrev >= 0 ? 'Previsão: sobra' : 'Previsão: falta'}</h2><p class="num" data-count="${Math.abs(saldoPrev)}">${brl(Math.abs(saldoPrev))}</p><p class="of">${!total ? 'sem salário cadastrado' : `mantendo ${brl(ritmo)} por dia em gastos avulsos`}</p></div>
      <div class="panel"><h2>Já comprometido</h2><p class="num" data-count="${t.despesas}">${brl(t.despesas)}</p><p class="of">${total ? `${Math.min(999, Math.round(t.despesas / total * 100))}% do que você tem este mês` : 'despesas do mês'}</p></div>`;
   // orçamentos
   const gc = {}; t.listaG.forEach(x => { const k = x.descricao.trim().toLowerCase(); gc[k] = (gc[k] || 0) + Number(x.valor); });
   $('#orcLista').innerHTML = orcs.length ? orcs.map((o, i) => {
-    const g = gc[o.categoria.trim().toLowerCase()] || 0, pct = g / o.limite * 100, cls = pct >= 100 ? 'estoura' : pct >= 80 ? 'perto' : '';
+    const g = t.listaG.reduce((a, x) => { const d = plNz(x.descricao), c = plNz(o.categoria); return d === c || d.includes(c) ? a + Number(x.valor) : a; }, 0), pct = g / o.limite * 100, cls = pct >= 100 ? 'estoura' : pct >= 80 ? 'perto' : '';
     return `<article class="orc ${cls}" style="--i:${i}" data-orc="${o.id}" tabindex="0" role="button" aria-label="Editar orçamento ${esc(o.categoria)}"><div class="orc-top"><strong>${esc(o.categoria)}</strong>${cls ? balaoHtml(pct >= 100 ? 'vermelho' : 'amarelo', pct >= 100 ? 'Estourou' : 'Perto do teto') : ''}</div><div class="orc-val"><b>${brl(g)}</b><span>de ${brl(o.limite)}</span></div><div class="bar"><i style="width:${Math.min(100, pct)}%"></i></div><div class="orc-amts"><span>${pct >= 100 ? `${brl(g - o.limite)} acima` : `faltam ${brl(o.limite - g)}`}</span><span>${Math.round(Math.min(999, pct))}%</span></div></article>`;
   }).join('') : '<p class="hist-vazio">Nenhum orçamento ainda. Defina um teto para um gasto (por exemplo, Mercado) e acompanhe aqui.</p>';
   const gr = gruposGastos(t), sug = Object.keys(gr).filter(k => !orcs.some(o => o.categoria.trim().toLowerCase() === k)).sort((a, b) => gr[b].v - gr[a].v).slice(0, 4);
   $('#orcSug').innerHTML = sug.length ? '<span class="help" style="width:100%;margin:6px 0 0">Sugestões a partir dos seus gastos:</span>' + sug.map((k, i) => `<button type="button" class="chip-btn gasto-chip" style="--i:${i}" data-sugorc="${esc(gr[k].n)}"><b>${esc(gr[k].n)}</b><span>${brl(gr[k].v)} no mês</span></button>`).join('') : '';
-  // parcelas futuras
-  const fimMes = t.mes + '-31', porMes = {};
-  cartoes.forEach(c => abertasC(c).forEach(x => { if (x.data > fimMes) { const m = x.data.slice(0, 7); porMes[m] = (porMes[m] || 0) + Number(x.valor); } }));
-  const ms = Object.keys(porMes).sort().slice(0, 6);
-  $('#planoParcelas').innerHTML = ms.length ? ms.map((m, i) => `<div class="mes-card" style="--i:${i}"><span>${plCap(mesNome(m))}</span><b>${brl(porMes[m])}</b></div>`).join('') : '<p class="hist-vazio">Nenhuma parcela futura no cartão.</p>';
   renderAgenda();
   contar();
 }
