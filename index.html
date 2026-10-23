@@ -608,6 +608,32 @@ body::before{content:"";position:fixed;inset:-25%;z-index:-1;pointer-events:none
 .sem-card em{position:absolute;top:-10px;right:12px;font-style:normal;font-size:.72rem;font-weight:800;padding:2px 10px;border-radius:99px;background:var(--brand);color:#fff}
 .vista-in .mes-grid>*,.vista-in .sem-grid>*{animation:pop .55s cubic-bezier(.2,.8,.2,1) backwards;animation-delay:calc(var(--i,0)*45ms)}
 @media (max-width:720px){.sem-grid{grid-template-columns:repeat(2,minmax(0,1fr));row-gap:18px}.plano-bloco{margin-top:30px}}
+
+/* ===== agenda semanal ===== */
+.semana{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:8px;margin:12px 0 16px}
+.dia{position:relative;display:flex;flex-direction:column;align-items:center;gap:3px;padding:10px 4px 9px;min-height:108px;border:1px solid var(--line);border-radius:16px;background:var(--surface);color:var(--ink);cursor:pointer;font-variant-numeric:tabular-nums;box-shadow:var(--shadow)}
+.dia .dn{font-size:.74rem;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
+.dia .dd{font-family:var(--display);font-weight:800;font-size:1.4rem;line-height:1.1}
+.dia .dp{display:flex;gap:3px;height:8px;align-items:center}
+.dia .dp i{width:7px;height:7px;border-radius:50%;background:var(--divida)}
+.dia .dv{font-size:.72rem;font-weight:700;color:var(--muted);max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dia.tem .dv{color:var(--divida)}
+.dia.atraso .dp i{background:#E5383B}.dia.atraso .dv{color:#E5383B}
+.dia.hoje{border-color:var(--brand);box-shadow:0 0 0 2px var(--brand),var(--shadow)}
+.dia.hoje .dn::after{content:" · hoje";text-transform:lowercase;color:var(--brand)}
+.dia.sel{background:linear-gradient(135deg,#6C4DFF,#FF4D8D);border-color:transparent;color:#fff;box-shadow:0 10px 24px rgba(108,77,255,.4);transform:translateY(-3px)}
+.dia.sel .dn,.dia.sel .dv,.dia.sel .dn::after{color:#fff}
+.dia.sel .dp i{background:#fff}
+.dia:not(.sel):hover{transform:translateY(-2px)}
+.ag-aviso{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin:8px 0 0;padding:10px 14px;border-radius:14px;background:color-mix(in srgb,var(--brand) 10%,transparent);font-size:.95rem}
+.ag-aviso.atraso{background:rgba(229,56,59,.12);color:#E5383B;font-weight:600}
+.ag-dia-t{font-size:1.15rem;margin:4px 0 0}
+@media (max-width:720px){
+  .semana{gap:5px}
+  .dia{min-height:84px;padding:8px 2px;border-radius:13px}
+  .dia .dv{display:none}.dia .dd{font-size:1.15rem}.dia .dn{font-size:.66rem}
+  .dia.hoje .dn::after{content:"";}
+}
 </style>
 
 </head>
@@ -915,9 +941,11 @@ window.somBrilho = function (grande, aguardar) {
         <div class="mes-grid" id="planoParcelas"></div>
       </section>
       <section class="plano-bloco" aria-labelledby="tAg">
-        <div class="plano-cab"><div><h3 class="sec-t" id="tAg">Agenda dos próximos 30 dias</h3><p class="sub">Quanto vence em cada semana, com contas, faturas e parcelas.</p></div></div>
-        <div class="sem-grid" id="agendaSemanas"></div>
-        <ul class="hist biglist" id="agendaLista"></ul>
+        <div class="plano-cab"><div><h3 class="sec-t" id="tAg">Agenda da semana</h3><p class="sub">De segunda a domingo. Toque em um dia para ver o que você tem que pagar.</p></div>
+          <div class="mesnav"><button class="btn small" type="button" data-sem="-1" aria-label="Semana anterior">‹</button><strong class="mes" id="semLabel"></strong><button class="btn small" type="button" data-sem="1" aria-label="Próxima semana">›</button><button class="btn small ghost" type="button" data-sem="0">Hoje</button></div></div>
+        <div id="agendaAviso"></div>
+        <div class="semana" id="agendaSemana" role="group" aria-label="Dias da semana"></div>
+        <div id="agendaDia" aria-live="polite"></div>
       </section>
     </section>
     <section id="vistaAdmin" hidden aria-label="Administração">
@@ -1693,7 +1721,7 @@ async function carregarCartoes() {
   const { data, error } = r;
   if (error) { toast('Não foi possível carregar os cartões. Tente de novo.', true); return; }
   cartoes = data; if (!fechX) { const m = fechaLocal(); cartoes.forEach(c => { c.dia_fechamento = m[c.id] || null; }); }
-  renderCartoes(); marcarAbas();
+  renderCartoes(); marcarAbas(); if (vista === 'plano') renderAgenda();
   if (cartaoId) { cartoes.some(c => c.id === cartaoId) ? renderCartaoDet() : $('#dlgCartaoDet').close(); }
 }
 const PALX = [['#6C4DFF', '#3D8BFF'], ['#FF4D8D', '#FF7A59'], ['#00B8A3', '#2BD98B'], ['#8A5CFF', '#C45CFF'], ['#1E1E2C', '#4A4A63'], ['#F59E0B', '#EF4444']];
@@ -1976,7 +2004,7 @@ async function carregarContas() {
     .eq('user_id', userId).order('vencimento', { ascending: false });
   if (error) { toast('Não foi possível carregar as contas. Tente de novo.', true); return; }
   contasFat = data.map(f => ({ ...f, valor: f.valor == null ? null : Number(f.valor), consumo: f.consumo == null ? null : Number(f.consumo) }));
-  renderContas(); marcarAbas();
+  renderContas(); marcarAbas(); if (vista === 'plano') renderAgenda();
   if (contaTipo) renderContaDet();
 }
 
@@ -2570,18 +2598,66 @@ async function carregarOrcs() {
   orcs = r.data.map(x => ({ ...x, limite: Number(x.limite) })); orcsOk = true;
 }
 async function carregarPlano() {
+  semIni = null; diaSel = null;
   const mes = hojeISO().slice(0, 7);
   try { const [t, cx] = await Promise.all([totaisMes(mes), caixaInicial(mes), carregarOrcs()]); planoDados = { ...t, caixa: cx, mes }; }
   catch (e) { toast('Não foi possível carregar o planejamento. Tente de novo.', true); return; }
   await Promise.all([carregarCartoes(), carregarContas()]);
   renderPlano();
 }
-function agendaItens() {
+/* ---------- agenda semanal (segunda a domingo) ---------- */
+let semIni = null, diaSel = null;
+const segundaDe = iso => { const d = new Date(iso + 'T00:00:00'); d.setDate(d.getDate() - ((d.getDay() + 6) % 7)); return d.toLocaleDateString('sv-SE'); };
+const DIAS_SEM = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'];
+const DIAS_LONGO = ['Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado', 'Domingo'];
+function agendaItens() {   // tudo que ainda precisa ser pago: contas da casa e faturas de cartão (inclusive as futuras)
   const it = [];
-  contasFat.filter(f => !f.paga && plDias(f.vencimento) <= 30).forEach(f => { const c = CONTAS[f.tipo] || { nome: f.tipo, emoji: '🧾' }; it.push({ d: f.vencimento, ico: c.emoji, t: `Conta de ${c.nome}`, v: f.valor }); });
-  cartoes.forEach(c => { const v = proxVenc(c.dia_vencimento), fat = faturaC(c); if (fat > 0 && v.dias <= 30) it.push({ d: isoD(v.d), ico: '💳', t: `Fatura ${c.nome}`, v: fat }); });
-  return it.sort((a, b) => a.d.localeCompare(b.d));
+  contasFat.filter(f => !f.paga).forEach(f => { const c = CONTAS[f.tipo] || { nome: f.tipo, emoji: '🧾' }; it.push({ d: f.vencimento, ico: c.emoji, t: `Conta de ${c.nome}`, v: f.valor, go: 'conta:' + f.tipo }); });
+  cartoes.forEach(c => {
+    if (!c.compras_cartao) return;
+    faturasC(c).forEach(f => {
+      const falta = Math.max(0, somaC(f.itens.filter(x => !x.paga)) - pagoFatC(c, chaveVenc(f.venc)));
+      if (f.itens.length && falta > 0.001) it.push({ d: isoD(f.venc), ico: '💳', t: `Fatura ${c.nome}`, v: falta, go: 'cartao:' + c.id });
+    });
+  });
+  return it;
 }
+function renderAgenda() {
+  const box = $('#agendaSemana'); if (!box) return;
+  const hoje = hojeISO();
+  if (!semIni) semIni = segundaDe(hoje);
+  const dias = Array.from({ length: 7 }, (_, i) => plAdd(semIni, i));
+  if (!diaSel || !dias.includes(diaSel)) diaSel = dias.includes(hoje) ? hoje : dias[0];
+  const todos = agendaItens(), porDia = {};
+  todos.forEach(x => (porDia[x.d] = porDia[x.d] || []).push(x));
+  const tot = l => l.reduce((a, x) => a + Number(x.v || 0), 0);
+  $('#semLabel').textContent = `${plCurto(dias[0])} a ${plCurto(dias[6])}`;
+  box.innerHTML = dias.map((d, i) => {
+    const l = porDia[d] || [], atraso = d < hoje && l.length;
+    return `<button type="button" class="dia${d === hoje ? ' hoje' : ''}${d === diaSel ? ' sel' : ''}${l.length ? ' tem' : ''}${atraso ? ' atraso' : ''}" data-dia="${d}" aria-pressed="${d === diaSel}" aria-label="${DIAS_LONGO[i]}, ${fmtData(d)}: ${l.length ? l.length + ' a pagar, ' + brl(tot(l)) : 'nada a pagar'}"><span class="dn">${DIAS_SEM[i]}</span><span class="dd">${d.slice(8)}</span><span class="dp">${'<i></i>'.repeat(Math.min(3, l.length))}</span><span class="dv">${l.length ? brl(tot(l)) : '—'}</span></button>`;
+  }).join('');
+  // aviso: total da semana e contas vencidas em semanas anteriores
+  const semTot = dias.reduce((a, d) => a + tot(porDia[d] || []), 0), semQtd = dias.reduce((a, d) => a + (porDia[d] || []).length, 0);
+  const venc = todos.filter(x => x.d < hoje).sort((a, b) => a.d.localeCompare(b.d)), antes = venc.filter(x => x.d < semIni);
+  $('#agendaAviso').innerHTML = `<div class="ag-aviso"><span>${semQtd ? `Nesta semana: <b>${brl(semTot)}</b> em ${semQtd} ${semQtd === 1 ? 'pagamento' : 'pagamentos'}` : 'Nada a pagar nesta semana 🎉'}</span></div>`
+    + (antes.length ? `<div class="ag-aviso atraso"><span>⚠️ ${antes.length} ${antes.length === 1 ? 'pagamento vencido' : 'pagamentos vencidos'} em semanas anteriores</span><button type="button" class="btn small" data-atraso="${antes[0].d}">Ver</button></div>` : '');
+  // detalhe do dia clicado
+  const l = (porDia[diaSel] || []).slice().sort((a, b) => a.t.localeCompare(b.t)), dd = plDias(diaSel), rel = dd === 0 ? 'hoje' : dd === 1 ? 'amanhã' : dd === -1 ? 'ontem' : dd > 0 ? `em ${dd} dias` : `há ${-dd} dias`;
+  const st = x => { if (dd < 0) return balaoHtml('vermelho', `Vencida há ${-dd} dia(s)`); if (dd === 0) return balaoHtml('vermelho', 'Vence hoje'); const n = nivelVenc(dd, 3); return n ? balaoHtml(n, dd === 1 ? 'Vence amanhã' : `Vence em ${dd} dias`) : ''; };
+  $('#agendaDia').innerHTML = `<h4 class="ag-dia-t">${DIAS_LONGO[dias.indexOf(diaSel)]}, ${fmtData(diaSel)} <span class="sub" style="font-weight:400">(${rel})</span></h4>`
+    + (l.length ? `<div class="rtotal"><span>A pagar neste dia</span><b>${brl(tot(l))}</b></div>` : '')
+    + `<ul class="hist biglist">${l.length ? l.map(x => `<li><div class="desc"><strong>${x.ico} ${esc(x.t)}</strong><small>${st(x)}</small></div><span class="val">${x.v == null ? 'sem valor' : brl(Number(x.v))}</span><button class="del" type="button" data-go="${esc(x.go)}">Abrir</button></li>`).join('') : '<li class="hist-vazio">Nada para pagar neste dia. 🎉</li>'}</ul>`;
+}
+$('#vistaPlano').addEventListener('click', e => {
+  const s = e.target.closest('[data-sem]');
+  if (s) { const n = Number(s.dataset.sem); if (n === 0) { semIni = segundaDe(hojeISO()); diaSel = hojeISO(); } else semIni = plAdd(semIni || segundaDe(hojeISO()), n * 7); return renderAgenda(); }
+  const d = e.target.closest('[data-dia]');
+  if (d) { diaSel = d.dataset.dia; renderAgenda(); const b = $('#agendaSemana .dia.sel'); if (b) b.focus({ preventScroll: true }); return; }
+  const a = e.target.closest('[data-atraso]');
+  if (a) { semIni = segundaDe(a.dataset.atraso); diaSel = a.dataset.atraso; return renderAgenda(); }
+  const g = e.target.closest('[data-go]');
+  if (g) { const [k, id] = g.dataset.go.split(':'); return k === 'cartao' ? abrirCartao(id) : abrirConta(id); }
+});
 function renderPlano() {
   const t = planoDados; if (!t) return;
   const hj = new Date(), dm = new Date(hj.getFullYear(), hj.getMonth() + 1, 0).getDate(), dia = hj.getDate(), restam = dm - dia + 1;
@@ -2604,15 +2680,7 @@ function renderPlano() {
   cartoes.forEach(c => abertasC(c).forEach(x => { if (x.data > fimMes) { const m = x.data.slice(0, 7); porMes[m] = (porMes[m] || 0) + Number(x.valor); } }));
   const ms = Object.keys(porMes).sort().slice(0, 6);
   $('#planoParcelas').innerHTML = ms.length ? ms.map((m, i) => `<div class="mes-card" style="--i:${i}"><span>${plCap(mesNome(m))}</span><b>${brl(porMes[m])}</b></div>`).join('') : '<p class="hist-vazio">Nenhuma parcela futura no cartão.</p>';
-  // agenda
-  const ag = agendaItens(), hojeI = hojeISO(), sem = [0, 0, 0, 0];
-  ag.forEach(x => { if (x.v != null) sem[Math.max(0, Math.min(3, Math.floor(plDias(x.d) / 7)))] += Number(x.v); });
-  const maior = Math.max(...sem);
-  $('#agendaSemanas').innerHTML = maior > 0 ? sem.map((v, i) => `<div class="sem-card${v === maior ? ' pesada' : ''}" style="--i:${i}">${v === maior ? '<em>mais pesada</em>' : ''}<span>${plCurto(plAdd(hojeI, i * 7))} a ${plCurto(plAdd(hojeI, i * 7 + 6))}</span><b>${brl(v)}</b><div class="bar"><i style="width:${Math.round(v / maior * 100)}%"></i></div></div>`).join('') : '';
-  $('#agendaLista').innerHTML = ag.length ? ag.map(x => {
-    const dd = plDias(x.d), niv = nivelVenc(dd, 3), txt = dd < 0 ? `Vencida há ${-dd} dia(s)` : dd === 0 ? 'Vence hoje' : dd === 1 ? 'Vence amanhã' : `Em ${dd} dias`;
-    return `<li><div class="desc"><strong>${x.ico} ${esc(x.t)}</strong><small>${fmtData(x.d)} ${niv ? balaoHtml(niv, txt) : '(' + txt.toLowerCase() + ')'}</small></div><span class="val">${x.v == null ? 'sem valor' : brl(Number(x.v))}</span></li>`;
-  }).join('') : '<li class="hist-vazio">Nada vence nos próximos 30 dias. 🎉</li>';
+  renderAgenda();
   contar();
 }
 function abrirOrc(o, nome) {
