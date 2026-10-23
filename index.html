@@ -578,15 +578,36 @@ body::before{content:"";position:fixed;inset:-25%;z-index:-1;pointer-events:none
 
 /* ===== planejamento ===== */
 .sec-t{margin:30px 0 10px;font-size:1.15rem;font-weight:800}
-.orc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:14px;margin-top:10px}
-.orc{background:var(--surface);border-radius:18px;padding:16px 18px;box-shadow:var(--shadow);cursor:pointer;transition:transform .2s,box-shadow .2s;animation:pop .5s cubic-bezier(.2,.8,.2,1) backwards;animation-delay:calc(var(--i,0)*50ms)}
+.orc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px}
+.orc{display:flex;flex-direction:column;gap:12px;background:var(--surface);border-radius:18px;padding:18px 20px;box-shadow:var(--shadow);cursor:pointer;transition:transform .2s,box-shadow .2s;animation:pop .5s cubic-bezier(.2,.8,.2,1) backwards;animation-delay:calc(var(--i,0)*50ms)}
 .orc:hover{transform:translateY(-3px)}
-.orc-top{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:10px}
+.orc-top{display:flex;justify-content:space-between;align-items:center;gap:8px;min-height:26px}.orc-top strong{font-size:1.05rem;font-weight:700;overflow-wrap:anywhere}
 .orc .bar i{background:var(--meta)}.orc.perto .bar i{background:#FFC83D}.orc.estoura .bar i{background:#E5383B}
 .orc.estoura{box-shadow:0 0 0 2px #E5383B,var(--shadow)}
-.orc-amts{display:flex;justify-content:space-between;gap:8px;margin-top:8px;font-size:.9rem;color:var(--muted)}.orc-amts b{color:var(--ink)}
-.gasto-chip.pesada{box-shadow:0 0 0 2px #E5383B}
-#orcSug,#planoParcelas,#agendaSemanas{margin-top:10px}
+.orc-val{display:flex;align-items:baseline;flex-wrap:wrap;column-gap:8px}.orc-val b{font-family:var(--display);font-size:1.55rem;font-weight:800;line-height:1.15;color:var(--ink)}.orc-val span{color:var(--muted);font-size:.92rem}
+.orc .bar{height:10px}
+.orc-amts{display:flex;justify-content:space-between;gap:8px;font-size:.9rem;color:var(--muted);font-variant-numeric:tabular-nums}.orc-amts span:last-child{font-weight:700;color:var(--ink)}
+#orcSug{margin-top:14px}
+
+/* blocos do planejamento */
+.plano-bloco{margin-top:36px}
+.plano-cab{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap;margin-bottom:16px}
+.plano-cab .sec-t{margin:0}
+.plano-cab .sub{margin-top:2px}
+.mes-grid,.sem-grid{display:grid;gap:12px}
+.mes-grid{grid-template-columns:repeat(auto-fill,minmax(150px,1fr))}
+.sem-grid{grid-template-columns:repeat(4,minmax(0,1fr));margin:10px 0 22px}
+.mes-grid .hist-vazio,.sem-grid .hist-vazio{grid-column:1/-1;margin:0;padding:0}
+.mes-card,.sem-card{position:relative;display:flex;flex-direction:column;gap:6px;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:14px 16px;font-variant-numeric:tabular-nums}
+.mes-card span,.sem-card span{color:var(--muted);font-size:.9rem;font-weight:600}
+.mes-card b,.sem-card b{font-family:var(--display);font-size:1.3rem;font-weight:800;line-height:1.15;color:var(--ink)}
+.sem-card .bar{height:8px;margin-top:auto}
+.sem-card .bar i{background:var(--brand)}
+.sem-card.pesada{border-color:#E5383B;box-shadow:0 0 0 1px #E5383B}
+.sem-card.pesada .bar i{background:#E5383B}
+.sem-card em{position:absolute;top:-10px;right:12px;font-style:normal;font-size:.72rem;font-weight:800;padding:2px 10px;border-radius:99px;background:var(--brand);color:#fff}
+.vista-in .mes-grid>*,.vista-in .sem-grid>*{animation:pop .55s cubic-bezier(.2,.8,.2,1) backwards;animation-delay:calc(var(--i,0)*45ms)}
+@media (max-width:720px){.sem-grid{grid-template-columns:repeat(2,minmax(0,1fr));row-gap:18px}.plano-bloco{margin-top:30px}}
 </style>
 
 </head>
@@ -884,15 +905,20 @@ window.somBrilho = function (grande, aguardar) {
       <div class="toolbar"><div><h2 class="vt">Planejamento do mês</h2><p class="sub">Veja quanto ainda pode gastar, como o mês deve fechar e o que vence nos próximos dias.</p></div></div>
       <div class="hero tres" id="planoResumo"></div>
       <p class="help">A previsão usa o seu ritmo atual de gastos avulsos. Contas, parcelas e faturas já lançadas entram pelo valor cheio.</p>
-      <h3 class="sec-t">Orçamento por categoria</h3>
-      <div class="toolbar"><p class="sub" style="margin:0">Defina um teto para cada tipo de gasto e acompanhe durante o mês.</p><button class="btn primary" id="btnNovoOrc" type="button">Novo orçamento</button></div>
-      <div id="orcLista" class="orc-grid"></div>
-      <div class="chips" id="orcSug" aria-label="Sugestões de orçamento"></div>
-      <h3 class="sec-t">Parcelas já comprometidas</h3>
-      <div class="chips" id="planoParcelas"></div>
-      <h3 class="sec-t">Agenda dos próximos 30 dias</h3>
-      <div class="chips" id="agendaSemanas"></div>
-      <ul class="hist biglist" id="agendaLista"></ul>
+      <section class="plano-bloco" aria-labelledby="tOrc">
+        <div class="plano-cab"><div><h3 class="sec-t" id="tOrc">Orçamento por categoria</h3><p class="sub">Defina um teto para cada tipo de gasto e acompanhe durante o mês.</p></div><button class="btn primary" id="btnNovoOrc" type="button">Novo orçamento</button></div>
+        <div id="orcLista" class="orc-grid"></div>
+        <div class="chips" id="orcSug" aria-label="Sugestões de orçamento"></div>
+      </section>
+      <section class="plano-bloco" aria-labelledby="tParc">
+        <div class="plano-cab"><div><h3 class="sec-t" id="tParc">Parcelas já comprometidas</h3><p class="sub">O que já está parcelado no cartão para os próximos meses.</p></div></div>
+        <div class="mes-grid" id="planoParcelas"></div>
+      </section>
+      <section class="plano-bloco" aria-labelledby="tAg">
+        <div class="plano-cab"><div><h3 class="sec-t" id="tAg">Agenda dos próximos 30 dias</h3><p class="sub">Quanto vence em cada semana, com contas, faturas e parcelas.</p></div></div>
+        <div class="sem-grid" id="agendaSemanas"></div>
+        <ul class="hist biglist" id="agendaLista"></ul>
+      </section>
     </section>
     <section id="vistaAdmin" hidden aria-label="Administração">
       <div class="hero tres" id="adminKpis"></div>
@@ -2569,7 +2595,7 @@ function renderPlano() {
   const gc = {}; t.listaG.forEach(x => { const k = x.descricao.trim().toLowerCase(); gc[k] = (gc[k] || 0) + Number(x.valor); });
   $('#orcLista').innerHTML = orcs.length ? orcs.map((o, i) => {
     const g = gc[o.categoria.trim().toLowerCase()] || 0, pct = g / o.limite * 100, cls = pct >= 100 ? 'estoura' : pct >= 80 ? 'perto' : '';
-    return `<article class="orc ${cls}" style="--i:${i}" data-orc="${o.id}" tabindex="0" role="button" aria-label="Editar orçamento ${esc(o.categoria)}"><div class="orc-top"><strong>${esc(o.categoria)}</strong>${cls ? balaoHtml(pct >= 100 ? 'vermelho' : 'amarelo', pct >= 100 ? 'Estourou' : 'Perto do teto') : ''}</div><div class="bar"><i style="width:${Math.min(100, pct)}%"></i></div><div class="orc-amts"><span><b>${brl(g)}</b> de ${brl(o.limite)}</span><span>${pct >= 100 ? `${brl(g - o.limite)} acima` : `faltam ${brl(o.limite - g)}`}</span></div></article>`;
+    return `<article class="orc ${cls}" style="--i:${i}" data-orc="${o.id}" tabindex="0" role="button" aria-label="Editar orçamento ${esc(o.categoria)}"><div class="orc-top"><strong>${esc(o.categoria)}</strong>${cls ? balaoHtml(pct >= 100 ? 'vermelho' : 'amarelo', pct >= 100 ? 'Estourou' : 'Perto do teto') : ''}</div><div class="orc-val"><b>${brl(g)}</b><span>de ${brl(o.limite)}</span></div><div class="bar"><i style="width:${Math.min(100, pct)}%"></i></div><div class="orc-amts"><span>${pct >= 100 ? `${brl(g - o.limite)} acima` : `faltam ${brl(o.limite - g)}`}</span><span>${Math.round(Math.min(999, pct))}%</span></div></article>`;
   }).join('') : '<p class="hist-vazio">Nenhum orçamento ainda. Defina um teto para um gasto (por exemplo, Mercado) e acompanhe aqui.</p>';
   const gr = gruposGastos(t), sug = Object.keys(gr).filter(k => !orcs.some(o => o.categoria.trim().toLowerCase() === k)).sort((a, b) => gr[b].v - gr[a].v).slice(0, 4);
   $('#orcSug').innerHTML = sug.length ? '<span class="help" style="width:100%;margin:6px 0 0">Sugestões a partir dos seus gastos:</span>' + sug.map((k, i) => `<button type="button" class="chip-btn gasto-chip" style="--i:${i}" data-sugorc="${esc(gr[k].n)}"><b>${esc(gr[k].n)}</b><span>${brl(gr[k].v)} no mês</span></button>`).join('') : '';
@@ -2577,12 +2603,12 @@ function renderPlano() {
   const fimMes = t.mes + '-31', porMes = {};
   cartoes.forEach(c => abertasC(c).forEach(x => { if (x.data > fimMes) { const m = x.data.slice(0, 7); porMes[m] = (porMes[m] || 0) + Number(x.valor); } }));
   const ms = Object.keys(porMes).sort().slice(0, 6);
-  $('#planoParcelas').innerHTML = ms.length ? ms.map((m, i) => `<span class="chip-btn gasto-chip" style="--i:${i};cursor:default"><b>${plCap(mesNome(m))}</b><span>${brl(porMes[m])}</span></span>`).join('') : '<p class="hist-vazio">Nenhuma parcela futura no cartão.</p>';
+  $('#planoParcelas').innerHTML = ms.length ? ms.map((m, i) => `<div class="mes-card" style="--i:${i}"><span>${plCap(mesNome(m))}</span><b>${brl(porMes[m])}</b></div>`).join('') : '<p class="hist-vazio">Nenhuma parcela futura no cartão.</p>';
   // agenda
   const ag = agendaItens(), hojeI = hojeISO(), sem = [0, 0, 0, 0];
   ag.forEach(x => { if (x.v != null) sem[Math.max(0, Math.min(3, Math.floor(plDias(x.d) / 7)))] += Number(x.v); });
   const maior = Math.max(...sem);
-  $('#agendaSemanas').innerHTML = maior > 0 ? sem.map((v, i) => `<span class="chip-btn gasto-chip${v === maior ? ' pesada' : ''}" style="--i:${i};cursor:default"><b>${plCurto(plAdd(hojeI, i * 7))} a ${plCurto(plAdd(hojeI, i * 7 + 6))}</b><span>${brl(v)}</span>${v === maior ? '<em>mais pesada</em>' : ''}</span>`).join('') : '';
+  $('#agendaSemanas').innerHTML = maior > 0 ? sem.map((v, i) => `<div class="sem-card${v === maior ? ' pesada' : ''}" style="--i:${i}">${v === maior ? '<em>mais pesada</em>' : ''}<span>${plCurto(plAdd(hojeI, i * 7))} a ${plCurto(plAdd(hojeI, i * 7 + 6))}</span><b>${brl(v)}</b><div class="bar"><i style="width:${Math.round(v / maior * 100)}%"></i></div></div>`).join('') : '';
   $('#agendaLista').innerHTML = ag.length ? ag.map(x => {
     const dd = plDias(x.d), niv = nivelVenc(dd, 3), txt = dd < 0 ? `Vencida há ${-dd} dia(s)` : dd === 0 ? 'Vence hoje' : dd === 1 ? 'Vence amanhã' : `Em ${dd} dias`;
     return `<li><div class="desc"><strong>${x.ico} ${esc(x.t)}</strong><small>${fmtData(x.d)} ${niv ? balaoHtml(niv, txt) : '(' + txt.toLowerCase() + ')'}</small></div><span class="val">${x.v == null ? 'sem valor' : brl(Number(x.v))}</span></li>`;
