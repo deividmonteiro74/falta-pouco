@@ -2,6 +2,7 @@
 <html lang="pt-BR">
 <head>
 <meta charset="utf-8">
+<meta name="build" content="20261025-012142">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Falta Pouco: dívidas e metas</title>
 <link rel="preload" as="video" type="video/mp4" href="/abertura_vertical.mp4" media="(orientation: portrait)">
@@ -679,6 +680,25 @@ body::before{content:"";position:fixed;inset:-25%;z-index:-1;pointer-events:none
 @media (max-width:720px){.sim-out{grid-template-columns:1fr}}
 .pbar{display:block;height:6px;border-radius:99px;background:rgba(127,127,160,.28);overflow:hidden;margin-top:6px}.pbar i{display:block;height:100%;border-radius:99px;background:currentColor;opacity:.75}
 .per:active,.orc:active,.chip-btn:active{transform:scale(.97)}
+.hero.tres .panel{cursor:pointer;display:block}
+.hero.tres .panel h2{font-size:1rem;font-weight:700;margin:0 0 10px;padding-right:26px}
+.hero.tres .panel .num{margin-bottom:6px}
+.hero.tres .panel .of{font-size:1.05rem;font-weight:600;margin:0}
+.hero.tres .pmore{position:absolute;top:14px;right:16px;opacity:.85;font-size:1.05rem}
+.hero.tres .pdet{display:none;margin:12px 0 0;padding-top:10px;border-top:1px solid rgba(255,255,255,.35);font-size:.9rem;line-height:1.5;color:rgba(255,255,255,.95)}
+.hero.tres .panel.aberto .pdet{display:block}
+.pbar2{height:8px;border-radius:99px;background:rgba(255,255,255,.3);overflow:hidden;margin:12px 0 0}.pbar2 i{display:block;height:100%;background:#fff;border-radius:99px}
+.upd-bar{position:fixed;left:50%;bottom:calc(18px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:9999;display:flex;align-items:center;gap:14px;padding:10px 12px 10px 18px;border-radius:99px;background:#1A1446;color:#fff;box-shadow:0 12px 32px rgba(0,0,0,.45);font-weight:600;max-width:calc(100vw - 24px)}
+@keyframes agIn{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+@keyframes perPop{from{opacity:0;transform:translateY(10px) scale(.88)}to{opacity:1;transform:none}}
+@keyframes barGrow{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+.anima .per{animation:perPop .5s cubic-bezier(.2,.8,.2,1) backwards;animation-delay:calc(var(--i,0)*70ms)}
+.anima .ag-grupo,.anima .rtotal{animation:agIn .5s cubic-bezier(.2,.8,.2,1) backwards;animation-delay:calc(var(--i,0)*90ms + 120ms)}
+.anima .pbar i{transform-origin:left;animation:barGrow .8s cubic-bezier(.2,.8,.2,1) backwards;animation-delay:.25s}
+.ag-dia-cab{cursor:pointer;user-select:none}
+.ag-dia-cab .chev,.ag-grupo .chev{display:inline-block;transition:transform .25s;opacity:.7}
+.ag-grupo.fechado .chev{transform:rotate(-90deg)}.ag-grupo.fechado .hist{display:none}
+.upd-bar{animation:agIn .4s ease backwards}
 /* ===== ajustes: texto sobreposto, cores dos balões, sem piscar ===== */
 .hero+.help,.hero.tres+.help{margin-top:18px}
 .hero .panel:not(.meta):not(.divida):not(.neg):nth-child(2){background:linear-gradient(135deg,#8A5CFF,#C45CFF)}
@@ -984,16 +1004,6 @@ window.somBrilho = function (grande, aguardar) {
       <div class="toolbar"><div><h2 class="vt">Planejamento do mês</h2><p class="sub">Veja quanto ainda pode gastar, como o mês deve fechar e o que vence nos próximos dias.</p></div>
         <div class="mesnav"><button class="btn small" type="button" data-plm="-1" aria-label="Mês anterior">‹</button><strong class="mes" id="planMesLabel"></strong><button class="btn small" type="button" data-plm="1" aria-label="Próximo mês">›</button></div></div>
       <div class="hero tres" id="planoResumo"></div>
-      <p class="help">A previsão usa o seu ritmo atual de gastos avulsos. Contas, parcelas e faturas já lançadas entram pelo valor cheio.</p>
-      <section class="plano-bloco" aria-labelledby="tSim">
-        <div class="plano-cab"><div><h3 class="sec-t" id="tSim">E se eu gastar…?</h3><p class="sub">Arraste e veja na hora como um gasto novo mexe no seu mês.</p></div></div>
-        <div class="sim" id="planoSim">
-          <div class="sim-chips"><button type="button" class="chip-btn" data-sim="0">Zerar</button><button type="button" class="chip-btn" data-sim="50">R$ 50</button><button type="button" class="chip-btn" data-sim="100">R$ 100</button><button type="button" class="chip-btn" data-sim="200">R$ 200</button><button type="button" class="chip-btn" data-sim="500">R$ 500</button></div>
-          <input type="range" id="simRange" min="0" max="500" step="5" value="0" aria-label="Valor do gasto simulado">
-          <div class="sim-out"><div><small>Gasto simulado</small><b id="simV">R$ 0,00</b></div><div><small>Pode gastar por dia</small><b id="simDia">—</b><em id="simDiaD"></em></div><div><small>Previsão do mês</small><b id="simPrev">—</b><em id="simPrevD"></em></div></div>
-          <p class="sim-msg" id="simMsg"></p>
-        </div>
-      </section>
       <section class="plano-bloco" aria-labelledby="tOrc">
         <div class="plano-cab"><div><h3 class="sec-t" id="tOrc">Orçamento por categoria</h3><p class="sub">Defina um teto para cada tipo de gasto e acompanhe durante o mês.</p></div><button class="btn primary" id="btnNovoOrc" type="button">Novo orçamento</button></div>
         <div id="orcLista" class="orc-grid"></div>
@@ -1633,7 +1643,7 @@ function trocarVista(v) {
   if (v === 'admin' && ehAdmin) carregarAdmin();
   if (v === 'cartoes' && userId) carregarCartoes();
   if (v === 'contas' && userId) carregarContas();
-  if (v === 'plano' && userId) { planMes = mesSel; carregarPlano(); }
+  if (v === 'plano' && userId) { planMes = mesSel; agAnim = true; carregarPlano(); }
   if (v === 'projecao' && userId) carregarProj();
   if ((v === 'gastos' || v === 'salario') && userId) carregarMes();
 }
@@ -2713,6 +2723,9 @@ const PERIODOS = [{ k: 'todo', n: 'Mês todo' }, { k: '1', n: 'Dias 1 a 10', a: 
 const plSoma = l => l.reduce((a, x) => a + Number(x.v || 0), 0);
 const plNoPer = (l, p) => p.a ? l.filter(x => { const n = Number(x.d.slice(8)); return n >= p.a && n <= p.b; }) : l;
 const plPerDe = iso => { const n = Number(iso.slice(8)); return n <= 10 ? '1' : n <= 20 ? '2' : '3'; };
+let agAnim = true;
+function setHtml(el, h) { if (el._h === h) return false; el.innerHTML = h; el._h = h; return true; }   // não refaz a tela quando nada mudou (evita piscar)
+function animaNum(el, to, ms = 650) { const t0 = performance.now(); const f = now => { const k = Math.min(1, (now - t0) / ms); el.textContent = brl(to * (1 - Math.pow(1 - k, 3))); if (k < 1) requestAnimationFrame(f); else el.textContent = brl(to); }; requestAnimationFrame(f); }
 function renderAgenda() {
   const box = $('#agendaPeriodos'); if (!box) return;
   const hoje = hojeISO(), mesHoje = hoje.slice(0, 7);
@@ -2721,31 +2734,37 @@ function renderAgenda() {
   const todos = agendaItens(), doMes = todos.filter(x => x.d.slice(0, 7) === agMes);
   $('#agMesLabel').textContent = plCap(mesNome(agMes));
   const tots = PERIODOS.slice(1).map(p => plSoma(plNoPer(doMes, p))), mx = Math.max(...tots);
-  box.innerHTML = PERIODOS.map((p, i) => {
+  const perHtml = PERIODOS.map((p, i) => {
     const l = plNoPer(doMes, p), t = plSoma(l), pesada = i > 0 && mx > 0 && t === mx, agora = agMes === mesHoje && i > 0 && p.k === plPerDe(hoje);
-    return `<button type="button" class="per${p.k === agPer ? ' sel' : ''}${pesada ? ' pesada' : ''}" style="--i:${i}" data-per="${p.k}" aria-pressed="${p.k === agPer}"><span class="pn">${p.n}${agora ? ' · agora' : ''}</span><b>${brl(t)}</b><small>${l.length ? `${l.length} ${l.length === 1 ? 'pagamento' : 'pagamentos'}` : 'nada a pagar'}</small>${i > 0 ? `<span class="pbar"><i style="width:${mx ? t / mx * 100 : 0}%"></i></span>` : ''}${pesada ? '<em>mais pesado</em>' : ''}</button>`;
+    return `<button type="button" class="per${p.k === agPer ? ' sel' : ''}${pesada ? ' pesada' : ''}" style="--i:${i}" data-per="${p.k}" aria-pressed="${p.k === agPer}"><span class="pn">${p.n}${agora ? ' · agora' : ''}</span><b data-v="${t}">${brl(t)}</b><small>${l.length ? `${l.length} ${l.length === 1 ? 'pagamento' : 'pagamentos'}` : 'nada a pagar'}</small>${i > 0 ? `<span class="pbar"><i style="width:${mx ? t / mx * 100 : 0}%"></i></span>` : ''}${pesada ? '<em>mais pesado</em>' : ''}</button>`;
   }).join('');
   const fora = todos.filter(x => x.d < hoje && x.d.slice(0, 7) !== agMes).sort((a, b) => a.d.localeCompare(b.d));
-  $('#agendaAviso').innerHTML = fora.length ? `<div class="ag-aviso atraso"><span>⚠️ ${fora.length} ${fora.length === 1 ? 'pagamento vencido' : 'pagamentos vencidos'} em outros meses</span><button type="button" class="btn small" data-atraso="${fora[0].d}">Ver</button></div>` : '';
+  setHtml($('#agendaAviso'), fora.length ? `<div class="ag-aviso atraso"><span>⚠️ ${fora.length} ${fora.length === 1 ? 'pagamento vencido' : 'pagamentos vencidos'} em outros meses</span><button type="button" class="btn small" data-atraso="${fora[0].d}">Ver</button></div>` : '');
   const per = PERIODOS.find(p => p.k === agPer) || PERIODOS[0];
   const l = plNoPer(doMes, per).sort((a, b) => a.d.localeCompare(b.d) || a.t.localeCompare(b.t)), porDia = {};
   l.forEach(x => (porDia[x.d] = porDia[x.d] || []).push(x));
   const st = (x, dd) => { if (dd < 0) return balaoHtml('vermelho', `Vencida há ${-dd} dia(s)`); if (dd === 0) return balaoHtml('vermelho', 'Vence hoje'); const n = nivelVenc(dd, 3); return n ? balaoHtml(n, dd === 1 ? 'Vence amanhã' : `Vence em ${dd} dias`) : ''; };
   const SEM = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
-  $('#agendaLista').innerHTML = `<div class="rtotal"><span>${per.n} · a pagar</span><b>${brl(plSoma(l))}</b></div>` + (l.length ? Object.keys(porDia).map(d => {
+  const listaHtml = `<div class="rtotal"><span>${per.n} · a pagar</span><b data-v="${plSoma(l)}">${brl(plSoma(l))}</b></div>` + (l.length ? Object.keys(porDia).map((d, n) => {
     const dd = plDias(d), rel = dd === 0 ? 'hoje' : dd === 1 ? 'amanhã' : dd === -1 ? 'ontem' : dd > 0 ? `em ${dd} dias` : `há ${-dd} dias`;
-    return `<div class="ag-grupo${d === hoje ? ' hoje' : ''}"><div class="ag-dia-cab"><strong>${SEM[new Date(d + 'T00:00:00').getDay()]}, ${plCurto(d)} <span class="sub">(${rel})</span></strong><span>${brl(plSoma(porDia[d]))}</span></div><ul class="hist biglist">${porDia[d].map(x => `<li><div class="desc"><strong>${x.ico} ${esc(x.t)}</strong><small>${st(x, dd)}</small></div><span class="val">${x.v == null ? 'sem valor' : brl(Number(x.v))}</span><button class="del" type="button" data-go="${esc(x.go)}">Abrir</button></li>`).join('')}</ul></div>`;
+    return `<div class="ag-grupo${d === hoje ? ' hoje' : ''}" style="--i:${n}"><div class="ag-dia-cab" role="button" tabindex="0" title="Toque para recolher"><strong>${SEM[new Date(d + 'T00:00:00').getDay()]}, ${plCurto(d)} <span class="sub">(${rel})</span></strong><span>${brl(plSoma(porDia[d]))} <span class="chev">▾</span></span></div><ul class="hist biglist">${porDia[d].map(x => `<li><div class="desc"><strong>${x.ico} ${esc(x.t)}</strong><small>${st(x, dd)}</small></div><span class="val">${x.v == null ? 'sem valor' : brl(Number(x.v))}</span><button class="del" type="button" data-go="${esc(x.go)}">Abrir</button></li>`).join('')}</ul></div>`;
   }).join('') : '<p class="hist-vazio">Nada para pagar neste período. 🎉</p>');
+  const lista = $('#agendaLista'), animar = agAnim, mudou = [setHtml(box, perHtml), setHtml(lista, listaHtml)].some(Boolean);
+  box.classList.toggle('anima', animar && mudou); lista.classList.toggle('anima', animar && mudou);
+  if (animar && mudou) { agAnim = false; document.querySelectorAll('#agendaPeriodos b[data-v], #agendaLista .rtotal b[data-v]').forEach(b => animaNum(b, Number(b.dataset.v))); }
 }
+$('#planoResumo').addEventListener('click', e => { const p = e.target.closest('.panel'); if (!p) return; p.classList.toggle('aberto'); p.setAttribute('aria-expanded', p.classList.contains('aberto')); });
+$('#planoResumo').addEventListener('keydown', e => { if (e.key !== 'Enter' && e.key !== ' ') return; const p = e.target.closest('.panel'); if (p) { e.preventDefault(); p.click(); } });
 $('#vistaPlano').addEventListener('click', e => {
   const pm = e.target.closest('[data-plm]');
   if (pm) { planMes = mesAdd(planMes || hojeISO().slice(0, 7), Number(pm.dataset.plm)); return carregarPlano(); }
+  const dc = e.target.closest('.ag-dia-cab'); if (dc) { dc.parentElement.classList.toggle('fechado'); return; }
   const m = e.target.closest('[data-agm]');
-  if (m) { const n = Number(m.dataset.agm); agMes = n === 0 ? hojeISO().slice(0, 7) : addMeses(agMes + '-01', n, 1).slice(0, 7); agPer = agMes === hojeISO().slice(0, 7) ? plPerDe(hojeISO()) : 'todo'; return renderAgenda(); }
+  if (m) { const n = Number(m.dataset.agm); agMes = n === 0 ? hojeISO().slice(0, 7) : addMeses(agMes + '-01', n, 1).slice(0, 7); agPer = agMes === hojeISO().slice(0, 7) ? plPerDe(hojeISO()) : 'todo'; agAnim = true; return renderAgenda(); }
   const p = e.target.closest('[data-per]');
-  if (p) { agPer = p.dataset.per; return renderAgenda(); }
+  if (p) { agPer = p.dataset.per; agAnim = true; return renderAgenda(); }
   const a = e.target.closest('[data-atraso]');
-  if (a) { agMes = a.dataset.atraso.slice(0, 7); agPer = plPerDe(a.dataset.atraso); return renderAgenda(); }
+  if (a) { agMes = a.dataset.atraso.slice(0, 7); agPer = plPerDe(a.dataset.atraso); agAnim = true; return renderAgenda(); }
   const g = e.target.closest('[data-go]');
   if (g) { const [k, id] = g.dataset.go.split(':'); return k === 'cartao' ? abrirCartao(id) : abrirConta(id); }
 });
@@ -2780,26 +2799,30 @@ function renderPlano() {
   const hj = new Date(), atual = hojeISO().slice(0, 7), [py, pm] = t.mes.split('-').map(Number), dm = new Date(py, pm, 0).getDate(), dia = t.mes === atual ? hj.getDate() : t.mes < atual ? dm : 0, restam = t.mes === atual ? dm - dia + 1 : t.mes > atual ? dm : 0;
   const total = t.renda + t.caixa, livre = total - t.despesas, porDia = livre > 0 && restam ? livre / restam : 0;
   const ritmo = t.gastos / (dia || dm), saldoPrev = total - ((t.despesas - t.gastos) + ritmo * dm);
-  planCalc = { total, livre, restam, porDia, saldoPrev };
-  $('#planoResumo').innerHTML =
-    `<div class="panel ${!total ? '' : livre > 0 ? 'meta' : 'neg'}"><h2>Pode gastar por dia</h2><p class="num" data-count="${porDia}">${brl(porDia)}</p><p class="of">${!total ? 'cadastre seu salário na aba Salário' : !restam ? 'mês encerrado' : livre > 0 ? `${brl(livre)} livres para ${restam} dia(s) até o fim do mês` : 'o mês já está comprometido: evite novos gastos'}</p></div>
-     <div class="panel ${!total ? '' : saldoPrev >= 0 ? '' : 'neg'}"><h2>${saldoPrev >= 0 ? 'Previsão: sobra' : 'Previsão: falta'}</h2><p class="num" data-count="${Math.abs(saldoPrev)}">${brl(Math.abs(saldoPrev))}</p><p class="of">${!total ? 'sem salário cadastrado' : `mantendo ${brl(ritmo)} por dia em gastos avulsos`}</p></div>
-     <div class="panel"><h2>Já comprometido</h2><p class="num" data-count="${t.despesas}">${brl(t.despesas)}</p><p class="of">${total ? `${Math.min(999, Math.round(t.despesas / total * 100))}% do que você tem este mês` : 'despesas do mês'}</p></div>`;
+  const pctC = total ? Math.min(100, t.despesas / total * 100) : 0;
+  const paineis = [
+    { cls: !total ? '' : livre > 0 ? 'meta' : 'neg', ico: '📅', tit: 'Pode gastar por dia', num: brl(porDia), curto: !total ? 'Cadastre seu salário' : !restam ? 'Mês encerrado' : livre > 0 ? 'até o fim do mês' : 'Mês comprometido',
+      det: !total ? 'Cadastre seu salário na aba Salário para ver quanto pode gastar.' : livre > 0 ? `${brl(livre)} livres para ${restam} dia(s).` : 'O mês já está comprometido. Evite novos gastos.' },
+    { cls: !total ? '' : saldoPrev >= 0 ? '' : 'neg', ico: '🔮', tit: 'Como o mês fecha', num: brl(Math.abs(saldoPrev)), curto: !total ? 'Sem salário cadastrado' : saldoPrev >= 0 ? 'vai sobrar' : 'vai faltar',
+      det: `Se você mantiver ${brl(ritmo)} por dia em gastos avulsos. Contas, parcelas e faturas lançadas entram pelo valor cheio.` },
+    { cls: '', ico: '🧾', tit: 'Já comprometido', num: brl(t.despesas), curto: total ? `${Math.round(pctC)}% do que você tem` : 'despesas do mês', bar: total ? pctC : null,
+      det: total ? `${brl(t.despesas)} de ${brl(total)} entre contas, parcelas e gastos.` : 'Soma das despesas deste mês.' },
+  ];
+  setHtml($('#planoResumo'), paineis.map(x => `<div class="panel ${x.cls}" role="button" tabindex="0" aria-expanded="false"><span class="pmore" aria-hidden="true">ⓘ</span><h2>${x.ico} ${x.tit}</h2><p class="num">${x.num}</p><p class="of">${x.curto}</p>${x.bar != null ? `<div class="pbar2"><i style="width:${x.bar}%"></i></div>` : ''}<p class="pdet">${x.det}</p></div>`).join(''));
   // orçamentos (clique no cartão para ver quais gastos entraram)
-  $('#orcLista').innerHTML = orcs.length ? orcs.map((o, i) => {
+  setHtml($('#orcLista'), orcs.length ? orcs.map((o, i) => {
     const lst = t.listaG.filter(x => plMatch(x.descricao, o.categoria)), g = lst.reduce((a, x) => a + Number(x.valor), 0), pct = g / o.limite * 100;
     const cls = pct >= 100 ? 'estoura' : pct >= 80 ? 'perto' : '', mood = pct >= 100 ? '🚨' : pct >= 80 ? '😬' : pct >= 50 ? '🙂' : '😌', aberto = orcAberto.has(o.id);
     const det = lst.length
       ? `<ul class="orc-det">${lst.slice().sort((x, y) => String(y.data || '').localeCompare(String(x.data || ''))).map(x => `<li><span>${esc(x.descricao)}${x.data ? ` <small>${plCurto(String(x.data).slice(0, 10))}</small>` : ''}</span><b>${brl(Number(x.valor))}</b></li>`).join('')}</ul>`
       : `<p class="orc-det">Nenhum gasto deste mês com nome igual ou parecido com “${esc(o.categoria)}”. Ao lançar um gasto, use esse nome (ou algo que o contenha, como “${esc(o.categoria)} no salão”).</p>`;
     return `<article class="orc ${cls}${aberto ? ' aberto' : ''}" style="--i:${i}" data-orc="${o.id}" data-fin="${Math.min(100, pct)}" tabindex="0" role="button" aria-expanded="${aberto}" aria-label="Ver gastos do orçamento ${esc(o.categoria)}"><div class="orc-top"><strong>${esc(o.categoria)}</strong><span class="mood" aria-hidden="true">${mood}</span></div><div class="orc-val"><b>${brl(g)}</b><span>de ${brl(o.limite)}</span></div><div class="bar"><i style="width:${Math.min(100, orcVisto[o.id] ?? 0)}%"></i></div><div class="orc-amts"><span>${pct >= 100 ? `${brl(g - o.limite)} acima` : `faltam ${brl(o.limite - g)}`}</span><span>${Math.round(Math.min(999, pct))}%</span></div>${det}<div class="orc-foot"><span class="orc-hint">${lst.length ? `${lst.length} gasto(s)` : 'nenhum gasto contado'} <span class="chev">▾</span></span><button type="button" class="btn small ghost" data-orcedit="${o.id}">Editar</button></div></article>`;
-  }).join('') : '<p class="hist-vazio">Nenhum orçamento ainda. Defina um teto para um gasto (por exemplo, Mercado) e acompanhe aqui.</p>';
+  }).join('') : '<p class="hist-vazio">Nenhum orçamento ainda. Defina um teto para um gasto (por exemplo, Mercado) e acompanhe aqui.</p>');
   requestAnimationFrame(() => requestAnimationFrame(() => document.querySelectorAll('#orcLista .orc').forEach(a => {   // a barra só anima quando o valor muda
     const f = Number(a.dataset.fin), bi = a.querySelector('.bar i'); if (bi) bi.style.width = f + '%'; orcVisto[a.dataset.orc] = f;
   })));
   const gr = gruposGastos(t), sug = Object.keys(gr).filter(k => !orcs.some(o => plMatch(gr[k].n, o.categoria))).sort((a, b) => gr[b].v - gr[a].v).slice(0, 4);
   $('#orcSug').innerHTML = sug.length ? '<span class="help" style="width:100%;margin:6px 0 0">Sugestões a partir dos seus gastos:</span>' + sug.map((k, i) => `<button type="button" class="chip-btn gasto-chip" style="--i:${i}" data-sugorc="${esc(gr[k].n)}"><b>${esc(gr[k].n)}</b><span>${brl(gr[k].v)} no mês</span></button>`).join('') : '';
-  ajustaSim();
   renderAgenda();
   contar();
 }
@@ -2815,27 +2838,6 @@ $('#btnNovoOrc').onclick = () => abrirOrc();
 function alternarOrc(a) { const id = a.dataset.orc; orcAberto.has(id) ? orcAberto.delete(id) : orcAberto.add(id); a.classList.toggle('aberto', orcAberto.has(id)); a.setAttribute('aria-expanded', orcAberto.has(id)); }
 $('#orcLista').addEventListener('click', e => { const ed = e.target.closest('[data-orcedit]'); if (ed) return abrirOrc(orcs.find(o => o.id === ed.dataset.orcedit)); const a = e.target.closest('[data-orc]'); if (a) alternarOrc(a); });
 $('#orcLista').addEventListener('keydown', e => { if (e.key !== 'Enter' && e.key !== ' ') return; const a = e.target.closest('[data-orc]'); if (a && e.target === a) { e.preventDefault(); alternarOrc(a); } });
-/* ---------- simulador: "e se eu gastar...?" ---------- */
-function ajustaSim() {
-  const r = $('#simRange'); if (!r || !planCalc) return; const c = planCalc;
-  r.max = Math.max(500, Math.ceil(Math.max(c.livre, 0) * 1.5 / 10) * 10);
-  const v = Math.min(Number(r.value), Number(r.max)), restaDia = c.restam ? (c.livre - v) / c.restam : 0, prev = c.saldoPrev - v;
-  r.value = v;
-  $('#simV').textContent = brl(v);
-  $('#simDia').textContent = c.total ? brl(Math.max(0, restaDia)) : '—';
-  $('#simDiaD').textContent = c.total && v && c.restam ? `${brl(Math.max(0, c.porDia - Math.max(0, restaDia)))} a menos por dia` : '';
-  $('#simPrev').textContent = c.total ? `${prev >= 0 ? 'sobra' : 'falta'} ${brl(Math.abs(prev))}` : '—';
-  $('#simPrevD').textContent = c.total && v ? `antes: ${c.saldoPrev >= 0 ? 'sobra' : 'falta'} ${brl(Math.abs(c.saldoPrev))}` : '';
-  const sim = $('#planoSim'); sim.classList.remove('ok', 'warn', 'bad');
-  let msg = 'Arraste a barra ou toque num valor para simular.';
-  if (!c.total) msg = 'Cadastre seu salário na aba Salário para simular.';
-  else if (v > 0 && c.livre - v < 0) { msg = `🚨 Isso estoura o mês: você ficaria ${brl(v - Math.max(0, c.livre))} além do que tem.`; sim.classList.add('bad'); }
-  else if (v > 0 && prev < 0) { msg = '⚠️ Cabe agora, mas no seu ritmo de gastos o mês fecha no vermelho.'; sim.classList.add('warn'); }
-  else if (v > 0) { msg = '✅ Cabe no mês e ainda sobra no fim.'; sim.classList.add('ok'); }
-  $('#simMsg').textContent = msg;
-}
-$('#simRange').addEventListener('input', ajustaSim);
-$('#planoSim').addEventListener('click', e => { const b = e.target.closest('[data-sim]'); if (!b) return; $('#simRange').value = b.dataset.sim; ajustaSim(); });
 $('#orcSug').addEventListener('click', e => { const b = e.target.closest('[data-sugorc]'); if (b) abrirOrc(null, b.dataset.sugorc); });
 $('#formOrc').addEventListener('submit', async e => {
   e.preventDefault();
@@ -2891,6 +2893,36 @@ $('#chips').addEventListener('click', e => {
 let temaSalvo; try { temaSalvo = localStorage.getItem('tema'); } catch (e) {}
 aplicaTema(temaSalvo || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'));
 
+
+/* ---------- atualização sem fechar o app ----------
+   De tempos em tempos confere se há uma versão nova publicada. Se houver, avisa e atualiza sozinho
+   quando não há nada sendo digitado; o login e a aba atual são mantidos. */
+(function () {
+  const atual = (document.querySelector('meta[name="build"]') || {}).content;
+  let avisou = false, tempo = null;
+  const ocupado = () => !!document.querySelector('dialog[open]') || /^(INPUT|TEXTAREA|SELECT)$/.test((document.activeElement || {}).tagName || '');
+  function aplicar() { try { sessionStorage.setItem('fp_vista', typeof vista === 'string' ? vista : ''); } catch { /* sem sessionStorage */ } location.reload(); }
+  function aviso() {
+    if (avisou) return; avisou = true;
+    const b = document.createElement('div'); b.className = 'upd-bar'; b.setAttribute('role', 'status');
+    b.innerHTML = '<span>✨ Nova versão disponível</span><button type="button" class="btn small go">Atualizar agora</button>';
+    b.querySelector('button').onclick = aplicar; document.body.appendChild(b);
+    tempo = setInterval(() => { if (!ocupado()) { clearInterval(tempo); aplicar(); } }, 4000);   // aplica sozinho quando for seguro
+  }
+  async function conferir() {
+    if (!atual || avisou || document.hidden) return;
+    try {
+      const r = await fetch('/?_v=' + Date.now(), { cache: 'no-store' }); if (!r.ok) return;
+      const m = (await r.text()).match(/<meta name="build" content="([^"]+)"/);
+      if (m && m[1] !== atual) aviso();
+    } catch { /* sem internet: tenta depois */ }
+  }
+  setInterval(conferir, 45000);
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) conferir(); });
+  addEventListener('focus', conferir);
+  // depois de atualizar, volta para a aba em que você estava
+  addEventListener('load', () => { let v = null; try { v = sessionStorage.getItem('fp_vista'); sessionStorage.removeItem('fp_vista'); } catch { /* ignore */ } if (!v) return; let n = 0; const t = setInterval(() => { if (typeof userId !== 'undefined' && userId) { clearInterval(t); try { trocarVista(v); } catch { /* ignore */ } } else if (++n > 40) clearInterval(t); }, 250); });
+})();
 if ('serviceWorker' in navigator) addEventListener('load', () => navigator.serviceWorker.register('/sw.js').catch(() => {}));
 
 /* ---------- início ---------- */
