@@ -662,6 +662,23 @@ body::before{content:"";position:fixed;inset:-25%;z-index:-1;pointer-events:none
 
 .prox-tag{display:inline-block;font-size:.72rem;font-weight:800;padding:2px 9px;border-radius:99px;background:#6C4DFF;color:#fff;vertical-align:middle}
 .row .acao{display:flex;gap:8px;flex-wrap:wrap}
+.orc .bar i{transition:width .9s cubic-bezier(.2,.8,.2,1)}
+.orc-top .mood{font-size:1.35rem;line-height:1}
+.orc-det{display:none;list-style:none;margin:0;padding:10px 0 0;border-top:1px dashed var(--line);font-size:.9rem;color:var(--muted);line-height:1.5}
+.orc.aberto .orc-det{display:block}
+.orc-det li{display:flex;justify-content:space-between;gap:8px;padding:3px 0}.orc-det li b{color:var(--ink)}.orc-det small{opacity:.8}
+.orc-foot{display:flex;justify-content:space-between;align-items:center;gap:8px;color:var(--muted);font-size:.85rem}
+.orc .chev{display:inline-block;transition:transform .25s}.orc.aberto .chev{transform:rotate(180deg)}
+.sim{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:18px 20px;box-shadow:var(--shadow);display:flex;flex-direction:column;gap:14px;transition:border-color .25s,box-shadow .25s}
+.sim.ok{border-color:#22C55E}.sim.warn{border-color:#FFC83D}.sim.bad{border-color:#E5383B;box-shadow:0 0 0 2px rgba(229,56,59,.25)}
+.sim-chips{display:flex;gap:8px;flex-wrap:wrap}
+.sim input[type=range]{width:100%;height:32px;accent-color:#6C4DFF;cursor:pointer}
+.sim-out{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.sim-out small{display:block;color:var(--muted);font-size:.8rem}.sim-out b{font-family:var(--display);font-size:1.25rem;font-variant-numeric:tabular-nums}.sim-out em{display:block;font-style:normal;color:var(--muted);font-size:.8rem}
+.sim-msg{margin:0;font-weight:600}
+@media (max-width:720px){.sim-out{grid-template-columns:1fr}}
+.pbar{display:block;height:6px;border-radius:99px;background:rgba(127,127,160,.28);overflow:hidden;margin-top:6px}.pbar i{display:block;height:100%;border-radius:99px;background:currentColor;opacity:.75}
+.per:active,.orc:active,.chip-btn:active{transform:scale(.97)}
 /* ===== ajustes: texto sobreposto, cores dos balões, sem piscar ===== */
 .hero+.help,.hero.tres+.help{margin-top:18px}
 .hero .panel:not(.meta):not(.divida):not(.neg):nth-child(2){background:linear-gradient(135deg,#8A5CFF,#C45CFF)}
@@ -968,6 +985,15 @@ window.somBrilho = function (grande, aguardar) {
         <div class="mesnav"><button class="btn small" type="button" data-plm="-1" aria-label="Mês anterior">‹</button><strong class="mes" id="planMesLabel"></strong><button class="btn small" type="button" data-plm="1" aria-label="Próximo mês">›</button></div></div>
       <div class="hero tres" id="planoResumo"></div>
       <p class="help">A previsão usa o seu ritmo atual de gastos avulsos. Contas, parcelas e faturas já lançadas entram pelo valor cheio.</p>
+      <section class="plano-bloco" aria-labelledby="tSim">
+        <div class="plano-cab"><div><h3 class="sec-t" id="tSim">E se eu gastar…?</h3><p class="sub">Arraste e veja na hora como um gasto novo mexe no seu mês.</p></div></div>
+        <div class="sim" id="planoSim">
+          <div class="sim-chips"><button type="button" class="chip-btn" data-sim="0">Zerar</button><button type="button" class="chip-btn" data-sim="50">R$ 50</button><button type="button" class="chip-btn" data-sim="100">R$ 100</button><button type="button" class="chip-btn" data-sim="200">R$ 200</button><button type="button" class="chip-btn" data-sim="500">R$ 500</button></div>
+          <input type="range" id="simRange" min="0" max="500" step="5" value="0" aria-label="Valor do gasto simulado">
+          <div class="sim-out"><div><small>Gasto simulado</small><b id="simV">R$ 0,00</b></div><div><small>Pode gastar por dia</small><b id="simDia">—</b><em id="simDiaD"></em></div><div><small>Previsão do mês</small><b id="simPrev">—</b><em id="simPrevD"></em></div></div>
+          <p class="sim-msg" id="simMsg"></p>
+        </div>
+      </section>
       <section class="plano-bloco" aria-labelledby="tOrc">
         <div class="plano-cab"><div><h3 class="sec-t" id="tOrc">Orçamento por categoria</h3><p class="sub">Defina um teto para cada tipo de gasto e acompanhe durante o mês.</p></div><button class="btn primary" id="btnNovoOrc" type="button">Novo orçamento</button></div>
         <div id="orcLista" class="orc-grid"></div>
@@ -2640,6 +2666,14 @@ const ATUALIZADO_EM = /^\d{4}-/.test(DEPLOY_EM) ? DEPLOY_EM : '2026-10-20T15:52:
 /* ---------- planejamento: por dia, previsão, orçamentos e agenda ---------- */
 let planMes = null, planoDados = null, orcs = [], orcsOk = false, orcEdit = null;
 const plNz = s => String(s).normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toLowerCase();
+const plMatch = (desc, cat) => {   // gasto conta no orçamento se o nome for igual, parecido ou contiver o da categoria
+  const d = plNz(desc), c = plNz(cat); if (!d || !c) return false;
+  if (d === c || d.includes(c) || (d.length >= 3 && c.includes(d))) return true;
+  const tk = x => x.split(/[^a-z0-9]+/).filter(w => w.length > 2), a = tk(d), b = tk(c);
+  if (!a.length || !b.length) return false;
+  const [mn, mx] = a.length <= b.length ? [a, b] : [b, a]; return mn.every(w => mx.includes(w));
+};
+let orcAberto = new Set(), orcVisto = {}, planCalc = null;
 const plCap = s => s.charAt(0).toUpperCase() + s.slice(1);
 const plAdd = (iso, n) => { const d = new Date(iso + 'T00:00:00'); d.setDate(d.getDate() + n); return d.toLocaleDateString('sv-SE'); };
 const plDias = iso => Math.round((new Date(iso + 'T00:00:00') - new Date(hojeISO() + 'T00:00:00')) / 86400000);
@@ -2689,7 +2723,7 @@ function renderAgenda() {
   const tots = PERIODOS.slice(1).map(p => plSoma(plNoPer(doMes, p))), mx = Math.max(...tots);
   box.innerHTML = PERIODOS.map((p, i) => {
     const l = plNoPer(doMes, p), t = plSoma(l), pesada = i > 0 && mx > 0 && t === mx, agora = agMes === mesHoje && i > 0 && p.k === plPerDe(hoje);
-    return `<button type="button" class="per${p.k === agPer ? ' sel' : ''}${pesada ? ' pesada' : ''}" style="--i:${i}" data-per="${p.k}" aria-pressed="${p.k === agPer}"><span class="pn">${p.n}${agora ? ' · agora' : ''}</span><b>${brl(t)}</b><small>${l.length ? `${l.length} ${l.length === 1 ? 'pagamento' : 'pagamentos'}` : 'nada a pagar'}</small>${pesada ? '<em>mais pesado</em>' : ''}</button>`;
+    return `<button type="button" class="per${p.k === agPer ? ' sel' : ''}${pesada ? ' pesada' : ''}" style="--i:${i}" data-per="${p.k}" aria-pressed="${p.k === agPer}"><span class="pn">${p.n}${agora ? ' · agora' : ''}</span><b>${brl(t)}</b><small>${l.length ? `${l.length} ${l.length === 1 ? 'pagamento' : 'pagamentos'}` : 'nada a pagar'}</small>${i > 0 ? `<span class="pbar"><i style="width:${mx ? t / mx * 100 : 0}%"></i></span>` : ''}${pesada ? '<em>mais pesado</em>' : ''}</button>`;
   }).join('');
   const fora = todos.filter(x => x.d < hoje && x.d.slice(0, 7) !== agMes).sort((a, b) => a.d.localeCompare(b.d));
   $('#agendaAviso').innerHTML = fora.length ? `<div class="ag-aviso atraso"><span>⚠️ ${fora.length} ${fora.length === 1 ? 'pagamento vencido' : 'pagamentos vencidos'} em outros meses</span><button type="button" class="btn small" data-atraso="${fora[0].d}">Ver</button></div>` : '';
@@ -2746,18 +2780,26 @@ function renderPlano() {
   const hj = new Date(), atual = hojeISO().slice(0, 7), [py, pm] = t.mes.split('-').map(Number), dm = new Date(py, pm, 0).getDate(), dia = t.mes === atual ? hj.getDate() : t.mes < atual ? dm : 0, restam = t.mes === atual ? dm - dia + 1 : t.mes > atual ? dm : 0;
   const total = t.renda + t.caixa, livre = total - t.despesas, porDia = livre > 0 && restam ? livre / restam : 0;
   const ritmo = t.gastos / (dia || dm), saldoPrev = total - ((t.despesas - t.gastos) + ritmo * dm);
+  planCalc = { total, livre, restam, porDia, saldoPrev };
   $('#planoResumo').innerHTML =
     `<div class="panel ${!total ? '' : livre > 0 ? 'meta' : 'neg'}"><h2>Pode gastar por dia</h2><p class="num" data-count="${porDia}">${brl(porDia)}</p><p class="of">${!total ? 'cadastre seu salário na aba Salário' : !restam ? 'mês encerrado' : livre > 0 ? `${brl(livre)} livres para ${restam} dia(s) até o fim do mês` : 'o mês já está comprometido: evite novos gastos'}</p></div>
      <div class="panel ${!total ? '' : saldoPrev >= 0 ? '' : 'neg'}"><h2>${saldoPrev >= 0 ? 'Previsão: sobra' : 'Previsão: falta'}</h2><p class="num" data-count="${Math.abs(saldoPrev)}">${brl(Math.abs(saldoPrev))}</p><p class="of">${!total ? 'sem salário cadastrado' : `mantendo ${brl(ritmo)} por dia em gastos avulsos`}</p></div>
      <div class="panel"><h2>Já comprometido</h2><p class="num" data-count="${t.despesas}">${brl(t.despesas)}</p><p class="of">${total ? `${Math.min(999, Math.round(t.despesas / total * 100))}% do que você tem este mês` : 'despesas do mês'}</p></div>`;
-  // orçamentos
-  const gc = {}; t.listaG.forEach(x => { const k = x.descricao.trim().toLowerCase(); gc[k] = (gc[k] || 0) + Number(x.valor); });
+  // orçamentos (clique no cartão para ver quais gastos entraram)
   $('#orcLista').innerHTML = orcs.length ? orcs.map((o, i) => {
-    const g = t.listaG.reduce((a, x) => { const d = plNz(x.descricao), c = plNz(o.categoria); return d === c || d.includes(c) ? a + Number(x.valor) : a; }, 0), pct = g / o.limite * 100, cls = pct >= 100 ? 'estoura' : pct >= 80 ? 'perto' : '';
-    return `<article class="orc ${cls}" style="--i:${i}" data-orc="${o.id}" tabindex="0" role="button" aria-label="Editar orçamento ${esc(o.categoria)}"><div class="orc-top"><strong>${esc(o.categoria)}</strong>${cls ? balaoHtml(pct >= 100 ? 'vermelho' : 'amarelo', pct >= 100 ? 'Estourou' : 'Perto do teto') : ''}</div><div class="orc-val"><b>${brl(g)}</b><span>de ${brl(o.limite)}</span></div><div class="bar"><i style="width:${Math.min(100, pct)}%"></i></div><div class="orc-amts"><span>${pct >= 100 ? `${brl(g - o.limite)} acima` : `faltam ${brl(o.limite - g)}`}</span><span>${Math.round(Math.min(999, pct))}%</span></div></article>`;
+    const lst = t.listaG.filter(x => plMatch(x.descricao, o.categoria)), g = lst.reduce((a, x) => a + Number(x.valor), 0), pct = g / o.limite * 100;
+    const cls = pct >= 100 ? 'estoura' : pct >= 80 ? 'perto' : '', mood = pct >= 100 ? '🚨' : pct >= 80 ? '😬' : pct >= 50 ? '🙂' : '😌', aberto = orcAberto.has(o.id);
+    const det = lst.length
+      ? `<ul class="orc-det">${lst.slice().sort((x, y) => String(y.data || '').localeCompare(String(x.data || ''))).map(x => `<li><span>${esc(x.descricao)}${x.data ? ` <small>${plCurto(String(x.data).slice(0, 10))}</small>` : ''}</span><b>${brl(Number(x.valor))}</b></li>`).join('')}</ul>`
+      : `<p class="orc-det">Nenhum gasto deste mês com nome igual ou parecido com “${esc(o.categoria)}”. Ao lançar um gasto, use esse nome (ou algo que o contenha, como “${esc(o.categoria)} no salão”).</p>`;
+    return `<article class="orc ${cls}${aberto ? ' aberto' : ''}" style="--i:${i}" data-orc="${o.id}" data-fin="${Math.min(100, pct)}" tabindex="0" role="button" aria-expanded="${aberto}" aria-label="Ver gastos do orçamento ${esc(o.categoria)}"><div class="orc-top"><strong>${esc(o.categoria)}</strong><span class="mood" aria-hidden="true">${mood}</span></div><div class="orc-val"><b>${brl(g)}</b><span>de ${brl(o.limite)}</span></div><div class="bar"><i style="width:${Math.min(100, orcVisto[o.id] ?? 0)}%"></i></div><div class="orc-amts"><span>${pct >= 100 ? `${brl(g - o.limite)} acima` : `faltam ${brl(o.limite - g)}`}</span><span>${Math.round(Math.min(999, pct))}%</span></div>${det}<div class="orc-foot"><span class="orc-hint">${lst.length ? `${lst.length} gasto(s)` : 'nenhum gasto contado'} <span class="chev">▾</span></span><button type="button" class="btn small ghost" data-orcedit="${o.id}">Editar</button></div></article>`;
   }).join('') : '<p class="hist-vazio">Nenhum orçamento ainda. Defina um teto para um gasto (por exemplo, Mercado) e acompanhe aqui.</p>';
-  const gr = gruposGastos(t), sug = Object.keys(gr).filter(k => !orcs.some(o => o.categoria.trim().toLowerCase() === k)).sort((a, b) => gr[b].v - gr[a].v).slice(0, 4);
+  requestAnimationFrame(() => requestAnimationFrame(() => document.querySelectorAll('#orcLista .orc').forEach(a => {   // a barra só anima quando o valor muda
+    const f = Number(a.dataset.fin), bi = a.querySelector('.bar i'); if (bi) bi.style.width = f + '%'; orcVisto[a.dataset.orc] = f;
+  })));
+  const gr = gruposGastos(t), sug = Object.keys(gr).filter(k => !orcs.some(o => plMatch(gr[k].n, o.categoria))).sort((a, b) => gr[b].v - gr[a].v).slice(0, 4);
   $('#orcSug').innerHTML = sug.length ? '<span class="help" style="width:100%;margin:6px 0 0">Sugestões a partir dos seus gastos:</span>' + sug.map((k, i) => `<button type="button" class="chip-btn gasto-chip" style="--i:${i}" data-sugorc="${esc(gr[k].n)}"><b>${esc(gr[k].n)}</b><span>${brl(gr[k].v)} no mês</span></button>`).join('') : '';
+  ajustaSim();
   renderAgenda();
   contar();
 }
@@ -2770,8 +2812,30 @@ function abrirOrc(o, nome) {
   $('#dlgOrc').showModal(); (o || nome ? f.limite : f.categoria).focus();
 }
 $('#btnNovoOrc').onclick = () => abrirOrc();
-$('#orcLista').addEventListener('click', e => { const a = e.target.closest('[data-orc]'); if (a) abrirOrc(orcs.find(o => o.id === a.dataset.orc)); });
-$('#orcLista').addEventListener('keydown', e => { if (e.key !== 'Enter' && e.key !== ' ') return; const a = e.target.closest('[data-orc]'); if (a) { e.preventDefault(); abrirOrc(orcs.find(o => o.id === a.dataset.orc)); } });
+function alternarOrc(a) { const id = a.dataset.orc; orcAberto.has(id) ? orcAberto.delete(id) : orcAberto.add(id); a.classList.toggle('aberto', orcAberto.has(id)); a.setAttribute('aria-expanded', orcAberto.has(id)); }
+$('#orcLista').addEventListener('click', e => { const ed = e.target.closest('[data-orcedit]'); if (ed) return abrirOrc(orcs.find(o => o.id === ed.dataset.orcedit)); const a = e.target.closest('[data-orc]'); if (a) alternarOrc(a); });
+$('#orcLista').addEventListener('keydown', e => { if (e.key !== 'Enter' && e.key !== ' ') return; const a = e.target.closest('[data-orc]'); if (a && e.target === a) { e.preventDefault(); alternarOrc(a); } });
+/* ---------- simulador: "e se eu gastar...?" ---------- */
+function ajustaSim() {
+  const r = $('#simRange'); if (!r || !planCalc) return; const c = planCalc;
+  r.max = Math.max(500, Math.ceil(Math.max(c.livre, 0) * 1.5 / 10) * 10);
+  const v = Math.min(Number(r.value), Number(r.max)), restaDia = c.restam ? (c.livre - v) / c.restam : 0, prev = c.saldoPrev - v;
+  r.value = v;
+  $('#simV').textContent = brl(v);
+  $('#simDia').textContent = c.total ? brl(Math.max(0, restaDia)) : '—';
+  $('#simDiaD').textContent = c.total && v && c.restam ? `${brl(Math.max(0, c.porDia - Math.max(0, restaDia)))} a menos por dia` : '';
+  $('#simPrev').textContent = c.total ? `${prev >= 0 ? 'sobra' : 'falta'} ${brl(Math.abs(prev))}` : '—';
+  $('#simPrevD').textContent = c.total && v ? `antes: ${c.saldoPrev >= 0 ? 'sobra' : 'falta'} ${brl(Math.abs(c.saldoPrev))}` : '';
+  const sim = $('#planoSim'); sim.classList.remove('ok', 'warn', 'bad');
+  let msg = 'Arraste a barra ou toque num valor para simular.';
+  if (!c.total) msg = 'Cadastre seu salário na aba Salário para simular.';
+  else if (v > 0 && c.livre - v < 0) { msg = `🚨 Isso estoura o mês: você ficaria ${brl(v - Math.max(0, c.livre))} além do que tem.`; sim.classList.add('bad'); }
+  else if (v > 0 && prev < 0) { msg = '⚠️ Cabe agora, mas no seu ritmo de gastos o mês fecha no vermelho.'; sim.classList.add('warn'); }
+  else if (v > 0) { msg = '✅ Cabe no mês e ainda sobra no fim.'; sim.classList.add('ok'); }
+  $('#simMsg').textContent = msg;
+}
+$('#simRange').addEventListener('input', ajustaSim);
+$('#planoSim').addEventListener('click', e => { const b = e.target.closest('[data-sim]'); if (!b) return; $('#simRange').value = b.dataset.sim; ajustaSim(); });
 $('#orcSug').addEventListener('click', e => { const b = e.target.closest('[data-sugorc]'); if (b) abrirOrc(null, b.dataset.sugorc); });
 $('#formOrc').addEventListener('submit', async e => {
   e.preventDefault();
