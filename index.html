@@ -660,6 +660,8 @@ body::before{content:"";position:fixed;inset:-25%;z-index:-1;pointer-events:none
 .proj-lin li{display:flex;justify-content:space-between;gap:8px;font-size:.92rem;color:var(--muted)}.proj-lin li b{color:var(--ink);font-weight:700}.proj-lin small{font-style:italic}
 @media (max-width:720px){.per-grid{grid-template-columns:repeat(2,minmax(0,1fr));row-gap:18px}}
 
+.prox-tag{display:inline-block;font-size:.72rem;font-weight:800;padding:2px 9px;border-radius:99px;background:#6C4DFF;color:#fff;vertical-align:middle}
+.row .acao{display:flex;gap:8px;flex-wrap:wrap}
 /* ===== ajustes: texto sobreposto, cores dos balões, sem piscar ===== */
 .hero+.help,.hero.tres+.help{margin-top:18px}
 .hero .panel:not(.meta):not(.divida):not(.neg):nth-child(2){background:linear-gradient(135deg,#8A5CFF,#C45CFF)}
@@ -2125,17 +2127,24 @@ function renderContas() {
     const p = projetar(t, 3);
     const linhaVenc = pend ? `<span class="${st.cls}">${st.txt}</span> · ${fmtData(pend.vencimento)}` : (todas.length ? 'Nenhuma conta em aberto' : 'Nenhuma conta lançada');
     const proj = p && p.itens.length
-      ? `<div class="projt">Projeção</div><ul class="proj">${p.itens.map(x => `<li><span>${mesAno(x.venc)} · dia ${x.venc.slice(8, 10)}</span><b>~ ${brl(x.valor)}</b></li>`).join('')}</ul>`
+      ? `<div class="projt">Próximos meses (estimativa)</div><ul class="proj">${p.itens.map(x => `<li><span>${mesAno(x.venc)} · dia ${x.venc.slice(8, 10)}</span><b>~ ${brl(x.valor)}</b></li>`).join('')}</ul>`
       : `<p class="proj-vazio">${todas.length ? 'Informe o valor de pelo menos uma conta para ver a projeção.' : 'Lance as últimas contas para ver a projeção.'}</p>`;
     return `<article class="row card" style="--g1:${g1};--g2:${g2};animation-delay:${k * 60}ms" data-ctipo="${t}">
       <div class="ctop"><span class="tag">${c.nome}</span>${st && st.nivel ? balaoHtml(st.nivel, st.balao) : ''}</div>
       <div class="cmid"><div class="cinfo"><button class="nome" data-ctopen="${t}">${c.emoji} ${c.nome}</button><div class="prazo">${linhaVenc}</div></div></div>
-      <div class="camts"><strong>${ult ? brl(ult.valor) : '—'}</strong><span>${ult ? 'última conta' : 'sem valor lançado'}</span></div>
+      <div class="camts"><strong>${pend ? (pend.valor != null ? brl(pend.valor) : 'sem valor') : (ult ? brl(ult.valor) : '—')}</strong><span>${pend ? 'próxima a vencer' : (ult ? 'última conta' : 'sem valor lançado')}</span></div>
       ${proj}
-      <div class="acao"><button class="btn small go" data-cadd="${t}">Lançar conta</button></div></article>`;
+      <div class="acao">${pend ? `<button class="btn small go" data-cpagar="${pend.id}">Marcar ${mesAno(pend.vencimento)} como paga</button>` : ''}<button class="btn small${pend ? ' ghost' : ' go'}" data-cadd="${t}">${todas[0] ? `Lançar conta de ${mesAno(addMeses(todas[0].vencimento, 1, Number(todas[0].vencimento.slice(8, 10))))}` : 'Lançar conta'}</button></div></article>`;
   }).join('');
 }
-$('#contasLista').addEventListener('click', e => {
+$('#contasLista').addEventListener('click', async e => {
+  const pagar = e.target.closest('[data-cpagar]');
+  if (pagar) {   // paga exatamente a conta mostrada no cartão (a próxima a vencer)
+    pagar.disabled = true;
+    const { error } = await sb.from('contas_faturas').update({ paga: true }).eq('id', pagar.dataset.cpagar);
+    if (error) { pagar.disabled = false; return toast('Não foi possível atualizar. Tente de novo.', true); }
+    toast('Conta marcada como paga ✅'); return carregarContas();
+  }
   const add = e.target.closest('[data-cadd]'); if (add) return abrirConta(add.dataset.cadd, true);
   const row = e.target.closest('.row'); if (row) abrirConta(row.dataset.ctipo);
 });
@@ -2209,9 +2218,10 @@ function renderContaDet() {
   $('#ctProj').innerHTML = p && p.itens.length
     ? `<ul class="proj" style="--g1:${c.cor[0]}">${p.itens.map(x => `<li><span>${fmtData(x.venc)}</span><b>~ ${brl(x.valor)}</b></li>`).join('')}</ul><p class="dica">Estimativa com base em ${p.k} conta(s): ${c.dica}. O valor real pode variar.</p>`
     : '<p class="proj-vazio">Sem projeção ainda.</p>';
-  $('#ctHist').innerHTML = todas.length ? todas.map(f => {
+  const ordem = [...todas.filter(f => !f.paga).sort((a, b) => a.vencimento.localeCompare(b.vencimento)), ...todas.filter(f => f.paga)];
+  $('#ctHist').innerHTML = todas.length ? ordem.map((f, i) => {
     const st = statusVenc(f);
-    return `<li><div class="desc">${fmtData(f.vencimento)}<small class="${st.cls}">${st.txt}</small>${st.nivel ? balaoHtml(st.nivel, st.balao) : ''}${f.consumo != null ? `<small>Consumo: ${fmtNum(f.consumo)} ${esc(f.consumo_unidade || '')}</small>` : ''}</div>
+    return `<li><div class="desc">${fmtData(f.vencimento)}${!f.paga && i === 0 ? ' <span class="prox-tag">próxima a vencer</span>' : ''}<small class="${st.cls}">${st.txt}</small>${st.nivel ? balaoHtml(st.nivel, st.balao) : ''}${f.consumo != null ? `<small>Consumo: ${fmtNum(f.consumo)} ${esc(f.consumo_unidade || '')}</small>` : ''}</div>
       <span class="val">${f.valor == null ? 'sem valor' : brl(f.valor)}</span>
       <span class="acoes">${f.foto_path ? `<button class="del" data-cfoto="${f.id}">📷 Foto</button>` : ''}<button class="del" data-cpaga="${f.id}">${f.paga ? 'Reabrir' : 'Pagar'}</button><button class="del" data-cedit="${f.id}">Editar</button><button class="del" data-cdelf="${f.id}" aria-label="Excluir conta de ${fmtData(f.vencimento)}">Excluir</button></span></li>`;
   }).join('') : '<li class="hist-vazio">Nenhuma conta lançada ainda.</li>';
@@ -2710,10 +2720,13 @@ async function carregarProj() { await Promise.all([carregarCartoes(), carregarCo
 function renderProj() {
   if (!$('#projLista')) return;
   const mes0 = hojeISO().slice(0, 7), ms = Array.from({ length: 6 }, (_, i) => addMeses(mes0 + '-01', i, 1).slice(0, 7));
-  const M = {}; ms.forEach(m => M[m] = { cartao: 0, lanc: 0, est: {} });
-  cartoes.forEach(c => abertasC(c).forEach(x => { const m = x.data.slice(0, 7); if (M[m]) M[m].cartao += Number(x.valor); }));
+  const M = {}; ms.forEach(m => M[m] = { cartao: 0, fat: [], lanc: 0, est: {} });
+  // mesma conta da Agenda do mês: cada fatura cai no mês do seu vencimento, já descontando pagamentos; vencidas entram no mês atual
+  agendaItens().forEach(x => {
+    const m = x.d.slice(0, 7) < mes0 ? mes0 : x.d.slice(0, 7); if (!M[m]) return;
+    if (x.ico === '💳') { M[m].cartao += Number(x.v); M[m].fat.push(x); } else M[m].lanc += Number(x.v || 0);
+  });
   Object.keys(CONTAS).forEach(t => {
-    contasFat.filter(f => f.tipo === t && !f.paga).forEach(f => { const m = f.vencimento.slice(0, 7); if (M[m]) M[m].lanc += Number(f.valor || 0); });
     const p = projetar(t, 8);
     if (p) p.itens.forEach(it => { const m = it.venc.slice(0, 7); if (M[m] && !contasFat.some(f => f.tipo === t && !f.paga && f.vencimento.slice(0, 7) === m)) M[m].est[t] = (M[m].est[t] || 0) + it.valor; });
   });
@@ -2721,7 +2734,7 @@ function renderProj() {
   $('#projResumo').innerHTML = `<div class="panel"><h2>Próximos 6 meses</h2><p class="num">${brl(soma)}</p><p class="of">cartão e contas da casa</p></div><div class="panel ${mx > 0 ? 'neg' : ''}"><h2>Mês mais pesado</h2><p class="num">${mx > 0 ? plCap(mesNome(ms[im])) : '—'}</p><p class="of">${mx > 0 ? brl(mx) : 'nada comprometido ainda'}</p></div><div class="panel"><h2>Média por mês</h2><p class="num">${brl(soma / 6)}</p><p class="of">nos próximos 6 meses</p></div>`;
   $('#projLista').innerHTML = ms.map((m, i) => {
     const d = M[m], linhas = [];
-    if (d.cartao > 0) linhas.push(['💳', 'Cartão (parcelas e compras)', d.cartao, '']);
+    d.fat.forEach(x => linhas.push(['💳', esc(x.t), Number(x.v), '']));
     if (d.lanc > 0) linhas.push(['🧾', 'Contas da casa lançadas', d.lanc, '']);
     Object.keys(d.est).forEach(t => linhas.push([CONTAS[t].emoji, CONTAS[t].nome, d.est[t], 'estimada']));
     return `<article class="proj-card${i === im && mx > 0 ? ' pesada' : ''}" style="--i:${i}"><div class="proj-top"><strong>${plCap(mesNome(m))}${i === 0 ? ' <small>· este mês</small>' : ''}</strong>${i === im && mx > 0 ? '<em>mais pesado</em>' : ''}</div><b class="proj-tot">${brl(tt[i])}</b><div class="bar"><i style="width:${mx ? tt[i] / mx * 100 : 0}%"></i></div><ul class="proj-lin">${linhas.length ? linhas.map(l => `<li><span>${l[0]} ${l[1]}${l[3] ? ` <small>${l[3]}</small>` : ''}</span><b>${brl(l[2])}</b></li>`).join('') : '<li class="hist-vazio">Nada comprometido.</li>'}</ul></article>`;
