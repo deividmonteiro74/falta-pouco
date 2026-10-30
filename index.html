@@ -729,6 +729,15 @@ body::before{content:"";position:fixed;inset:-25%;z-index:-1;pointer-events:none
 .chip-btn:hover{box-shadow:0 12px 24px color-mix(in srgb,var(--c1) 50%,transparent)}
 .gasto-chip em{background:rgba(255,255,255,.3);color:#fff}
 @media (prefers-reduced-motion:reduce){.vista-in,.vista-in *,.wdet{animation:none!important}}
+
+/* ===== correções: animação dos cartões e carregamento do Planejamento ===== */
+@keyframes wentra{from{opacity:0;transform:translateY(34px) scale(.97)}}
+#cartoesLista.entra .wc,#cartoesLista.entra .wallet .wc{animation:wentra .5s cubic-bezier(.2,.8,.2,1) backwards!important}   /* o estilo antigo desligava esta animação com !important */
+@keyframes wabre{from{opacity:.25;transform:translateY(14px) scale(.97)}}
+.wdet{animation:wabre .3s cubic-bezier(.2,.8,.2,1)}
+@keyframes brilhoCarga{to{background-position:-200% 0}}
+#planoResumo:empty,#projResumo:empty,[data-mesresumo]:empty{min-height:150px;border-radius:24px;background:linear-gradient(90deg,var(--surface) 0%,color-mix(in srgb,var(--brand) 14%,var(--surface)) 50%,var(--surface) 100%);background-size:200% 100%;animation:brilhoCarga 1.3s linear infinite}
+@media (prefers-reduced-motion:reduce){#cartoesLista.entra .wc,#cartoesLista.entra .wallet .wc,.wdet,#planoResumo:empty,#projResumo:empty,[data-mesresumo]:empty{animation:none!important}}
 </style>
 
 </head>
@@ -1009,7 +1018,7 @@ window.somBrilho = function (grande, aguardar) {
         <div class="acoes"><button class="btn" data-rel type="button">Relatório do mês</button><button class="btn primary" data-novo="gastos" type="button">Novo gasto</button></div>
       </div>
       <div data-caixa-box></div>
-      <div class="hero tres" data-resumo></div>
+      <div class="hero tres" data-mesresumo></div>
       <p class="help" id="dicaGastos"></p>
       <div class="chips grupos" id="chips_gastos"></div>
     </section>
@@ -1019,7 +1028,7 @@ window.somBrilho = function (grande, aguardar) {
         <div class="acoes"><button class="btn" data-copiar type="button">Copiar do mês anterior</button><button class="btn" data-rel type="button">Relatório do mês</button><button class="btn primary" data-novo="rendas" type="button">Nova entrada</button></div>
       </div>
       <div data-caixa-box></div>
-      <div class="hero tres" data-resumo></div>
+      <div class="hero tres" data-mesresumo></div>
       <div class="chips" id="chips_rendas"></div>
       <ul class="hist biglist" id="lista_rendas"></ul>
     </section>
@@ -1396,7 +1405,8 @@ async function entrar(session) {
   await checarAdmin();
   await carregar();
   carregarCartoes(); carregarContas(); verificarFechamento();
-  setTimeout(() => { if (userId) carregarMes(); }, 1500);   // adianta os dados da aba Gastos/Salário
+  setTimeout(() => { if (userId) carregarMes(); }, 1500);
+  setTimeout(() => { if (userId) carregarPlano(); }, 3000);   // adianta os dados da aba Gastos/Salário
 }
 
 /* ---------- dados ---------- */
@@ -1666,6 +1676,7 @@ function trocarVista(v) {
   const secao = $({ meu: '#vistaMeu', cartoes: '#vistaCartoes', contas: '#vistaContas', gastos: '#vistaGastos', salario: '#vistaSalario', plano: '#vistaPlano', projecao: '#vistaProj', admin: '#vistaAdmin' }[v]);
   if (secao && !vistasAnim.has(v)) { vistasAnim.add(v); secao.classList.add('vista-in'); setTimeout(() => secao.classList.remove('vista-in'), 1200); }
   if (v === 'admin' && ehAdmin) carregarAdmin();
+  if (v === 'cartoes') entradaCartoes();
   if (v === 'cartoes' && userId) carregarCartoes();
   if (v === 'contas' && userId) carregarContas();
   if (v === 'plano' && userId) { planMes = mesSel; agAnim = true; carregarPlano(); }
@@ -2435,7 +2446,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.ma
 function renderMes() {
   const t = mesDados; if (!t) return;
   document.querySelectorAll('[data-mes-label]').forEach(e => { const s = mesNome(mesSel); e.textContent = s.charAt(0).toUpperCase() + s.slice(1); });
-  document.querySelectorAll('[data-resumo]').forEach(e => e.innerHTML = resumoHtml(t));
+  document.querySelectorAll('[data-mesresumo]').forEach(e => e.innerHTML = resumoHtml(t));
   document.querySelectorAll('[data-caixa-box]').forEach(e => e.innerHTML = caixaBoxHtml(t));
   const cxLi = (t.caixa || 0) > 0 ? `<li class="caixa-li"><div class="desc"><strong>${t.manual ? '💼 Caixa inicial' : '💼 Caixa do mês anterior'}</strong><small>${t.manual ? 'valor que você informou' : 'o que sobrou e ficou guardado'}</small></div><span class="val pos">+ ${brl(t.caixa)}</span></li>` : '';
   $('#lista_rendas').innerHTML = cxLi + (t.listaR.length ? t.listaR.map(x => linhaLanc(x, 'rendas')).join('') : '<li class="hist-vazio">Nenhuma entrada neste mês. Cadastre seu salário em "Nova entrada".</li>');
@@ -2723,9 +2734,8 @@ async function carregarOrcs() {
 async function carregarPlano() {
   semIni = null; diaSel = null; agPer = null;
   const mes = planMes || hojeISO().slice(0, 7); agMes = mes;
-  try { const [t, cx] = await Promise.all([totaisMes(mes), caixaInicial(mes), carregarOrcs()]); planoDados = { ...t, caixa: cx, mes }; }
+  try { const [t, cx] = await Promise.all([totaisMes(mes), caixaInicial(mes), carregarOrcs(), carregarCartoes(), carregarContas()]); planoDados = { ...t, caixa: cx, mes }; }
   catch (e) { toast('Não foi possível carregar o planejamento. Tente de novo.', true); return; }
-  await Promise.all([carregarCartoes(), carregarContas()]);
   renderPlano();
 }
 /* ---------- agenda semanal (segunda a domingo) ---------- */
@@ -2944,6 +2954,15 @@ carregarContas = memoizar(() => 'contas', carregarContas, 30000);
 carregarMes = memoizar(() => 'mes:' + mesSel, carregarMes, 30000);
 carregar = memoizar(() => 'itens', carregar, 30000);
 carregarPlano = memoizar(() => 'plano:' + (planMes || ''), carregarPlano, 30000);
+let modoCart = null;
+function entradaCartoes() { const box = $('#cartoesLista'); if (!box) return; box.classList.remove('entra'); void box.offsetWidth; box.classList.add('entra'); setTimeout(() => box.classList.remove('entra'), 1300); }
+const _renderCartoes = renderCartoes;
+renderCartoes = function () {
+  _renderCartoes();
+  const box = $('#cartoesLista'), modo = box.querySelector('.wdet') ? 'detalhe' : box.querySelector('.wc') ? 'carteira' : 'vazio';
+  if (modo === 'carteira' && modoCart === 'detalhe') entradaCartoes();   // voltando do detalhe: os cartões entram em cascata
+  modoCart = modo;
+};
 
 /* ---------- atualização sem fechar o app ----------
    De tempos em tempos confere se há uma versão nova publicada. Se houver, avisa e atualiza sozinho
