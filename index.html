@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
 <meta charset="utf-8">
-<meta name="build" content="20261107-012858">
+<meta name="build" content="20261107-125046">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Falta Pouco: dívidas e metas</title>
 <link rel="preload" as="video" type="video/mp4" href="/abertura_vertical.mp4" media="(orientation: portrait)">
@@ -727,6 +727,12 @@ body::before{content:"";position:fixed;inset:-25%;z-index:-1;pointer-events:none
 .rel-exp.aberto .rel-det{display:block}
 .rd-dia{margin-top:8px}.rd-cab{display:flex;justify-content:space-between;font-weight:700;font-variant-numeric:tabular-nums}
 .rd-item{display:flex;justify-content:space-between;gap:10px;color:var(--muted);padding:2px 0 2px 12px}.rd-item b{color:var(--ink);font-weight:600}
+.banco-box{margin-top:10px;flex-wrap:wrap}
+.banco-res{flex-basis:100%;display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;font-size:.92rem}
+.banco-res small{flex-basis:100%;color:var(--muted)}.banco-res .pos{color:#22C55E;font-weight:700}.banco-res .neg{color:#E5383B;font-weight:700}
+.cal .dia{justify-content:flex-start}
+.cal .dv{margin:auto 0;align-self:center;font-size:.82rem;padding:3px 12px}
+@media (max-width:560px){.cal .dv{font-size:.62rem;padding:1px 5px}}
 /* ===== ajustes: texto sobreposto, cores dos balões, sem piscar ===== */
 .hero+.help,.hero.tres+.help{margin-top:18px}
 .hero .panel:not(.meta):not(.divida):not(.neg):nth-child(2){background:linear-gradient(135deg,#8A5CFF,#C45CFF)}
@@ -2429,7 +2435,7 @@ function resumoHtml(t) {
   const cx = t.caixa || 0, ent = t.renda + cx, disp = ent - t.despesas, neg = disp < 0;
   return `<div class="panel"><h2>Entrou</h2><p class="num" data-count="${ent}">${brl(ent)}</p><p class="of">${cx > 0 ? `inclui ${brl(cx)} de ${t.manual ? 'caixa inicial' : 'caixa do mês anterior'}` : 'salário e outras entradas'}</p></div>
   <div class="panel divida"><h2>Saiu</h2><p class="num" data-count="${t.despesas}">${brl(t.despesas)}</p><p class="of">o que já saiu da conta</p></div>
-  <div class="panel ${neg ? 'neg' : 'meta'}"><h2>${neg ? 'No vermelho' : 'Sobrou'}</h2><p class="num" data-count="${Math.abs(disp)}">${brl(Math.abs(disp))}</p><p class="of">${!ent ? 'cadastre seu salário' : neg ? 'a mais do que você tinha' : 'tem na conta agora 💚'}</p></div>`;
+  <div class="panel ${neg ? 'neg' : 'meta'}"><h2>${neg ? 'No vermelho' : (mesSel === hojeISO().slice(0, 7) ? 'Saldo atual' : 'Sobrou')}</h2><p class="num" data-count="${Math.abs(disp)}">${brl(Math.abs(disp))}</p><p class="of">${!ent ? 'cadastre seu salário' : neg ? 'a mais do que você tinha' : 'tem na conta agora 💚'}</p></div>`;
 }
 function linhaLanc(x, mod) {
   const r = mod === 'rendas';
@@ -2443,9 +2449,12 @@ function caixaBoxHtml(t) {
   const dica = edita ? `Digite só neste mês quanto você tem em caixa no início de ${mesNome(MES_CAIXA)}. Dos meses seguintes em diante o app calcula sozinho.`
     : mesSel < MES_CAIXA ? `O caixa inicial é informado em ${mesNome(MES_CAIXA)}.`
     : 'Calculado automaticamente: é o que sobrou do mês anterior.';
+  const banco = mesSel === hojeISO().slice(0, 7) ? `<div class="caixa-box banco-box" data-banco-box><div class="cx-txt"><h3>🏦 Conferir com o banco</h3><small>Digite o saldo que aparece no seu banco agora. Se for diferente do app, um toque ajusta.</small></div>
+    <label class="cx-campo"><span>R$</span><input type="text" inputmode="decimal" autocomplete="off" data-banco-input placeholder="0,00" aria-label="Saldo atual no banco"></label>
+    <button class="btn small" type="button" data-banco-conf>Conferir</button><div class="banco-res" data-banco-res aria-live="polite"></div></div>` : '';
   return `<div class="caixa-box"><div class="cx-txt"><h3>💼 Caixa</h3><small>${dica}</small></div>
     <label class="cx-campo"><span>R$</span><input type="text" inputmode="decimal" autocomplete="off" data-caixa-input value="${edita && !tem && !v ? '' : fmtCx(v)}" placeholder="0,00" aria-label="Caixa de ${mesNome(mesSel)}" ${edita ? '' : 'disabled'}></label>
-    ${edita ? '<button class="btn primary small" type="button" data-caixa-salvar>Salvar caixa</button>' : ''}</div>`;
+    ${edita ? '<button class="btn primary small" type="button" data-caixa-salvar>Salvar caixa</button>' : ''}</div>${banco}`;
 }
 async function salvarCaixa(box) {
   const inp = box.querySelector('[data-caixa-input]'), btn = box.querySelector('[data-caixa-salvar]'), n = parseMoney(inp.value);
@@ -2457,6 +2466,24 @@ async function salvarCaixa(box) {
   if (error) return toast('Não foi possível salvar o caixa. Tente de novo.', true);
   caixaManual = novo; toast('Caixa salvo 💚'); carregarMes();
 }
+document.addEventListener('click', async e => {   // conferir o saldo do app com o do banco
+  const c = e.target.closest('[data-banco-conf]'), a = e.target.closest('[data-banco-aj]');
+  if (c) {
+    const box = c.closest('[data-banco-box]'), inp = box.querySelector('[data-banco-input]'), res = box.querySelector('[data-banco-res]'), n = parseMoney(inp.value);
+    if (!inp.value.trim() || !(n >= 0)) { res.innerHTML = '<span class="neg">Digite o saldo que aparece no banco.</span>'; return; }
+    const t = mesDados; if (!t) return;
+    const app = t.renda + (t.caixa || 0) - t.despesas, dif = Math.round((n - app) * 100) / 100;
+    res.innerHTML = Math.abs(dif) < 0.005 ? '<span class="pos">✅ Bateu! O app e o banco estão iguais.</span>'
+      : `<span>O app mostra <b>${brl(app)}</b> e o banco <b>${brl(n)}</b>: ${dif > 0 ? 'faltam no app' : 'sobram no app'} <b>${brl(Math.abs(dif))}</b>.</span><button class="btn primary small" type="button" data-banco-aj="${dif}">Ajustar para bater</button><small>Cria o lançamento “Ajuste de saldo (banco)” de hoje. Se descobrir o que faltou lançar, apague o ajuste.</small>`;
+    return;
+  }
+  if (a) {
+    const dif = Number(a.dataset.bancoAj); a.disabled = true;
+    const { error } = await sb.from(dif > 0 ? 'rendas' : 'gastos').insert({ descricao: 'Ajuste de saldo (banco)', valor: Math.abs(dif), data: hojeISO() });
+    a.disabled = false; if (error) return toast('Não foi possível ajustar. Tente de novo.', true);
+    toast('Saldo ajustado ao banco ✅'); carregarMes(); return;
+  }
+});
 document.addEventListener('click', e => { const b = e.target.closest('[data-caixa-salvar]'); if (b) salvarCaixa(b.closest('[data-caixa-box]')); });
 document.addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.matches('[data-caixa-input]') && !e.target.disabled) { e.preventDefault(); salvarCaixa(e.target.closest('[data-caixa-box]')); } });
 function renderMes() {
@@ -2885,14 +2912,15 @@ function renderPlano() {
   const t = planoDados; if (!t) return;
   $('#planMesLabel').textContent = plCap(mesNome(t.mes));
   const hj = new Date(), atual = hojeISO().slice(0, 7), [py, pm] = t.mes.split('-').map(Number), dm = new Date(py, pm, 0).getDate(), dia = t.mes === atual ? hj.getDate() : t.mes < atual ? dm : 0, restam = t.mes === atual ? dm - dia + 1 : t.mes > atual ? dm : 0;
-  const desp = t.despesas + ((t.aPagar && t.aPagar.total) || 0), total = t.renda + t.caixa, livre = total - desp, porDia = livre > 0 && restam ? livre / restam : 0;
-  const ritmo = t.gastos / (dia || dm), saldoPrev = total - ((desp - t.gastos) + ritmo * dm);
+  const aP = (t.aPagar && t.aPagar.total) || 0, desp = t.despesas + aP, total = t.renda + t.caixa;
+  const saldo = total - t.despesas;                 // saldo na conta agora (igual ao do banco quando tudo está lançado)
+  const livre = saldo - aP, porDia = livre > 0 && restam ? livre / restam : 0;   // o que sobra depois de pagar tudo que está aberto
   const pctC = total ? Math.min(100, desp / total * 100) : 0;
   const paineis = [
     { cls: !total ? '' : livre > 0 ? 'meta' : 'neg', ico: '📅', tit: 'Pode gastar por dia', num: brl(porDia), curto: !total ? 'Cadastre seu salário' : !restam ? 'Mês encerrado' : livre > 0 ? 'até o fim do mês' : 'Mês comprometido',
-      det: !total ? 'Cadastre seu salário na aba Salário para ver quanto pode gastar.' : livre > 0 ? `${brl(livre)} livres para ${restam} dia(s).` : 'O mês já está comprometido. Evite novos gastos.' },
-    { cls: !total ? '' : saldoPrev >= 0 ? '' : 'neg', ico: '🔮', tit: 'Como o mês fecha', num: brl(Math.abs(saldoPrev)), curto: !total ? 'Sem salário cadastrado' : saldoPrev >= 0 ? 'vai sobrar' : 'vai faltar',
-      det: `Se você mantiver ${brl(ritmo)} por dia em gastos avulsos. Contas, parcelas e faturas lançadas entram pelo valor cheio.` },
+      det: !total ? 'Cadastre seu salário na aba Salário para ver quanto pode gastar.' : livre > 0 ? `${brl(livre)} livres (já separando o que ainda vai pagar) para ${restam} dia(s).` : 'O mês já está comprometido. Evite novos gastos.' },
+    { cls: !total ? '' : livre >= 0 ? '' : 'neg', ico: '🔮', tit: 'Como o mês fecha', num: brl(Math.abs(livre)), curto: !total ? 'Sem salário cadastrado' : livre >= 0 ? 'sobra se não gastar mais' : 'falta para pagar tudo',
+      det: `Saldo de hoje ${brl(saldo)} menos ${brl(aP)} de contas e faturas ainda abertas. Cada gasto novo diminui esse valor.` },
     { cls: '', ico: '🧾', tit: 'Já comprometido', num: brl(desp), curto: total ? `${Math.round(pctC)}% do que você tem` : 'despesas do mês', bar: total ? pctC : null,
       det: total ? `${brl(desp)} de ${brl(total)}: ${brl(t.despesas)} já saíram da conta e ${brl(desp - t.despesas)} ainda vão sair (contas e faturas).` : 'Soma das despesas deste mês.' },
   ];
