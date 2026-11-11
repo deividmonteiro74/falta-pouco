@@ -4,24 +4,24 @@
 <!--
   FALTA POUCO · arquivo único (index.html)
   Organização, de cima para baixo. Para achar cada parte, busque pelo texto entre aspas:
-   1. <head>: cor, tema e bloqueio do Face ID aplicados antes de desenhar a tela
-   2. <style> (um bloco só, com todo o visual):
+   1. (head): cor, tema e bloqueio do Face ID aplicados antes de desenhar a tela
+   2. (style) (um bloco só, com todo o visual):
         "Base, temas, componentes"  cores, cartões, páginas e ajustes por versão (V3 a V15)
         "Vidro estilo iPhone"       efeito glass (vale quando a opção Vidro está ligada)
         "correção: valor dos cartões"  números que se ajustam à largura do cartão
         "Abertura em vídeo"
         "V16"                       animações, calendário, foto de perfil, categorias, Face ID
-   3. <body>: abertura em vídeo, login ("viewAuth"), app ("viewApp") com as páginas
+   3. (body): abertura em vídeo, login ("viewAuth"), app ("viewApp") com as páginas
         vistaMeu, vistaCartoes, vistaContas, vistaGastos, vistaSalario, vistaPlano, vistaProj, vistaAdmin;
-        depois todas as janelas (<dialog>) e a tela de bloqueio ("trava")
-   4. <script> principal: Supabase, dados, cálculos e desenho das telas
+        depois todas as janelas ((dialog)) e a tela de bloqueio ("trava")
+   4. (script) principal: Supabase, dados, cálculos e desenho das telas
         (funções render..., carregar..., "calendário (agenda do mês)", "números que rolam")
-   5. <script> "Extras": transições de página, janelas animadas, gestos do calendário,
+   5. (script) "Extras": transições de página, janelas animadas, gestos do calendário,
         foto de perfil, categorias automáticas e Face ID
-  A cada versão publicada, mude o <meta name="build">: é assim que o app avisa "Nova versão disponível".
+  A cada versão publicada, mude o meta "build": é assim que o app avisa "Nova versão disponível".
 -->
 <meta charset="utf-8">
-<meta name="build" content="20261111-143000">
+<meta name="build" content="20261111-160000">
 <script>
 window.fpCor=function(c){var r=document.documentElement.style,h=c[0].replace('#',''),n=parseInt(h,16);r.setProperty('--acc1',c[0]);r.setProperty('--acc2',c[1]);r.setProperty('--acc3',c[2]);r.setProperty('--acc1-rgb',(n>>16&255)+','+(n>>8&255)+','+(n&255))};
 try{var _v=JSON.parse(localStorage.getItem('fp_visual')||'{}'),_r=document.documentElement;if(_v.glass)_r.dataset.glass='on';if(_v.anim===false)_r.dataset.anim='off';if(_v.cor)window.fpCor(_v.cor)}catch(e){}
@@ -1009,6 +1009,55 @@ dialog.sheet .alca{display:none}
 }
 @media (prefers-reduced-motion:reduce){.cat-bar i,.bv-foto{animation:none}}
 
+/* ===== carteira de cartões (estilo iPhone) ===== */
+html.vt-carteira :is(.wc,.wsel){view-transition-name:var(--vtn)}
+html.vt-carteira::view-transition-old(conteudo){animation:wFade .2s ease-in both}
+html.vt-carteira::view-transition-new(conteudo){animation:wDetIn .55s var(--mola) .1s both}
+@keyframes wFade{to{opacity:0}}
+@keyframes wDetIn{from{opacity:0;transform:translateY(26px)}}
+@keyframes wSai{to{opacity:0;transform:translateY(150px) scale(.95)}}
+@keyframes wEntra{from{opacity:0;transform:translateY(150px) scale(.95)}}
+#cartoesLista.cascata .wallet>.wc{animation:wsobe .75s var(--mola) backwards!important;animation-delay:calc(var(--k,0) * 80ms)!important}
+#cartoesLista.cascata .wdica{animation:entra .6s var(--mola) .35s backwards!important}
+@media (hover:hover) and (pointer:fine){
+  .wc .vcard{transition:transform .6s var(--mola),box-shadow .3s}
+  .wc.tilt .vcard{transform:perspective(900px) translateY(-10px) rotateX(var(--rx,0deg)) rotateY(var(--ry,0deg));transition:transform .18s ease-out,box-shadow .3s;box-shadow:0 22px 40px rgba(20,10,80,.35)}
+}
+
+/* ===== cartão: abas e compras de outras pessoas ===== */
+.ctabs{display:flex;gap:6px;padding:4px;margin:14px 0 12px;border-radius:14px;background:color-mix(in srgb,var(--muted) 12%,transparent)}
+.ctab{flex:1;padding:10px 12px;border:0;border-radius:11px;background:none;color:var(--muted);font:inherit;font-weight:700;cursor:pointer;transition:background .25s,color .25s,box-shadow .25s}
+.ctab.on{background:var(--surface);color:var(--ink);box-shadow:0 2px 10px rgba(40,28,120,.14)}
+.ctab span{font-weight:800;color:var(--meta)}
+.field.quem{grid-column:1/-1;display:grid;gap:8px}
+.seg{display:inline-flex;gap:4px;padding:4px;border-radius:12px;background:color-mix(in srgb,var(--muted) 12%,transparent);justify-self:start}
+.seg label{position:relative;cursor:pointer}
+.seg input{position:absolute;opacity:0;pointer-events:none}
+.seg span{display:block;padding:8px 14px;border-radius:9px;font-weight:700;color:var(--muted);transition:background .25s,color .25s}
+.seg input:checked+span{background:var(--surface);color:var(--ink);box-shadow:0 2px 8px rgba(40,28,120,.14)}
+.seg input:focus-visible+span{outline:3px solid var(--acc1);outline-offset:1px}
+.quem-dica{color:var(--muted);font-size:.85rem}
+.bal.pes{background:color-mix(in srgb,var(--acc1) 16%,transparent);color:var(--ink);font-weight:700}
+.bal.fut{background:color-mix(in srgb,var(--muted) 18%,transparent);color:var(--muted)}
+.pes-btn{text-decoration:none!important;font-size:1rem;padding:4px 6px}
+.pes-card{border:1px solid var(--line);border-radius:18px;padding:14px;margin:0 0 12px;background:var(--surface)}
+.pes-cab{display:flex;align-items:center;gap:12px}
+.pes-cab>div{flex:1;min-width:0}.pes-cab small{display:block;color:var(--muted);font-size:.85rem}
+.pes-av{display:grid;place-items:center;width:40px;height:40px;border-radius:50%;flex:none;background:linear-gradient(135deg,var(--acc1),var(--acc2));color:#fff;font-weight:800}
+.pes-v{font-family:var(--display);font-size:1.2rem}
+.pes-lista{margin:10px 0}
+#cTabPes .hist{list-style:none;padding:0}
+#cTabPes .hist li{display:flex;align-items:center;gap:12px;padding:10px 0;border-top:1px solid var(--line)}
+#cTabPes .hist li .desc{flex:1;min-width:0;text-align:left}
+#cTabPes .hist li .desc small{display:block;color:var(--muted)}
+#cTabPes .hist li .val{font-weight:800;white-space:nowrap}
+.pes-hist summary{cursor:pointer;font-weight:700;padding:8px 0;color:var(--muted)}
+.pes-setup ol{margin:8px 0 10px;padding-left:20px;line-height:1.6}
+.pes-sql{white-space:pre-wrap;word-break:break-word;padding:12px;border-radius:12px;background:color-mix(in srgb,var(--muted) 14%,transparent);font-size:.82rem;margin:0 0 10px}
+.ps-ops{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 14px}
+.ps-ops .chip-btn.on{outline:2px solid var(--acc1);outline-offset:1px}
+.pes-vazio p{margin:4px 0}
+
 /* ===== bloqueio com Face ID / digital ===== */
 html.travado :is(#viewApp,.top,#viewAuth,.upd-bar,#toast){visibility:hidden!important}
 html.travado dialog{visibility:hidden!important}
@@ -1446,11 +1495,24 @@ window.somBrilho = function (grande, aguardar) {
   <div class="dlg">
     <div class="dlg-head"><div><span class="tag meta">Cartão de crédito</span><h2 id="cNome"></h2></div><button type="button" class="x" data-fechar="dlgCartaoDet" aria-label="Fechar">×</button></div>
     <div id="cResumo"></div>
+    <div class="ctabs" role="tablist" aria-label="Seções do cartão">
+      <button type="button" role="tab" class="ctab on" data-ctab="fat" aria-selected="true">🧾 Faturas</button>
+      <button type="button" role="tab" class="ctab" data-ctab="pes" aria-selected="false">👥 Outras pessoas<span id="cPesBadge"></span></button>
+    </div>
+    <div id="cTabFat">
     <form class="inline-form" id="formCompra" novalidate>
       <label class="field"><span>Valor total da compra (R$)</span><input name="valor" inputmode="decimal" placeholder="0,00" required></label>
       <label class="field"><span>Data</span><input name="data" type="date" required></label>
       <label class="field"><span>Parcelas (1 = à vista)</span><input name="parc" type="number" min="1" max="24" value="1"></label>
       <label class="field"><span>Descrição (opcional)</span><input name="desc" maxlength="80"></label>
+      <div class="field quem"><span>Quem usou o cartão?</span>
+        <div class="seg" role="radiogroup" aria-label="Quem usou o cartão">
+          <label><input type="radio" name="quem" value="eu" checked><span>🙋 Eu</span></label>
+          <label><input type="radio" name="quem" value="outra"><span>👤 Outra pessoa</span></label>
+        </div>
+        <input name="pessoa" list="pessoasLista" maxlength="40" placeholder="Nome de quem usou (ex.: Maria)" autocomplete="off" hidden>
+        <small class="quem-dica" hidden>Entra na fatura e no limite, mas não conta como gasto seu. Você acompanha em “Outras pessoas”.</small>
+      </div>
       <p class="help" id="parcPrev" style="grid-column:1/-1;margin:0"></p>
       <div class="chips" id="chipsC" aria-label="Valores rápidos"><button type="button" class="chip-btn" data-v="20">+ 20</button><button type="button" class="chip-btn" data-v="50">+ 50</button><button type="button" class="chip-btn" data-v="100">+ 100</button><button type="button" class="chip-btn" data-v="300">+ 300</button></div>
       <button class="btn primary" type="submit" id="btnCompra">Registrar compra</button>
@@ -1459,9 +1521,26 @@ window.somBrilho = function (grande, aguardar) {
     <h3>Faturas</h3>
     <p class="help" style="margin:0 0 10px">Cada fatura mostra as compras e parcelas dela. Marque ✓ para pagar uma parcela inteira, ou use <b>Pagar um valor</b> dentro da fatura para pagar só uma parte (ex.: R$ 50 de uma parcela). Vale para qualquer mês, inclusive antecipando.</p>
     <div id="cFaturas"></div>
+    </div>
+    <div id="cTabPes" hidden></div>
 
     <div class="dlg-foot"><button class="btn go" id="cPaga" type="button">Quitar fatura</button><button class="btn" id="cTeste" type="button">Enviar aviso de teste</button><button class="btn" id="cEditar" type="button">Editar cartão</button><button class="btn danger" id="cExcluir" type="button">Excluir</button></div>
   </div>
+</dialog>
+
+<datalist id="pessoasLista"></datalist>
+
+<!-- Janela: de quem é a compra do cartão -->
+<dialog id="dlgPessoa" aria-labelledby="psT">
+  <form class="dlg" id="formPessoa" novalidate>
+    <div class="dlg-head"><div><span class="tag meta">Compra no cartão</span><h2 id="psT">De quem é esta compra?</h2></div><button type="button" class="x" data-fechar="dlgPessoa" aria-label="Fechar">×</button></div>
+    <p class="dica" id="psInfo"></p>
+    <div class="ps-ops" id="psOps" role="group" aria-label="Escolha rápida"></div>
+    <label class="field"><span>Ou digite o nome de quem usou</span><input name="nome" list="pessoasLista" maxlength="40" placeholder="Ex.: Maria" autocomplete="off"></label>
+    <label class="field chk" id="psTodasL"><input type="checkbox" name="todas" checked><span>Aplicar a todas as parcelas desta compra</span></label>
+    <p class="msg" id="psMsg" role="alert"></p>
+    <div class="dlg-foot"><button type="button" class="btn ghost" data-fechar="dlgPessoa">Cancelar</button><button class="btn primary" type="submit">Salvar</button></div>
+  </form>
 </dialog>
 
 <!-- Janela: conta (luz, água, internet) -->
@@ -2177,12 +2256,14 @@ function proxVenc(dia) {
   let d = mk(h.getFullYear(), h.getMonth()); if (d < h) d = mk(h.getFullYear(), h.getMonth() + 1);
   return { d, dias: Math.round((d - h) / 86400000) };
 }
+let pessoaX = true; // vira false se as colunas pessoa/recebido_em ainda não existirem em compras_cartao
 let zapX = true;    // vira false se as colunas alerta_whatsapp/whatsapp ainda não existirem no banco
 let cartX = true;   // vira false se as colunas bandeira/final/cor ainda não existirem no banco
 async function carregarCartoes() {
-  const REL = ',compras_cartao(id,valor,data,descricao,paga,criado_em,parcela_num,parcelas_total,grupo_id),pagamentos_cartao(id,valor,data,nota,aplicado)';
-  const q = (x, fx) => sb.from('cartoes').select('id,nome,limite,dia_vencimento,alerta_dias,alerta_limite' + (x ? ',bandeira,final,cor' : '') + (fx ? ',dia_fechamento' : '') + (zapX ? ',alerta_whatsapp,whatsapp' : '') + REL).eq('user_id', userId).order('criado_em');
+  const REL = () => ',compras_cartao(id,valor,data,descricao,paga,criado_em,parcela_num,parcelas_total,grupo_id' + (pessoaX ? ',pessoa,recebido_em' : '') + '),pagamentos_cartao(id,valor,data,nota,aplicado)';
+  const q = (x, fx) => sb.from('cartoes').select('id,nome,limite,dia_vencimento,alerta_dias,alerta_limite' + (x ? ',bandeira,final,cor' : '') + (fx ? ',dia_fechamento' : '') + (zapX ? ',alerta_whatsapp,whatsapp' : '') + REL()).eq('user_id', userId).order('criado_em');
   let r = await q(cartX, fechX);
+  if (r.error && pessoaX && /pessoa|recebido_em/i.test(r.error.message || '')) { pessoaX = false; r = await q(cartX, fechX); }
   if (r.error && zapX && /alerta_whatsapp|whatsapp/i.test(r.error.message || '')) { zapX = false; r = await q(cartX, fechX); }
   if (r.error && fechX && /dia_fechamento/i.test(r.error.message || '')) { fechX = false; r = await q(cartX, false); }
   if (r.error && cartX && (r.error.code === '42703' || /column|bandeira|does not exist/i.test(r.error.message || ''))) { cartX = false; r = await q(false, fechX); }
@@ -2216,10 +2297,11 @@ function walletDetalhe(c) {
   const ult = abertasC(c).sort((a, b) => b.data.localeCompare(a.data) || (b.criado_em || '').localeCompare(a.criado_em || '')).slice(0, 5);
   const aviso = est ? `🚨 Limite estourado em <b>${brl(u - lim)}</b>` : pct >= c.alerta_limite ? '⚠️ Perto do limite' : `${Math.round(pct)}% do limite usado`;
   return `<div class="wdet"><button class="linkbtn" type="button" data-wvolta>← Todos os cartões</button>
-    <div class="wsel" style="margin-top:10px">${cartaoHtml(c, k)}</div>
+    <div class="wsel" style="margin-top:10px;--vtn:${vtNome(c.id)}">${cartaoHtml(c, k)}</div>
     <div class="wpanel"><div class="wgrid">
       <div><span>Limite</span><b>${brl(lim)}</b></div><div><span>Disponível</span><b>${brl(Math.max(0, lim - u))}</b></div>
       <div><span>Fatura atual</span><b>${brl(fat)}</b></div>
+      ${somaC(aReceberC(c)) > 0 ? `<div><span>De outras pessoas</span><b>${brl(somaC(aReceberC(c)))}</b><small>a receber</small></div>` : ''}
       ${Number(c.dia_fechamento) >= 1 ? (() => { const f = proxVenc(c.dia_fechamento); return `<div><span>Fecha a fatura</span><b>Dia ${c.dia_fechamento}</b><small>${f.dias === 0 ? 'fecha hoje' : 'em ' + f.dias + ' dia(s)'} · ${fmtData(isoD(f.d))}</small></div>`; })() : ''}
       <div><span>Vencimento</span><b>Dia ${c.dia_vencimento}</b><small>${v.dias === 0 ? 'vence hoje' : 'em ' + v.dias + ' dia(s)'} · ${fmtData(isoD(v.d))}</small></div></div>
       <div class="bar big"><i style="width:${pct}%;background:${est ? '#E5383B' : pct >= c.alerta_limite ? 'var(--divida)' : 'var(--brand)'}"></i></div>
@@ -2228,13 +2310,36 @@ function walletDetalhe(c) {
       <ul class="wcompras">${ult.length ? ult.map(x => `<li><span>${fmtData(x.data)}${x.parcelas_total > 1 ? ` · ${x.parcela_num}/${x.parcelas_total}` : ''}<small>${esc(x.descricao || 'Compra')}</small></span><b>${brl(Number(x.valor))}</b></li>`).join('') : '<li class="hist-vazio">Nenhuma compra em aberto.</li>'}</ul>
       <div class="wacoes"><button class="btn go" type="button" data-cadd="${c.id}">Registrar compra</button><button class="btn" type="button" data-copen="${c.id}">Fatura e pagamentos</button><button class="btn ghost" type="button" data-cedit="${c.id}">Editar cartão</button></div></div></div>`;
 }
+/* carteira estilo iPhone: o cartão tocado desliza até o topo, os outros descem; ao voltar, a pilha se refaz */
+const vtNome = id => 'wc-' + String(id).replace(/[^a-zA-Z0-9_-]/g, '');
+function trocaCarteira(muda) {
+  const box = $('#cartoesLista');
+  if (!animLiberada() || !document.startViewTransition || document.querySelector('dialog[open]') || !box.offsetParent) { muda(); return false; }
+  const ids = cartoes.map(c => vtNome(c.id)), sel = walletSel ? vtNome(walletSel) : null;
+  const css = [];
+  const indo = muda._alvo ? vtNome(muda._alvo) : null, foco = indo || sel, kf = ids.indexOf(foco);
+  ids.forEach((n, k) => {
+    const d = Math.abs(k - kf) * 35;
+    css.push(`::view-transition-group(${n}){animation-duration:.62s;animation-timing-function:var(--mola)${n === foco ? ';z-index:5' : ''}}`,
+      `::view-transition-old(${n}):only-child{animation:wSai .34s cubic-bezier(.4,0,1,1) ${d}ms both}`,
+      `::view-transition-new(${n}):only-child{animation:wEntra .62s var(--mola) ${d + 60}ms both}`);
+  });
+  let st = document.getElementById('wcVT'); if (!st) { st = document.createElement('style'); st.id = 'wcVT'; document.head.appendChild(st); }
+  st.textContent = css.join('\n');
+  document.documentElement.classList.add('vt-carteira');
+  try {
+    const t = document.startViewTransition(() => { muda(); if (box.getBoundingClientRect().top < 0) box.scrollIntoView({ block: 'start' }); });
+    t.finished.finally(() => document.documentElement.classList.remove('vt-carteira'));
+  } catch (e) { document.documentElement.classList.remove('vt-carteira'); muda(); return false; }
+  return true;
+}
 function renderCartoes() {
   const box = $('#cartoesLista');
   if (walletSel && !cartoes.some(c => String(c.id) === walletSel)) walletSel = null;
   let h;
   if (!cartoes.length) h = '<div class="vazio"><div class="vz">💳</div><p>Nenhum cartão cadastrado. Cadastre o seu para acompanhar fatura, limite e vencimento.</p><button class="btn primary" data-cnovo>Cadastrar cartão</button></div>';
   else if (walletSel) h = walletDetalhe(cartoes.find(c => String(c.id) === walletSel));
-  else h = `<div class="wallet">${cartoes.map((c, k) => `<button type="button" class="wc" data-wid="${c.id}" style="animation-delay:${k * 70}ms" aria-label="Abrir ${esc(c.nome)}">${cartaoHtml(c, k)}</button>`).join('')}</div><p class="wdica">Toque em um cartão para ver limite, fatura e compras.</p>`;
+  else h = `<div class="wallet">${cartoes.map((c, k) => `<button type="button" class="wc" data-wid="${c.id}" style="animation-delay:${k * 70}ms;--vtn:${vtNome(c.id)}" aria-label="Abrir ${esc(c.nome)}">${cartaoHtml(c, k)}</button>`).join('')}</div><p class="wdica">Toque em um cartão para ver limite, fatura e compras.</p>`;
   setHtml(box, h);   // só redesenha se algo mudou: sem piscar ao trocar de aba
   contar();
 }
@@ -2243,8 +2348,12 @@ $('#cartoesLista').addEventListener('click', e => {
   const add = e.target.closest('[data-cadd]'); if (add) return abrirCartao(add.dataset.cadd, true);
   const op = e.target.closest('[data-copen]'); if (op) return abrirCartao(op.dataset.copen);
   const ed = e.target.closest('[data-cedit]'); if (ed) return abrirCartaoForm(cartoes.find(x => String(x.id) === ed.dataset.cedit));
-  if (e.target.closest('[data-wvolta],.wsel')) { walletSel = null; return renderCartoes(); }
-  const w = e.target.closest('[data-wid]'); if (w) { walletSel = w.dataset.wid; renderCartoes(); const dn = $('#cartoesLista .wdet'); if (dn) dn.classList.add('novo'); $('#cartoesLista').scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+  if (e.target.closest('[data-wvolta],.wsel')) { return trocaCarteira(() => { walletSel = null; renderCartoes(); }); }
+  const w = e.target.closest('[data-wid]');
+  if (w) {
+    const muda = () => { walletSel = w.dataset.wid; renderCartoes(); }; muda._alvo = w.dataset.wid;
+    if (!trocaCarteira(muda)) { const dn = $('#cartoesLista .wdet'); if (dn) dn.classList.add('novo'); $('#cartoesLista').scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+  }
 });
 /* cartão virtual no formulário: atualiza enquanto você digita */
 function atualizaPrev() {
@@ -2299,7 +2408,7 @@ $('#formCartao').addEventListener('submit', async e => {
   $('#dlgCartao').close(); toast(cartaoEdit ? 'Cartão atualizado' : 'Cartão cadastrado'); carregarCartoes();
 });
 function abrirCartao(id, foco) {
-  cartaoId = id; const f = $('#formCompra'); f.reset(); f.data.value = hojeISO(); $('#parcPrev').textContent = ''; $('#cMsg').textContent = '';
+  cartaoId = id; const f = $('#formCompra'); f.reset(); f.data.value = hojeISO(); $('#parcPrev').textContent = ''; $('#cMsg').textContent = ''; syncQuem(); mostraCTab('fat');
   renderCartaoDet(); const d = $('#dlgCartaoDet'); if (!d.open) d.showModal(); if (foco) f.valor.focus();
 }
 $('#dlgCartaoDet').addEventListener('close', () => { cartaoId = null; });
@@ -2307,7 +2416,7 @@ $('#dlgCartaoDet').addEventListener('close', () => { cartaoId = null; });
 document.addEventListener('click', e => {
   if (!walletSel || !$('#cartoesLista').offsetParent) return;
   if (e.target.closest('.wsel,.wpanel,button,a,input,select,textarea,label,dialog,header,nav,[data-cnovo],#toast')) return;
-  walletSel = null; renderCartoes();
+  trocaCarteira(() => { walletSel = null; renderCartoes(); });
 });
 ['dlgCartaoDet', 'dlgDetalhe', 'dlgResumo', 'dlgGrupo', 'dlgRel'].forEach(id => {
   const d = document.getElementById(id); if (!d) return;
@@ -2323,10 +2432,10 @@ function renderCartaoDet() {
   $('#cResumo').innerHTML = `<p class="big-num">${brl(u)} <span>de ${brl(lim)} de limite</span></p>
     <div class="bar big"><i style="width:${pct}%;background:${u > lim + 0.001 ? '#E5383B' : pct >= c.alerta_limite ? 'var(--divida)' : 'var(--brand)'}"></i></div>
     ${u > lim + 0.001 ? `<p class="aviso-estouro">🚨 Você estourou o limite em <b>${brl(u - lim)}</b> (usou ${Math.round(u / lim * 100)}% dele).</p>` : ''}
-    <div class="facts"><div><b>${brl(fat)}</b>fatura atual a pagar</div><div><b>${brl(pago)}</b>já pago da fatura</div><div><b>${brl(fut)}</b>parcelas futuras</div><div><b>${brl(Math.max(0, lim - u))}</b>disponível</div><div><b>Dia ${c.dia_vencimento}</b>vence em ${v.dias} dia(s)</div></div>`;
+    <div class="facts"><div><b>${brl(fat)}</b>fatura atual a pagar</div><div><b>${brl(pago)}</b>já pago da fatura</div><div><b>${brl(fut)}</b>parcelas futuras</div><div><b>${brl(Math.max(0, lim - u))}</b>disponível</div><div><b>Dia ${c.dia_vencimento}</b>vence em ${v.dias} dia(s)</div>${somaC(aReceberC(c)) > 0 ? `<div><b>${brl(somaC(aReceberC(c)))}</b>a receber de outras pessoas</div>` : ''}</div>`;
   const ordena = (a, b) => a.data.localeCompare(b.data) || (a.criado_em || '').localeCompare(b.criado_em || '');
   const dm = d => d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
-  const li = (x, atual) => `<li class="${x.paga ? 'ok' : ''}"><label class="fat-chk"><input type="checkbox" data-ccheck="${x.id}"${atual ? ' data-cur="1"' : ''}${x.paga ? ' checked' : ''} aria-label="Marcar a compra de ${brl(Number(x.valor))} como paga"></label><div class="desc">${fmtData(x.data)}${x.parcelas_total > 1 ? ` <span class="bal par">parcela ${x.parcela_num}/${x.parcelas_total}</span>` : ''}<small>${x.descricao ? esc(x.descricao) + ' ' : ''}${x.paga ? '<span class="pago">✓ Pago</span>' : '<span class="aberto">em aberto</span>'}</small></div><span class="val">${brl(Number(x.valor))}</span><button class="del" data-cdel="${x.id}" aria-label="Excluir compra de ${brl(Number(x.valor))}">Excluir</button></li>`;
+  const li = (x, atual) => `<li class="${x.paga ? 'ok' : ''}"><label class="fat-chk"><input type="checkbox" data-ccheck="${x.id}"${atual ? ' data-cur="1"' : ''}${x.paga ? ' checked' : ''} aria-label="Marcar a compra de ${brl(Number(x.valor))} como paga"></label><div class="desc">${fmtData(x.data)}${x.parcelas_total > 1 ? ` <span class="bal par">parcela ${x.parcela_num}/${x.parcelas_total}</span>` : ''}<small>${x.pessoa ? `<span class="bal pes">👤 ${esc(x.pessoa)}</span> ` : ''}${x.descricao ? esc(x.descricao) + ' ' : ''}${x.paga ? '<span class="pago">✓ Pago</span>' : '<span class="aberto">em aberto</span>'}</small></div><span class="val">${brl(Number(x.valor))}</span>${pessoaX ? `<button class="del pes-btn" type="button" data-cpes="${x.id}" title="Quem usou" aria-label="Quem usou: ${x.pessoa ? esc(x.pessoa) : 'eu'}">👤</button>` : ''}<button class="del" data-cdel="${x.id}" aria-label="Excluir compra de ${brl(Number(x.valor))}">Excluir</button></li>`;
   const cont = $('#cFaturas'), manter = cont.dataset.cid === String(c.id);
   const abertos = manter ? new Set([...cont.querySelectorAll('details[open]')].map(d => d.dataset.k)) : new Set(['0', '1']);
   cont.dataset.cid = String(c.id);
@@ -2339,23 +2448,119 @@ function renderCartaoDet() {
     return `<details class="fat-card st-${est}" data-k="${f.k}"${abertos.has(String(f.k)) ? ' open' : ''}><summary><div class="fc-t">${nome}<small>${sub}</small></div><div class="fc-v">${brl(total)}<small>${rot}</small></div></summary><div class="fc-body">${its.length ? `<div class="bar"><i style="width:${total > 0 ? Math.min(100, pago / total * 100) : 0}%;background:var(--meta)"></i></div><p class="st">Pago <b>${brl(pago)}</b> de ${brl(total)} · Falta <b>${brl(falta)}</b></p>` : ''}<p class="help" style="margin:6px 0">${f.k === 0 ? 'Marque ✓ o que você já pagou.' : 'Quer antecipar? Marque ✓ as parcelas que vai pagar antes do vencimento.'}</p>${its.length ? `<ul class="hist fat-itens">${its.map(x => li(x, f.k === 0)).join('')}</ul>` : '<p class="hist-vazio">Nenhuma compra nesta fatura.</p>'}${pgs.length ? `<p class="help" style="margin:10px 0 0"><b>Pagamentos de valor lançados nesta fatura</b></p><ul class="hist">${pgs.map(p => `<li><div class="desc"><span class="pago">✓ Pago</span> em ${fmtData(p.data)}<small>pagamento de valor</small></div><span class="val pg-val">${brl(Number(p.valor))}</span><button class="del" data-pdel="${p.id}">Excluir</button></li>`).join('')}</ul>` : ''}${its.length && falta > 0.001 ? `<p class="help" style="margin:12px 0 4px">Pagar só uma parte desta fatura (ex.: R$ 50 de uma parcela):</p><form class="pg-k" data-pk="${f.k}" novalidate><label class="field" style="flex:1;margin:0"><input name="valor" inputmode="decimal" placeholder="Valor (R$)" aria-label="Valor a pagar desta fatura"></label><button class="btn" type="submit">Pagar um valor</button></form>` : ''}${its.length && falta > 0.001 ? `<button type="button" class="btn go" data-quitark="${f.k}">${f.k === 0 ? 'Quitar esta fatura' : 'Antecipar a fatura inteira'}</button>` : ''}</div></details>`;
   }).join('');
 
+  renderPessoas(c);
 }
+/* ---------- compras de outras pessoas no seu cartão ----------
+   Continuam na fatura e no limite (o banco cobra de você), mas não contam como gasto seu.
+   Quando a pessoa te paga, marque "recebido": o valor é descontado do que saiu da sua conta no mês. */
+const SQL_PESSOA = 'alter table public.compras_cartao add column if not exists pessoa text, add column if not exists recebido_em date;';
+const aReceberC = (c, ate) => (c.compras_cartao || []).filter(x => x.pessoa && !x.recebido_em && (!ate || x.data <= ate));
+const nomesPessoas = () => [...new Set(cartoes.flatMap(c => (c.compras_cartao || []).map(x => x.pessoa).filter(Boolean)))].sort((a, b) => a.localeCompare(b, 'pt-BR'));
+function syncQuem() {
+  const f = $('#formCompra'), outra = f.quem.value === 'outra';
+  f.pessoa.hidden = !outra; f.querySelector('.quem-dica').hidden = !outra;
+  if (outra) $('#pessoasLista').innerHTML = nomesPessoas().map(n => `<option value="${esc(n)}">`).join('');
+}
+$('#formCompra').addEventListener('change', e => { if (e.target.name === 'quem') { syncQuem(); if (e.target.value === 'outra') $('#formCompra').pessoa.focus(); } });
+let cTab = 'fat';
+function mostraCTab(k) {
+  cTab = k;
+  document.querySelectorAll('#dlgCartaoDet .ctab').forEach(b => { const on = b.dataset.ctab === k; b.classList.toggle('on', on); b.setAttribute('aria-selected', on); });
+  $('#cTabFat').hidden = k !== 'fat'; $('#cTabPes').hidden = k !== 'pes';
+}
+document.querySelector('#dlgCartaoDet .ctabs').addEventListener('click', e => { const b = e.target.closest('[data-ctab]'); if (b) mostraCTab(b.dataset.ctab); });
+function renderPessoas(c) {
+  const box = $('#cTabPes'), pend = aReceberC(c), total = somaC(pend), corte = corteC(c);
+  $('#cPesBadge').textContent = total > 0 ? ` · ${brl(total)}` : '';
+  if (!pessoaX) {
+    box.innerHTML = `<div class="pes-setup"><p><b>Falta um ajuste rápido no banco de dados</b> para guardar quem usou o cartão e quando te pagou.</p>
+      <ol><li>Abra o painel do Supabase do app e vá em <b>SQL Editor</b>.</li><li>Cole o comando abaixo e clique em <b>Run</b>.</li><li>Volte aqui e atualize a página.</li></ol>
+      <pre class="pes-sql">${esc(SQL_PESSOA)}</pre><button type="button" class="btn small" data-copsql>Copiar comando</button></div>`;
+    return;
+  }
+  const porP = {}; pend.forEach(x => (porP[x.pessoa] = porP[x.pessoa] || []).push(x));
+  const nomes = Object.keys(porP).sort((a, b) => somaC(porP[b]) - somaC(porP[a]));
+  const recebidas = (c.compras_cartao || []).filter(x => x.pessoa && x.recebido_em).sort((a, b) => b.recebido_em.localeCompare(a.recebido_em) || b.data.localeCompare(a.data)).slice(0, 12);
+  const ordena = (a, b) => a.data.localeCompare(b.data) || (a.parcela_num || 0) - (b.parcela_num || 0);
+  const linha = x => `<li><label class="fat-chk"><input type="checkbox" data-crec="${x.id}" aria-label="Recebi ${brl(Number(x.valor))} de ${esc(x.pessoa)}"></label><div class="desc">${fmtData(x.data)}${x.parcelas_total > 1 ? ` <span class="bal par">parcela ${x.parcela_num}/${x.parcelas_total}</span>` : ''}<small>${x.descricao ? esc(x.descricao) + ' ' : ''}${x.data > corte ? '<span class="bal fut">fatura futura</span>' : ''}</small></div><span class="val">${brl(Number(x.valor))}</span></li>`;
+  box.innerHTML = `<p class="help" style="margin:4px 0 12px">Compras que outras pessoas fizeram no seu cartão. Elas continuam na fatura e no limite, mas <b>não contam como gasto seu</b>. Quando a pessoa te pagar, marque ✓: o valor é descontado do que saiu da sua conta no mês.</p>` +
+    (nomes.length ? nomes.map(p => {
+      const l = porP[p].slice().sort(ordena), agora = l.filter(x => x.data <= corte), depois = l.filter(x => x.data > corte);
+      return `<div class="pes-card"><div class="pes-cab"><span class="pes-av" aria-hidden="true">${esc(p[0].toUpperCase())}</span><div><strong>${esc(p)}</strong><small>${agora.length ? `${brl(somaC(agora))} até a fatura atual` : 'nada na fatura atual'}${depois.length ? ` · ${brl(somaC(depois))} em faturas futuras` : ''}</small></div><b class="pes-v">${brl(somaC(l))}</b></div>
+        <ul class="hist pes-lista">${l.map(linha).join('')}</ul>
+        ${agora.length ? `<button type="button" class="btn go small" data-crectodos="${esc(p)}">✓ Recebi ${brl(somaC(agora))} de ${esc(p)}</button>` : ''}</div>`;
+    }).join('') : `<div class="vazio pes-vazio"><div class="vz">👥</div><p>Ninguém te deve nada neste cartão.</p><p class="help">Quando alguém usar seu cartão, escolha <b>Outra pessoa</b> ao registrar a compra, ou toque em <b>👤</b> numa compra da fatura.</p></div>`) +
+    (recebidas.length ? `<details class="pes-hist"><summary>Já recebidos (${recebidas.length})</summary><ul class="hist">${recebidas.map(x => `<li><div class="desc">${esc(x.pessoa)} · ${fmtData(x.data)}${x.parcelas_total > 1 ? ` <span class="bal par">${x.parcela_num}/${x.parcelas_total}</span>` : ''}<small>${x.descricao ? esc(x.descricao) + ' · ' : ''}recebido em ${fmtData(x.recebido_em)}</small></div><span class="val">${brl(Number(x.valor))}</span><button class="del" type="button" data-crecdesf="${x.id}">Desfazer</button></li>`).join('')}</ul></details>` : '');
+}
+async function marcaRecebido(ids, data) {
+  if (!ids.length) return;
+  const { error } = await sb.from('compras_cartao').update({ recebido_em: data }).in('id', ids);
+  if (error) { toast('Não foi possível atualizar. Tente de novo.', true); return false; }
+  await carregarCartoes();
+  if (vista === 'gastos' || vista === 'salario') carregarMes(); else if (vista === 'plano') carregarPlano();
+  return true;
+}
+$('#cTabPes').addEventListener('click', async e => {
+  const c = cartoes.find(x => x.id === cartaoId); if (!c) return;
+  if (e.target.closest('[data-copsql]')) { try { await navigator.clipboard.writeText(SQL_PESSOA); toast('Comando copiado 📋'); } catch (x) { toast('Selecione o texto e copie manualmente.', true); } return; }
+  const t = e.target.closest('[data-crectodos]');
+  if (t) {
+    const p = t.dataset.crectodos, l = aReceberC(c, corteC(c)).filter(x => x.pessoa === p);
+    if (!l.length || !confirm(`Marcar como recebido ${brl(somaC(l))} de ${p}? O valor é descontado do que saiu da sua conta neste mês.`)) return;
+    t.disabled = true;
+    if (await marcaRecebido(l.map(x => x.id), hojeISO())) { confete(); toast(`Recebido de ${p} ✅`); }
+    return;
+  }
+  const d = e.target.closest('[data-crecdesf]');
+  if (d && await marcaRecebido([d.dataset.crecdesf], null)) toast('Voltou para “a receber”');
+});
+$('#cTabPes').addEventListener('change', async e => {
+  const i = e.target.closest('[data-crec]'); if (!i || !i.checked) return;
+  i.disabled = true;
+  if (await marcaRecebido([i.dataset.crec], hojeISO())) toast('Marcado como recebido ✅'); else { i.checked = false; i.disabled = false; }
+});
+// janela "de quem é esta compra?"
+let psCompra = null;
+$('#cFaturas').addEventListener('click', e => {
+  const b = e.target.closest('[data-cpes]'); if (!b) return;
+  const c = cartoes.find(x => x.id === cartaoId), x = c && c.compras_cartao.find(y => y.id === b.dataset.cpes); if (!x) return;
+  psCompra = x; const f = $('#formPessoa'); f.reset(); f.nome.value = x.pessoa || ''; $('#psMsg').textContent = '';
+  $('#psInfo').textContent = `${fmtData(x.data)} · ${brl(Number(x.valor))}${x.descricao ? ' · ' + x.descricao : ''}${x.parcelas_total > 1 ? ` · parcela ${x.parcela_num}/${x.parcelas_total}` : ''}`;
+  $('#psTodasL').hidden = !(x.parcelas_total > 1 && x.grupo_id);
+  $('#pessoasLista').innerHTML = nomesPessoas().map(n => `<option value="${esc(n)}">`).join('');
+  $('#psOps').innerHTML = `<button type="button" class="chip-btn${!x.pessoa ? ' on' : ''}" data-psv="">🙋 É minha</button>` + nomesPessoas().map(n => `<button type="button" class="chip-btn${x.pessoa === n ? ' on' : ''}" data-psv="${esc(n)}">👤 ${esc(n)}</button>`).join('');
+  $('#dlgPessoa').showModal();
+});
+$('#psOps').addEventListener('click', e => { const b = e.target.closest('[data-psv]'); if (!b) return; $('#formPessoa').nome.value = b.dataset.psv; $('#formPessoa').requestSubmit(); });
+$('#formPessoa').addEventListener('submit', async e => {
+  e.preventDefault(); const x = psCompra; if (!x) return;
+  const f = e.target, nome = f.nome.value.trim().replace(/\s+/g, ' ') || null, todas = !$('#psTodasL').hidden && f.todas.checked;
+  const upd = { pessoa: nome }; if (!nome) upd.recebido_em = null;
+  const { error } = todas ? await sb.from('compras_cartao').update(upd).eq('grupo_id', x.grupo_id) : await sb.from('compras_cartao').update(upd).eq('id', x.id);
+  if (error) return ($('#psMsg').textContent = 'Não foi possível salvar. Tente de novo.');
+  $('#dlgPessoa').close(); toast(nome ? `Compra marcada como de ${nome} 👤` : 'Compra marcada como sua');
+  await carregarCartoes();
+  if (vista === 'plano') carregarPlano();
+});
 $('#formCompra').addEventListener('submit', async e => {
   e.preventDefault();
   const f = e.target, erro = t => $('#cMsg').textContent = t; erro('');
   const valor = parseMoney(f.valor.value);
   if (!(valor > 0)) return erro('Informe um valor maior que zero.');
   if (!f.data.value) return erro('Informe a data.');
+  const pessoa = f.quem.value === 'outra' ? f.pessoa.value.trim().replace(/\s+/g, ' ') : '';
+  if (f.quem.value === 'outra' && !pessoa) return erro('Digite o nome de quem usou o cartão.');
+  if (pessoa && !pessoaX) return erro('Para marcar compras de outras pessoas, falta um ajuste no banco de dados. Veja a aba “Outras pessoas”.');
   const btn = $('#btnCompra'); btn.disabled = true;
   try {
     const n = Math.min(24, Math.max(1, parseInt(f.parc.value, 10) || 1)), gid = crypto.randomUUID(), base = Math.floor(valor / n * 100) / 100, desc = f.desc.value.trim();
-    const rows = Array.from({ length: n }, (_, i) => ({ cartao_id: cartaoId, valor: i === n - 1 ? Math.round((valor - base * (n - 1)) * 100) / 100 : base, data: addMesISO(f.data.value, i), descricao: desc || null, parcela_num: i + 1, parcelas_total: n, grupo_id: n > 1 ? gid : null }));
+    const rows = Array.from({ length: n }, (_, i) => ({ cartao_id: cartaoId, valor: i === n - 1 ? Math.round((valor - base * (n - 1)) * 100) / 100 : base, data: addMesISO(f.data.value, i), descricao: desc || null, parcela_num: i + 1, parcelas_total: n, grupo_id: n > 1 ? gid : null, ...(pessoa ? { pessoa } : {}) }));
     const { error } = await sb.from('compras_cartao').insert(rows);
     if (error) return erro('Não foi possível registrar. Tente de novo.');
-    f.valor.value = ''; f.desc.value = ''; f.parc.value = 1; $('#parcPrev').textContent = '';
+    f.valor.value = ''; f.desc.value = ''; f.parc.value = 1; $('#parcPrev').textContent = ''; f.quem.value = 'eu'; f.pessoa.value = ''; syncQuem();
     await carregarCartoes();
     const c = cartoes.find(x => x.id === cartaoId);
-    toast(c && usadoC(c) / Number(c.limite) * 100 >= c.alerta_limite ? 'Compra registrada. Atenção: você está perto do limite ⚠️' : (n > 1 ? `Compra em ${n}x registrada ✨` : 'Compra registrada ✨'));
+    toast(c && usadoC(c) / Number(c.limite) * 100 >= c.alerta_limite ? 'Compra registrada. Atenção: você está perto do limite ⚠️' : pessoa ? `Compra de ${pessoa} registrada 👤` : (n > 1 ? `Compra em ${n}x registrada ✨` : 'Compra registrada ✨'));
     f.valor.focus();
   } finally { btn.disabled = false; }
 });
@@ -2734,14 +2939,16 @@ const somaV = l => (l || []).reduce((a, x) => a + Number(x.valor || 0), 0);
 async function totaisMes(m) {
   const ini = m + '-01', fim = mesAdd(m, 1) + '-01', u = userId;
   const q = (t, col, sel = '*') => sb.from(t).select(sel).eq('user_id', u).gte(col, ini).lt(col, fim);
-  const [g, r, c, k, d] = await Promise.all([
+  const rb = pessoaX ? sb.from('compras_cartao').select('valor,recebido_em,pessoa,descricao').gte('recebido_em', ini).lt('recebido_em', fim).then(x => x, () => ({ data: [] })) : Promise.resolve({ data: [] });
+  const [g, r, c, k, d, b] = await Promise.all([
     q('gastos', 'data').order('data', { ascending: false }), q('rendas', 'data').order('data', { ascending: false }),
     sb.from('contas_faturas').select('valor,tipo,pago_em').eq('user_id', u).eq('paga', true).gte('pago_em', ini).lt('pago_em', fim), q('pagamentos_cartao', 'data', 'valor,data,cartao_id'),
-    sb.from('lancamentos').select('valor,data,itens!inner(tipo,nome)').eq('user_id', u).eq('itens.tipo', 'divida').gte('data', ini).lt('data', fim)
+    sb.from('lancamentos').select('valor,data,itens!inner(tipo,nome)').eq('user_id', u).eq('itens.tipo', 'divida').gte('data', ini).lt('data', fim), rb
   ]);
   if ([g, r, c, k, d].some(x => x.error)) throw new Error('falha');
   const t = { gastos: somaV(g.data), contas: somaV(c.data), cartao: somaV(k.data), dividas: somaV(d.data), renda: somaV(r.data), listaG: g.data, listaR: r.data, listaC: c.data, listaK: k.data, listaD: d.data };
-  t.despesas = t.gastos + t.contas + t.cartao + t.dividas; t.saldo = t.renda - t.despesas;   // despesas = o que realmente saiu da conta no mês (caixa)
+  t.listaRB = (b && !b.error && b.data) || []; t.reembolso = somaV(t.listaRB);   // compras de outras pessoas no seu cartão que já te pagaram
+  t.despesas = t.gastos + t.contas + t.cartao + t.dividas - t.reembolso; t.saldo = t.renda - t.despesas;   // despesas = o que realmente saiu da conta no mês (caixa)
   return t;
 }
 const MES_CAIXA = '2026-11';   // único mês em que o caixa é digitado; dos seguintes em diante o app calcula
@@ -2749,6 +2956,10 @@ async function caixaInicial(m) {
   const { data, error } = await sb.rpc('resumo_mensal');
   if (error) throw new Error('falha');
   const net = {}; (data || []).forEach(x => { net[x.mes] = Number(x.entradas) - Number(x.despesas); });
+  if (pessoaX) {   // o que outras pessoas te devolveram (compras no seu cartão) também passa de um mês para o outro
+    const rb = await sb.from('compras_cartao').select('valor,recebido_em').not('recebido_em', 'is', null).then(x => x, () => ({ data: [] }));
+    if (!rb.error) (rb.data || []).forEach(x => { const m = String(x.recebido_em).slice(0, 7); net[m] = (net[m] || 0) + Number(x.valor || 0); });
+  }
   const man = caixaManual && caixaManual.mes === MES_CAIXA && Number.isFinite(Number(caixaManual.valor)) ? caixaManual : null;
   if (man && m >= man.mes) {   // parte do valor informado em novembro e acumula mês a mês
     let caixa = Math.max(0, Number(man.valor)), mm = man.mes;
@@ -2763,11 +2974,13 @@ async function caixaInicial(m) {
 function aPagarMes(m) {   // o que ainda vai sair da conta: contas abertas e faturas (vencidas entram no mês atual)
   const hoje = hojeISO(), atual = m === hoje.slice(0, 7), its = agendaItens().filter(x => x.d.slice(0, 7) === m || (atual && x.d < hoje));
   const card = its.filter(x => x.ico === '💳');
-  return { total: plSoma(its), cartoes: plSoma(card), contas: plSoma(its.filter(x => x.ico !== '💳')) };
+  let receber = 0;   // compras de outras pessoas nas faturas deste mês que ainda não te pagaram
+  if (m >= hoje.slice(0, 7)) cartoes.forEach(c => { if (!c.compras_cartao) return; receber += atual ? somaC(aReceberC(c, corteC(c))) : somaC(faturasC(c).filter(f => chaveVenc(f.venc) === m).flatMap(f => f.itens.filter(x => x.pessoa && !x.recebido_em))); });
+  return { total: plSoma(its), cartoes: plSoma(card), contas: plSoma(its.filter(x => x.ico !== '💳')), receber };
 }
 function apagarHtml(t) {
   const a = t.aPagar; if (!a || !(a.total > 0)) return '';
-  const depois = t.renda + (t.caixa || 0) - t.despesas - a.total, det = [a.contas > 0 ? `contas ${brl(a.contas)}` : '', a.cartoes > 0 ? `faturas ${brl(a.cartoes)}` : ''].filter(Boolean).join(' · ');
+  const depois = t.renda + (t.caixa || 0) - t.despesas - a.total + (a.receber || 0), det = [a.contas > 0 ? `contas ${brl(a.contas)}` : '', a.cartoes > 0 ? `faturas ${brl(a.cartoes)}` : '', a.receber > 0 ? `+ ${brl(a.receber)} a receber de outras pessoas` : ''].filter(Boolean).join(' · ');
   return `<div class="ap-linha"><span>⏳ Ainda a pagar neste mês: <b>${brl(a.total)}</b><small>${det}</small></span><span class="${depois < 0 ? 'neg' : 'pos'}">${depois < 0 ? 'faltam' : 'sobram'} <b>${brl(Math.abs(depois))}</b> depois de pagar tudo</span></div>`;
 }
 async function carregarMes() {
@@ -2781,7 +2994,7 @@ async function carregarMes() {
 function resumoHtml(t) {
   const cx = t.caixa || 0, ent = t.renda + cx, disp = ent - t.despesas, neg = disp < 0;
   return `<div class="panel"><h2>Entrou</h2><p class="num" data-count="${ent}">${brl(ent)}</p><p class="of">${cx > 0 ? `inclui ${brl(cx)} de ${t.manual ? 'caixa inicial' : 'caixa do mês anterior'}` : 'salário e outras entradas'}</p></div>
-  <div class="panel divida"><h2>Saiu</h2><p class="num" data-count="${t.despesas}">${brl(t.despesas)}</p><p class="of">o que já saiu da conta</p></div>
+  <div class="panel divida"><h2>Saiu</h2><p class="num" data-count="${t.despesas}">${brl(t.despesas)}</p><p class="of">${t.reembolso > 0 ? `já descontado ${brl(t.reembolso)} que te devolveram` : 'o que já saiu da conta'}</p></div>
   <div class="panel ${neg ? 'neg' : 'meta'}"><h2>${neg ? 'No vermelho' : (mesSel === hojeISO().slice(0, 7) ? 'Saldo atual' : 'Sobrou')}</h2><p class="num" data-count="${Math.abs(disp)}">${brl(Math.abs(disp))}</p><p class="of">${!ent ? 'cadastre seu salário' : neg ? 'a mais do que você tinha' : 'tem na conta agora 💚'}</p></div>`;
 }
 function linhaLanc(x, mod) {
@@ -2915,8 +3128,9 @@ function abrirRel() {
     contas: (t.listaC || []).map(x => [NC[x.tipo] || x.tipo, x.pago_em, Number(x.valor || 0)]),
     cartao: (t.listaK || []).map(x => ['Fatura ' + nomeCartao(x.cartao_id), x.data, Number(x.valor)]),
     dividas: (t.listaD || []).map(x => [(x.itens && x.itens.nome) || 'Dívida', x.data, Number(x.valor)]),
+    reemb: (t.listaRB || []).map(x => [(x.pessoa || 'Outra pessoa') + (x.descricao ? ' · ' + x.descricao : ''), x.recebido_em, Number(x.valor)]),
   };
-  relRows = [['Salário e outras entradas', t.renda, 'pos', det.renda], ['Caixa do mês anterior', cx, 'pos'], ['Gastos avulsos', t.gastos, '', det.gastos], ['Contas da casa pagas (luz, água, internet)', t.contas, '', det.contas], ['Faturas de cartão pagas', t.cartao, '', det.cartao], ['Dívidas pagas', t.dividas, '', det.dividas], ['Total que saiu da conta', t.despesas, 'tot'], [disp < 0 ? 'Ficou no vermelho' : 'Sobrou', Math.abs(disp), 'tot'], ['Fica em caixa para o próximo mês', Math.max(0, disp), 'pos']];
+  relRows = [['Salário e outras entradas', t.renda, 'pos', det.renda], ['Caixa do mês anterior', cx, 'pos'], ['Gastos avulsos', t.gastos, '', det.gastos], ['Contas da casa pagas (luz, água, internet)', t.contas, '', det.contas], ['Faturas de cartão pagas', t.cartao, '', det.cartao], ...(t.reembolso > 0 ? [['Devolvido por outras pessoas (compras no seu cartão)', -t.reembolso, 'pos', det.reemb]] : []), ['Dívidas pagas', t.dividas, '', det.dividas], ['Total que saiu da conta', t.despesas, 'tot'], [disp < 0 ? 'Ficou no vermelho' : 'Sobrou', Math.abs(disp), 'tot'], ['Fica em caixa para o próximo mês', Math.max(0, disp), 'pos']];
   const SEMR = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
   const detHtml = it => {   // agrupa por dia: o que foi e quanto, dia a dia
     const dias = {}; it.forEach(x => (dias[String(x[1]).slice(0, 10)] = dias[String(x[1]).slice(0, 10)] || []).push(x));
@@ -3276,17 +3490,17 @@ function renderPlano() {
   const t = planoDados; if (!t) return;
   $('#planMesLabel').textContent = plCap(mesNome(t.mes));
   const hj = new Date(), atual = hojeISO().slice(0, 7), [py, pm] = t.mes.split('-').map(Number), dm = new Date(py, pm, 0).getDate(), dia = t.mes === atual ? hj.getDate() : t.mes < atual ? dm : 0, restam = t.mes === atual ? dm - dia + 1 : t.mes > atual ? dm : 0;
-  const aP = (t.aPagar && t.aPagar.total) || 0, desp = t.despesas + aP, total = t.renda + t.caixa;
+  const aP = (t.aPagar && t.aPagar.total) || 0, rec = (t.aPagar && t.aPagar.receber) || 0, desp = Math.max(0, t.despesas + aP - rec), total = t.renda + t.caixa;
   const saldo = total - t.despesas;                 // saldo na conta agora (igual ao do banco quando tudo está lançado)
-  const livre = saldo - aP, porDia = livre > 0 && restam ? livre / restam : 0;   // o que sobra depois de pagar tudo que está aberto
+  const livre = saldo - aP + rec, porDia = livre > 0 && restam ? livre / restam : 0;   // o que sobra depois de pagar tudo que está aberto
   const pctC = total ? Math.min(100, desp / total * 100) : 0;
   const paineis = [
     { cls: !total ? '' : livre > 0 ? 'meta' : 'neg', ico: '📅', tit: 'Pode gastar por dia', num: brl(porDia), curto: !total ? 'Cadastre seu salário' : !restam ? 'Mês encerrado' : livre > 0 ? 'até o fim do mês' : 'Mês comprometido',
       det: !total ? 'Cadastre seu salário na aba Salário para ver quanto pode gastar.' : livre > 0 ? `${brl(livre)} livres (já separando o que ainda vai pagar) para ${restam} dia(s).` : 'O mês já está comprometido. Evite novos gastos.' },
     { cls: !total ? '' : livre >= 0 ? '' : 'neg', ico: '🔮', tit: 'Como o mês fecha', num: brl(Math.abs(livre)), curto: !total ? 'Sem salário cadastrado' : livre >= 0 ? 'sobra se não gastar mais' : 'falta para pagar tudo',
-      det: `Saldo de hoje ${brl(saldo)} menos ${brl(aP)} de contas e faturas ainda abertas. Cada gasto novo diminui esse valor.` },
+      det: `Saldo de hoje ${brl(saldo)} menos ${brl(aP)} de contas e faturas ainda abertas${rec > 0 ? `, mais ${brl(rec)} que outras pessoas vão te devolver (compras no seu cartão)` : ''}. Cada gasto novo diminui esse valor.` },
     { cls: '', ico: '🧾', tit: 'Já comprometido', num: brl(desp), curto: total ? `${Math.round(pctC)}% do que você tem` : 'despesas do mês', bar: total ? pctC : null,
-      det: total ? `${brl(desp)} de ${brl(total)}: ${brl(t.despesas)} já saíram da conta e ${brl(desp - t.despesas)} ainda vão sair (contas e faturas).` : 'Soma das despesas deste mês.' },
+      det: total ? `${brl(desp)} de ${brl(total)}: ${brl(t.despesas)} já saíram da conta e ${brl(Math.max(0, aP - rec))} ainda vão sair (contas e faturas${rec > 0 ? `, sem contar ${brl(rec)} de compras de outras pessoas` : ''}).` : 'Soma das despesas deste mês.' },
   ];
   setHtml($('#planoResumo'), paineis.map(x => `<div class="panel ${x.cls}" role="button" tabindex="0" aria-expanded="false"><span class="pmore" aria-hidden="true">ⓘ</span><h2>${x.ico} ${x.tit}</h2><p class="num">${x.num}</p><p class="of">${x.curto}</p>${x.bar != null ? `<div class="pbar2"><i style="width:${x.bar}%"></i></div>` : ''}<p class="pdet">${x.det}</p></div>`).join(''));
   // orçamentos (clique no cartão para ver quais gastos entraram)
@@ -3506,12 +3720,28 @@ async function forcarSaida() {                 // desloga só este aparelho e vo
     try { document.startViewTransition(fim); } catch (e) { fim(); }
   };
 
+  /* ---------- carteira: cartão levanta e inclina sob o mouse (computador) ---------- */
+  if (matchMedia('(hover:hover) and (pointer:fine)').matches) {
+    const lista = $('#cartoesLista'); let atual = null;
+    const solta = () => { if (atual) { atual.classList.remove('tilt'); atual.style.removeProperty('--rx'); atual.style.removeProperty('--ry'); atual = null; } };
+    lista.addEventListener('pointermove', e => {
+      if (!animOk()) return;
+      const wc = e.target.closest('.wallet .wc'); if (wc !== atual) { solta(); atual = wc; if (wc) wc.classList.add('tilt'); }
+      if (!wc) return;
+      const r = wc.querySelector('.vcard').getBoundingClientRect(), x = (e.clientX - r.left) / r.width, y = (e.clientY - r.top) / r.height;
+      wc.style.setProperty('--ry', ((x - .5) * 10).toFixed(2) + 'deg'); wc.style.setProperty('--rx', ((.5 - y) * 8).toFixed(2) + 'deg');
+    });
+    lista.addEventListener('pointerleave', solta);
+    lista.addEventListener('click', solta, true);
+  }
+
   /* ---------- 2. listas em cascata na primeira vez ---------- */
-  const SEL_LISTAS = '#lista,#contasLista,#orcLista,#projLista,#chips_gastos,#lista_rendas,#hero,#contasHero,#planoResumo,#projResumo,#catLista,.hero[data-resumo]';
+  const SEL_LISTAS = '#cartoesLista,#lista,#contasLista,#orcLista,#projLista,#chips_gastos,#lista_rendas,#hero,#contasHero,#planoResumo,#projResumo,#catLista,.hero[data-resumo]';
   const vistos = new WeakSet();
   function cascata(el) {
     if (!animOk()) return;
     [...el.children].forEach((c, i) => c.style.setProperty('--k', Math.min(i, 12)));
+    el.querySelectorAll(':scope > .wallet > .wc').forEach((c, i) => c.style.setProperty('--k', Math.min(i, 12)));
     el.classList.remove('cascata'); void el.offsetWidth; el.classList.add('cascata');
     clearTimeout(el._ct); el._ct = setTimeout(() => el.classList.remove('cascata'), 1500);
   }
