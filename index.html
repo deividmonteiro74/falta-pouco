@@ -21,7 +21,7 @@
   A cada versão publicada, mude o meta "build": é assim que o app avisa "Nova versão disponível".
 -->
 <meta charset="utf-8">
-<meta name="build" content="20261111-160000">
+<meta name="build" content="20261111-163000">
 <script>
 window.fpCor=function(c){var r=document.documentElement.style,h=c[0].replace('#',''),n=parseInt(h,16);r.setProperty('--acc1',c[0]);r.setProperty('--acc2',c[1]);r.setProperty('--acc3',c[2]);r.setProperty('--acc1-rgb',(n>>16&255)+','+(n>>8&255)+','+(n&255))};
 try{var _v=JSON.parse(localStorage.getItem('fp_visual')||'{}'),_r=document.documentElement;if(_v.glass)_r.dataset.glass='on';if(_v.anim===false)_r.dataset.anim='off';if(_v.cor)window.fpCor(_v.cor)}catch(e){}
@@ -1011,12 +1011,16 @@ dialog.sheet .alca{display:none}
 
 /* ===== carteira de cartões (estilo iPhone) ===== */
 html.vt-carteira :is(.wc,.wsel){view-transition-name:var(--vtn)}
+html.vt-carteira #vistaCartoes .toolbar{view-transition-name:cart-topo}
+::view-transition-group(cart-topo){animation:none;z-index:60}
+::view-transition-old(cart-topo){display:none}
+::view-transition-new(cart-topo){animation:none}
 html.vt-carteira::view-transition-old(conteudo){animation:wFade .2s ease-in both}
 html.vt-carteira::view-transition-new(conteudo){animation:wDetIn .55s var(--mola) .1s both}
 @keyframes wFade{to{opacity:0}}
 @keyframes wDetIn{from{opacity:0;transform:translateY(26px)}}
 @keyframes wSai{to{opacity:0;transform:translateY(150px) scale(.95)}}
-@keyframes wEntra{from{opacity:0;transform:translateY(150px) scale(.95)}}
+@keyframes wEntra{from{opacity:0;transform:translateY(190px) scale(.96)}40%{opacity:1}}
 #cartoesLista.cascata .wallet>.wc{animation:wsobe .75s var(--mola) backwards!important;animation-delay:calc(var(--k,0) * 80ms)!important}
 #cartoesLista.cascata .wdica{animation:entra .6s var(--mola) .35s backwards!important}
 @media (hover:hover) and (pointer:fine){
@@ -2319,10 +2323,12 @@ function trocaCarteira(muda) {
   const css = [];
   const indo = muda._alvo ? vtNome(muda._alvo) : null, foco = indo || sel, kf = ids.indexOf(foco);
   ids.forEach((n, k) => {
-    const d = Math.abs(k - kf) * 35;
-    css.push(`::view-transition-group(${n}){animation-duration:.62s;animation-timing-function:var(--mola)${n === foco ? ';z-index:5' : ''}}`,
-      `::view-transition-old(${n}):only-child{animation:wSai .34s cubic-bezier(.4,0,1,1) ${d}ms both}`,
-      `::view-transition-new(${n}):only-child{animation:wEntra .62s var(--mola) ${d + 60}ms both}`);
+    // indo: o cartão escolhido passa por cima de todos enquanto os outros descem e somem.
+    // voltando: cada cartão já fica na ordem da pilha (o de baixo cobre o de cima), então nada "pula" no final.
+    const z = indo && n === foco ? 50 : k + 1, d = indo ? Math.abs(k - kf) * 35 : 90 + k * 55;
+    css.push(`::view-transition-group(${n}){z-index:${z};animation-duration:${indo ? '.6s' : '.7s'};animation-timing-function:var(--mola)}`,
+      `::view-transition-old(${n}):only-child{animation:wSai .3s cubic-bezier(.4,0,1,1) ${d}ms both}`,
+      `::view-transition-new(${n}):only-child{animation:wEntra .7s var(--mola) ${d}ms both}`);
   });
   let st = document.getElementById('wcVT'); if (!st) { st = document.createElement('style'); st.id = 'wcVT'; document.head.appendChild(st); }
   st.textContent = css.join('\n');
