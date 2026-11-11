@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
 <meta charset="utf-8">
-<meta name="build" content="20261107-131723">
+<meta name="build" content="20261111-121500">
 <script>
 window.fpCor=function(c){var r=document.documentElement.style,h=c[0].replace('#',''),n=parseInt(h,16);r.setProperty('--acc1',c[0]);r.setProperty('--acc2',c[1]);r.setProperty('--acc3',c[2]);r.setProperty('--acc1-rgb',(n>>16&255)+','+(n>>8&255)+','+(n&255))};
 try{var _v=JSON.parse(localStorage.getItem('fp_visual')||'{}'),_r=document.documentElement;if(_v.glass)_r.dataset.glass='on';if(_v.anim===false)_r.dataset.anim='off';if(_v.cor)window.fpCor(_v.cor)}catch(e){}
@@ -266,9 +266,9 @@ body{color:var(--ink);background:radial-gradient(900px 500px at 5% -5%,rgba(var(
 .ctop{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:12px;min-height:26px}
 .card .tag{background:color-mix(in srgb,var(--g1) 17%,transparent);color:var(--g1)}
 
-.panel[data-resumo]{cursor:pointer}
-.panel[data-resumo]:hover{transform:translateY(-3px)}
-.panel[data-resumo]:focus-visible{outline:3px solid #2B6CB0;outline-offset:3px}
+.panel[data-cres]{cursor:pointer}
+.panel[data-cres]:hover{transform:translateY(-3px)}
+.panel[data-cres]:focus-visible{outline:3px solid #2B6CB0;outline-offset:3px}
 .panel .ver{font-size:.85rem;font-weight:600;opacity:.9;text-decoration:underline;margin:6px 0 0}
 .rtotal{display:flex;justify-content:space-between;align-items:baseline;gap:12px;padding:12px 0;border-bottom:2px solid var(--line);font-weight:700}
 .rtotal b{font-family:var(--display);font-size:1.4rem}
@@ -528,12 +528,13 @@ body::before{content:"";position:fixed;inset:-25%;z-index:-1;pointer-events:none
   .side-toggle:hover{transform:scale(1.15);background:var(--brand);color:#fff}
   #viewApp{transition:padding-left .35s cubic-bezier(.2,.8,.2,1)}
   .top{transition:width .35s cubic-bezier(.2,.8,.2,1),box-shadow .3s;overflow:visible}
-  .user{display:grid;grid-template-columns:54px 1fr;gap:8px;padding:14px;border-radius:22px;background:linear-gradient(135deg,rgba(var(--acc1-rgb),.18),rgba(255,77,141,.15));border:1px solid color-mix(in srgb,var(--brand) 40%,var(--line));box-shadow:0 12px 28px rgba(76,52,200,.2)}
-  .user .linkbtn{grid-column:1/-1;display:flex;align-items:center;gap:10px;max-width:none;padding:2px;font-size:1.02rem;font-weight:800;text-align:left}
+  .user{display:grid;grid-template-columns:46px 46px minmax(0,1fr);gap:8px;padding:14px;border-radius:22px;background:linear-gradient(135deg,rgba(var(--acc1-rgb),.18),rgba(255,77,141,.15));border:1px solid color-mix(in srgb,var(--brand) 40%,var(--line));box-shadow:0 12px 28px rgba(76,52,200,.2)}
+  .user .linkbtn{grid-column:1/-1;display:flex;align-items:center;gap:10px;max-width:none;padding:2px 2px 12px;margin-bottom:2px;font-size:1.02rem;font-weight:800;text-align:left;border-bottom:1px solid color-mix(in srgb,var(--brand) 22%,transparent)}
   .user .linkbtn::before{content:attr(data-ini);display:grid;place-items:center;flex:none;width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,var(--acc1),var(--acc2));color:#fff;font-size:1.05rem;font-weight:800;box-shadow:0 6px 14px rgba(var(--acc1-rgb),.4)}
-  .user .btn{width:auto;min-height:42px}
-  #btnTema{grid-column:1;font-size:1.1rem}
-  #btnSair{grid-column:2;font-weight:700;color:#E5383B;background:rgba(229,56,59,.1);border-color:rgba(229,56,59,.4)}
+  .user .btn{width:auto;min-width:0;height:44px;min-height:44px;padding:0;display:grid;place-items:center;white-space:nowrap}
+  #btnAparencia{grid-column:1;font-size:1.15rem}
+  #btnTema{grid-column:2;font-size:1.15rem}
+  #btnSair{grid-column:3;display:flex;align-items:center;justify-content:center;gap:2px;padding:0 10px;font-weight:700;color:#E5383B;background:rgba(229,56,59,.1);border-color:rgba(229,56,59,.4)}
   #btnSair::before{content:"🚪 "}
   #btnSair:hover{background:#E5383B;color:#fff;border-color:#E5383B}
   /* recolhida: só ícones; ao passar o mouse, expande por cima */
@@ -547,8 +548,9 @@ body::before{content:"";position:fixed;inset:-25%;z-index:-1;pointer-events:none
   body.lado-fechado .top:not(:hover) #navAdmin .tab .ponto{position:absolute;top:8px;right:14px;margin:0}
   body.lado-fechado .top:not(:hover) .user{grid-template-columns:1fr;padding:10px 6px;justify-items:center}
   body.lado-fechado .top:not(:hover) .user .linkbtn{font-size:0;justify-content:center;grid-column:auto;gap:0}
-  body.lado-fechado .top:not(:hover) #btnTema,body.lado-fechado .top:not(:hover) #btnSair{grid-column:auto;width:46px;font-size:0;padding:0}
-  body.lado-fechado .top:not(:hover) #btnTema{font-size:1.1rem}
+  body.lado-fechado .top:not(:hover) #btnAparencia,body.lado-fechado .top:not(:hover) #btnTema,body.lado-fechado .top:not(:hover) #btnSair{grid-column:auto;width:46px;font-size:0;padding:0}
+  body.lado-fechado .top:not(:hover) #btnAparencia,body.lado-fechado .top:not(:hover) #btnTema{font-size:1.15rem}
+  body.lado-fechado .top:not(:hover) .user .linkbtn{padding:0;border:0;margin:0}
   body.lado-fechado .top:not(:hover) #btnSair::before{font-size:1.1rem;content:"🚪"}
 }
 @media (prefers-reduced-motion:reduce){.top,#viewApp{transition:none!important}}
@@ -749,16 +751,81 @@ body::before{content:"";position:fixed;inset:-25%;z-index:-1;pointer-events:none
 .ios{-webkit-appearance:none;appearance:none;flex:none;width:51px;height:31px;border-radius:99px;background:rgba(120,120,128,.32);position:relative;cursor:pointer;transition:background .25s;border:none;outline-offset:3px}
 .ios::after{content:"";position:absolute;top:2px;left:2px;width:27px;height:27px;border-radius:50%;background:#fff;box-shadow:0 2px 6px rgba(0,0,0,.3);transition:transform .28s cubic-bezier(.2,.8,.2,1),width .2s}
 .ios:active::after{width:32px}.ios:checked{background:#34C759}.ios:checked::after{transform:translateX(20px)}.ios:checked:active::after{transform:translateX(15px)}
-#btnAparencia{margin-right:6px}
 .btn:active{transform:scale(.96)}
 dialog[open] .dlg{animation:dlgIn .32s cubic-bezier(.2,.8,.2,1)}
 @keyframes dlgIn{from{opacity:0;transform:translateY(18px) scale(.96)}to{opacity:1;transform:none}}
 @keyframes blobs{from{transform:translate(0,0) scale(1)}to{transform:translate(4%,-3%) scale(1.12)}}
-html[data-glass=on]{--surface:rgba(255,255,255,.62);--line:rgba(255,255,255,.4)}
-html[data-glass=on][data-tema=dark]{--surface:rgba(255,255,255,.09);--line:rgba(255,255,255,.2)}
+/* ===== Vidro estilo iPhone (Liquid Glass) =====
+   Camadas: brilho especular (luz de cima) + preenchimento translúcido + desfoque forte com saturação.
+   Borda de luz dupla (forte em cima/esquerda, suave embaixo/direita), como a refração do vidro do iOS.
+   Leitura: o fundo atrás do vidro é clareado (tema claro) ou escurecido (tema escuro) para o texto ter contraste. */
+html[data-glass=on]{
+  --surface:rgba(255,255,255,.64);--line:rgba(255,255,255,.72);--ink:#14103A;--muted:#46437A;
+  --gl-fill:rgba(255,255,255,.6);
+  --gl-sheen:linear-gradient(165deg,rgba(255,255,255,.6) 0%,rgba(255,255,255,.14) 32%,rgba(255,255,255,0) 58%,rgba(255,255,255,.2) 100%);
+  --gl-blur:blur(22px) saturate(185%) brightness(1.06);
+  --gl-rim:inset 1.5px 1.5px 0 -.5px rgba(255,255,255,.98),inset -1px -1px 0 -.5px rgba(255,255,255,.65),inset 0 0 0 1px rgba(255,255,255,.4);
+  --gl-glow:inset 0 0 22px rgba(255,255,255,.4);
+  --gl-shadow:0 8px 28px rgba(40,28,120,.16),0 1px 3px rgba(40,28,120,.1);
+  --gl-strong:rgba(255,255,255,.88);--gl-field:rgba(255,255,255,.8);--gl-field-line:rgba(70,60,160,.22);--gl-bar:rgba(255,255,255,.58)}
+html[data-glass=on][data-tema=dark]{
+  --surface:rgba(34,28,92,.52);--line:rgba(255,255,255,.18);--ink:#F7F5FF;--muted:#D6D2F7;
+  --gl-fill:rgba(24,19,74,.5);
+  --gl-sheen:linear-gradient(165deg,rgba(255,255,255,.2) 0%,rgba(255,255,255,.05) 32%,rgba(255,255,255,0) 58%,rgba(255,255,255,.07) 100%);
+  --gl-blur:blur(24px) saturate(170%) brightness(.9);
+  --gl-rim:inset 1.5px 1.5px 0 -.5px rgba(255,255,255,.5),inset -1px -1px 0 -.5px rgba(255,255,255,.22),inset 0 0 0 1px rgba(255,255,255,.1);
+  --gl-glow:inset 0 0 24px rgba(255,255,255,.05);
+  --gl-shadow:0 12px 36px rgba(0,0,0,.45),0 2px 6px rgba(0,0,0,.25);
+  --gl-strong:rgba(22,18,66,.9);--gl-field:rgba(255,255,255,.1);--gl-field-line:rgba(255,255,255,.24);--gl-bar:rgba(20,16,60,.52)}
+/* "papel de parede" colorido atrás do vidro (é o que dá vida ao efeito) */
 html[data-glass=on] body::before{content:"";position:fixed;inset:-20%;z-index:-1;pointer-events:none;filter:blur(46px);opacity:.6;background:radial-gradient(40% 40% at 18% 22%,var(--acc1),transparent 62%),radial-gradient(36% 36% at 82% 28%,var(--acc2),transparent 62%),radial-gradient(42% 42% at 52% 92%,var(--acc3),transparent 62%);animation:blobs 20s ease-in-out infinite alternate}
-html[data-glass=on] :is(.row.card,.caixa-box,.proj-card,.orc,.cal .dia,.ap-linha,.dlg,.vista-bloco,.per,.wdet,.rel-exp,.panel:not(.meta):not(.divida):not(.neg)){-webkit-backdrop-filter:blur(18px) saturate(170%);backdrop-filter:blur(18px) saturate(170%);box-shadow:inset 0 1px 0 rgba(255,255,255,.35),0 10px 30px rgba(0,0,0,.18)}
-html[data-glass=on] .dlg{background:var(--surface)}
+html[data-glass=on][data-tema=dark] body::before{opacity:.72}
+
+/* superfícies de conteúdo */
+html[data-glass=on] :is(.row.card,.caixa-box,.proj-card,.orc,.ap-linha,.wpanel,.rel-exp,.sim,.mes-card,.sem-card,.per:not(.sel),.dia:not(.sel),.vazio,.urow,.biglist li,.fat-card,.auth){background:var(--gl-sheen),var(--gl-fill);-webkit-backdrop-filter:var(--gl-blur);backdrop-filter:var(--gl-blur)}
+html[data-glass=on] :is(.row.card:not(.feito):not(.feito-d):not(.estourou),.caixa-box,.proj-card:not(.pesada),.orc:not(.estoura),.ap-linha,.wpanel,.rel-exp,.sim:not(.ok):not(.warn):not(.bad),.mes-card,.sem-card:not(.pesada),.per:not(.sel):not(.pesada),.vazio,.urow,.biglist li,.fat-card,.auth){box-shadow:var(--gl-rim),var(--gl-glow),var(--gl-shadow)}
+html[data-glass=on] .dia:not(.sel):not(.hoje):not(.pesado){box-shadow:var(--gl-rim),0 4px 14px rgba(40,28,120,.12)}
+html[data-glass=on] .cal .dia{-webkit-backdrop-filter:blur(14px) saturate(180%);backdrop-filter:blur(14px) saturate(180%)}
+/* etiquetas coloridas legíveis no vidro claro (amarelo/ciano ficavam apagados) */
+html[data-glass=on]:not([data-tema=dark]) .card .tag{color:color-mix(in srgb,var(--g1) 55%,#000);background:color-mix(in srgb,var(--g1) 22%,rgba(255,255,255,.5))}
+
+/* botões, balões e campos */
+html[data-glass=on] .btn:not(.primary):not(.go):not(.danger){background:var(--gl-sheen),var(--gl-fill);-webkit-backdrop-filter:blur(16px) saturate(180%);backdrop-filter:blur(16px) saturate(180%);border-color:transparent;box-shadow:var(--gl-rim),0 2px 8px rgba(40,28,120,.1)}
+html[data-glass=on] .btn.primary,html[data-glass=on] .btn.go{box-shadow:inset 1.5px 1.5px 0 -.5px rgba(255,255,255,.6),inset -1px -1px 0 -.5px rgba(255,255,255,.25),0 6px 16px rgba(var(--acc1-rgb),.32)}
+html[data-glass=on] .chip-btn{background:var(--gl-sheen),var(--gl-fill);color:var(--ink);-webkit-backdrop-filter:blur(16px) saturate(180%);backdrop-filter:blur(16px) saturate(180%);box-shadow:var(--gl-rim),0 6px 16px rgba(var(--acc1-rgb),.16)}
+html[data-glass=on] :is(.field input,.field select,.busca input,.caixa-box input:not(:disabled),.dlg textarea){background:var(--gl-field);border-color:var(--gl-field-line)}
+
+/* janelas (modais): vidro mais denso, porque formulário precisa de leitura clara */
+html[data-glass=on] dialog,html[data-glass=on] .fim-card{background:var(--gl-sheen),var(--gl-strong);-webkit-backdrop-filter:blur(40px) saturate(180%);backdrop-filter:blur(40px) saturate(180%);box-shadow:var(--gl-rim),0 24px 70px rgba(10,5,60,.38)}
+html[data-glass=on] dialog::backdrop{background:rgba(20,14,70,.28);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
+html[data-glass=on] .dlg{background:transparent}
+html[data-glass=on] .vc-prev{background:var(--gl-strong)}
+
+/* barra lateral (computador) e barra de abas flutuante (celular), como a tab bar do iOS */
+@media (min-width:900px){html[data-glass=on] .top{background:var(--gl-sheen),var(--gl-bar);-webkit-backdrop-filter:var(--gl-blur);backdrop-filter:var(--gl-blur);border-right-color:transparent;box-shadow:inset -1px 0 0 rgba(255,255,255,.4),8px 0 32px rgba(40,28,120,.12)}}
+@media (max-width:899.98px){
+  html[data-glass=on] #navAdmin{background:var(--gl-sheen),var(--gl-bar);-webkit-backdrop-filter:var(--gl-blur);backdrop-filter:var(--gl-blur);border-color:transparent;border-radius:30px;box-shadow:var(--gl-rim),var(--gl-glow),var(--gl-shadow)}
+  html[data-glass=on] .top::before{background:var(--gl-bar);-webkit-backdrop-filter:var(--gl-blur);backdrop-filter:var(--gl-blur)}}
+
+/* cartões coloridos (Entrou, Saiu, Saldo...): vidro tingido, mantendo a cor e o texto branco bem legível */
+html[data-glass=on] .panel{-webkit-backdrop-filter:blur(20px) saturate(170%);backdrop-filter:blur(20px) saturate(170%);text-shadow:0 1px 2px rgba(0,0,0,.22);box-shadow:inset 1.5px 1.5px 0 -.5px rgba(255,255,255,.8),inset -1px -1px 0 -.5px rgba(255,255,255,.35),inset 0 0 0 1px rgba(255,255,255,.18),inset 0 0 28px rgba(255,255,255,.12),0 12px 32px rgba(20,10,80,.24)}
+html[data-glass=on] .panel::after{background:rgba(255,255,255,.1)}
+html[data-glass=on] .panel:not(.meta):not(.divida){background:var(--p-sheen),linear-gradient(135deg,rgba(var(--acc1-rgb),.86),color-mix(in srgb,var(--acc3) 74%,transparent))}
+html[data-glass=on] .panel.meta{background:var(--p-sheen),linear-gradient(135deg,rgba(0,166,148,.88),rgba(20,184,120,.76) 65%,rgba(52,200,150,.7))}
+html[data-glass=on] .panel.divida{background:var(--p-sheen),linear-gradient(135deg,rgba(240,60,128,.88),rgba(245,100,80,.78) 65%,rgba(245,140,60,.72))}
+html[data-glass=on] .hero .panel:not(.meta):not(.divida):not(.neg):nth-child(2){background:var(--p-sheen),linear-gradient(135deg,rgba(124,80,240,.88),rgba(180,80,240,.76))}
+html[data-glass=on] .hero .panel:not(.meta):not(.divida):not(.neg):nth-child(3){background:var(--p-sheen),linear-gradient(135deg,rgba(240,108,50,.88),rgba(245,150,60,.76))}
+html[data-glass=on] .hero .panel:not(.meta):not(.divida):not(.neg):nth-child(4){background:var(--p-sheen),linear-gradient(135deg,rgba(0,150,200,.88),rgba(30,190,175,.76))}
+html[data-glass=on] .panel.neg,html[data-glass=on] .hero .panel.neg{background:var(--p-sheen),linear-gradient(135deg,rgba(220,48,52,.9),rgba(245,96,96,.78))}
+html[data-glass=on]{--p-sheen:linear-gradient(165deg,rgba(255,255,255,.34) 0%,rgba(255,255,255,.08) 34%,rgba(255,255,255,0) 58%,rgba(255,255,255,.1) 100%)}
+
+/* acessibilidade: "Reduzir transparência" do sistema e navegadores sem desfoque ficam com vidro quase opaco */
+@media (prefers-reduced-transparency:reduce){
+  html[data-glass=on]{--gl-fill:rgba(255,255,255,.95);--gl-bar:rgba(255,255,255,.96);--gl-strong:#fff}
+  html[data-glass=on][data-tema=dark]{--gl-fill:rgba(26,21,69,.96);--gl-bar:rgba(22,18,60,.97);--gl-strong:#1A1545}}
+@supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){
+  html[data-glass=on]{--gl-fill:rgba(255,255,255,.95);--gl-bar:rgba(255,255,255,.96);--gl-strong:#fff}
+  html[data-glass=on][data-tema=dark]{--gl-fill:rgba(26,21,69,.96);--gl-bar:rgba(22,18,60,.97);--gl-strong:#1A1545}}
 html[data-anim=off] *,html[data-anim=off] *::before,html[data-anim=off] *::after{animation:none!important;transition:none!important}
 @media (prefers-reduced-motion:reduce){html:not([data-anim=on]) body::before{animation:none}}
 /* ===== ajustes: texto sobreposto, cores dos balões, sem piscar ===== */
@@ -768,6 +835,16 @@ html[data-anim=off] *,html[data-anim=off] *::before,html[data-anim=off] *::after
 .hero .panel:not(.meta):not(.divida):not(.neg):nth-child(4){background:linear-gradient(135deg,#00A6D6,#35E0C9)}
 .hero .panel.neg{background:linear-gradient(135deg,#E5383B,#FF6B6B)}
 .vista-in,.vista-in .panel,.vista-in .chips>*,.vista-in .urow,.vista-in .biglist>li,.vista-in .mes-grid>*,.vista-in .sem-grid>*,.orc,.proj-card,.rg,.row.card{animation:none!important}
+/* ===== correção: valor dos cartões coloridos cortado ("R" sem o resto do número) =====
+   O valor tinha fonte fixa grande e o cartão esconde o que passa da borda. Agora o tamanho
+   acompanha a largura do próprio cartão; título fica em cima do valor quando não há anel de progresso. */
+.panel{container-type:inline-size}
+.panel:not(:has(.ring)){display:block}
+.panel .num{font-size:clamp(1.3rem,12cqi,3rem)}
+.panel:has(.ring) .num{font-size:clamp(1.3rem,8cqi,3rem)}
+.hero.tres .panel .num{font-size:clamp(1.3rem,10.5cqi,2.4rem)}
+@media (max-width:899.98px){.hero.tres .panel .num{font-size:clamp(1.3rem,10.5cqi,2.2rem)}}
+.panel h2,.panel .of{overflow-wrap:anywhere}
 </style>
 
 </head>
@@ -2237,8 +2314,8 @@ function renderContas() {
     faturasDe(t).filter(f => !f.paga).forEach(f => { abertoN++; aberto += f.valor || 0; if (diasAte(f.vencimento) < 0) vencidas++; });
   });
   $('#contasHero').innerHTML =
-    `<div class="panel meta" role="button" tabindex="0" data-resumo="estimativa"><div class="ptxt"><h2>Estimativa da próxima conta</h2><p class="num">${brl(prevTotal)}</p><p class="${prevN ? 'of' : 'empty'}">${prevN ? `soma das próximas contas de ${prevN} serviço(s)` : 'Lance suas contas para ver a estimativa.'}</p><p class="ver">Ver detalhes ›</p></div></div>` +
-    `<div class="panel divida" role="button" tabindex="0" data-resumo="aberto"><div class="ptxt"><h2>Em aberto</h2><p class="num">${brl(aberto)}</p><p class="of">${abertoN} conta(s) a pagar${vencidas ? ` · ${vencidas} vencida(s)` : ''}</p><p class="ver">Ver contas ›</p></div></div>`;
+    `<div class="panel meta" role="button" tabindex="0" data-cres="estimativa"><div class="ptxt"><h2>Estimativa da próxima conta</h2><p class="num">${brl(prevTotal)}</p><p class="${prevN ? 'of' : 'empty'}">${prevN ? `soma das próximas contas de ${prevN} serviço(s)` : 'Lance suas contas para ver a estimativa.'}</p><p class="ver">Ver detalhes ›</p></div></div>` +
+    `<div class="panel divida" role="button" tabindex="0" data-cres="aberto"><div class="ptxt"><h2>Em aberto</h2><p class="num">${brl(aberto)}</p><p class="of">${abertoN} conta(s) a pagar${vencidas ? ` · ${vencidas} vencida(s)` : ''}</p><p class="ver">Ver contas ›</p></div></div>`;
 
   $('#contasLista').innerHTML = tipos.map((t, k) => {
     const c = CONTAS[t], [g1, g2] = c.cor, todas = faturasDe(t);
@@ -2297,8 +2374,8 @@ function abrirResumo(tipo) {
   }
   $('#dlgResumo').showModal();
 }
-$('#contasHero').addEventListener('click', e => { const p = e.target.closest('[data-resumo]'); if (p) abrirResumo(p.dataset.resumo); });
-$('#contasHero').addEventListener('keydown', e => { if (e.key !== 'Enter' && e.key !== ' ') return; const p = e.target.closest('[data-resumo]'); if (p) { e.preventDefault(); abrirResumo(p.dataset.resumo); } });
+$('#contasHero').addEventListener('click', e => { const p = e.target.closest('[data-cres]'); if (p) abrirResumo(p.dataset.cres); });
+$('#contasHero').addEventListener('keydown', e => { if (e.key !== 'Enter' && e.key !== ' ') return; const p = e.target.closest('[data-cres]'); if (p) { e.preventDefault(); abrirResumo(p.dataset.cres); } });
 $('#rCorpo').addEventListener('click', e => { const b = e.target.closest('[data-rabrir]'); if (!b) return; $('#dlgResumo').close(); abrirConta(b.dataset.rabrir); });
 
 function abrirConta(tipo, foco) {
@@ -2528,7 +2605,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.ma
 function renderMes() {
   const t = mesDados; if (!t) return;
   document.querySelectorAll('[data-mes-label]').forEach(e => { const s = mesNome(mesSel); e.textContent = s.charAt(0).toUpperCase() + s.slice(1); });
-  document.querySelectorAll('[data-resumo]').forEach(e => e.innerHTML = resumoHtml(t));
+  document.querySelectorAll('.hero[data-resumo]').forEach(e => e.innerHTML = resumoHtml(t));
   document.querySelectorAll('[data-apagar]').forEach(e => e.innerHTML = apagarHtml(t));
   document.querySelectorAll('[data-caixa-box]').forEach(e => e.innerHTML = caixaBoxHtml(t));
   const cxLi = (t.caixa || 0) > 0 ? `<li class="caixa-li"><div class="desc"><strong>${t.manual ? '💼 Caixa inicial' : '💼 Caixa do mês anterior'}</strong><small>${t.manual ? 'valor que você informou' : 'o que sobrou e ficou guardado'}</small></div><span class="val pos">+ ${brl(t.caixa)}</span></li>` : '';
@@ -2870,13 +2947,13 @@ function renderAgenda() {
   const hoje = hojeISO(), mesHoje = hoje.slice(0, 7);
   if (!agMes) agMes = mesHoje;
   const todos = agendaItens(), doMes = todos.filter(x => x.d.slice(0, 7) === agMes);
-  const [ay, am] = agMes.split('-').map(Number), nd = new Date(ay, am, 0).getDate(), off = new Date(ay, am - 1, 1).getDay();
+  const [ay, am] = agMes.split('-').map(Number), nd = new Date(ay, am, 0).getDate(), off = (new Date(ay, am - 1, 1).getDay() + 6) % 7;
   const iso = d => `${agMes}-${String(d).padStart(2, '0')}`;
   if (!agDia || (agDia !== 'todo' && agDia.slice(0, 7) !== agMes)) agDia = agMes === mesHoje ? hoje : 'todo';
   $('#agMesLabel').textContent = plCap(mesNome(agMes));
   const porDia = {}; doMes.forEach(x => (porDia[x.d] = porDia[x.d] || []).push(x));
   const tots = Array.from({ length: nd }, (_, i) => plSoma(porDia[iso(i + 1)] || [])), mx = Math.max(0, ...tots), comItens = tots.filter(v => v > 0).length;
-  const SEM = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+  const SEM = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'];
   let h = SEM.map(x => `<span class="sem">${x}</span>`).join('') + '<span class="vz"></span>'.repeat(off);
   for (let d = 1; d <= nd; d++) {
     const k = iso(d), l = porDia[k] || [], t = tots[d - 1], tem = l.length > 0;
