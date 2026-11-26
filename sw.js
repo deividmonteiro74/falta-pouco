@@ -1,6 +1,7 @@
 /* Falta Pouco · service worker
    Recebe os avisos no celular e guarda uma cópia do app para abrir mesmo sem internet. */
-const CACHE = 'falta-pouco-v2';
+const CACHE = 'falta-pouco-v3';
+const VERSAO = 'avisos-3';
 const BASICO = ['/', '/manifest.webmanifest', '/icon-192.png?v=10', '/icon-512.png?v=10', '/apple-touch-icon.png?v=10'];
 
 self.addEventListener('install', e => {
@@ -15,10 +16,23 @@ self.addEventListener('fetch', e => {
   const r = e.request;
   if (r.method !== 'GET') return;
   const u = new URL(r.url);
-  if (u.origin !== location.origin || r.headers.has('range') || /\.mp4$/i.test(u.pathname)) return;
-  if (r.mode === 'navigate') {   // página: sempre tenta a versão nova; sem internet, usa a guardada
-    e.respondWith(fetch(r).then(res => { const cp = res.clone(); caches.open(CACHE).then(c => c.put('/', cp)); return res; })
-      .catch(() => caches.match('/').then(x => x || Response.error())));
+  // biblioteca do Supabase e fontes: guardadas no aparelho, abre mais rápido
+  if (/^(cdn\.jsdelivr\.net|fonts\.googleapis\.com|fonts\.gstatic\.com|cdnjs\.cloudflare\.com)$/.test(u.hostname)) {
+    e.respondWith(caches.match(r).then(x => x || fetch(r).then(res => { if (res.ok || res.type === 'opaque') { const cp = res.clone(); caches.open(CACHE).then(c => c.put(r, cp)); } return res; })));
+    return;
+  }
+  if (u.origin !== location.origin || r.headers.has('range') || /\.(mp4|bin)$/i.test(u.pathname)) return;
+  if (r.mode === 'navigate') {   // página: busca a versão nova; se a internet demorar mais de 4 s ou faltar, abre a guardada
+    e.respondWith(new Promise(resolve => {
+      let feito = false;
+      const guardada = () => caches.match('/').then(x => x || caches.match(r));
+      const t = setTimeout(() => guardada().then(x => { if (x && !feito) { feito = true; resolve(x); } }), 4000);
+      fetch(r.url, { cache: 'no-cache', credentials: 'same-origin' }).then(res => {
+        clearTimeout(t);
+        if (res.ok) { const cp = res.clone(); caches.open(CACHE).then(c => c.put('/', cp)); }
+        if (!feito) { feito = true; resolve(res); }
+      }).catch(() => { clearTimeout(t); guardada().then(x => { if (!feito) { feito = true; resolve(x || Response.error()); } }); });
+    }));
     return;
   }
   if (/\.(png|jpg|jpeg|svg|webp|ico|webmanifest)$/i.test(u.pathname)) {   // ícones: usa o guardado e atualiza por trás
@@ -27,6 +41,12 @@ self.addEventListener('fetch', e => {
       return x || rede;
     }));
   }
+});
+
+/* o app pergunta se este é o service worker novo (usado na conferência dos avisos) */
+self.addEventListener('message', e => {
+  if (e.data && e.data.ping && e.ports && e.ports[0]) e.ports[0].postMessage({ versao: VERSAO });
+  if (e.data && e.data.pular) self.skipWaiting();
 });
 
 /* ---------- avisos ---------- */
