@@ -22,12 +22,11 @@
         (quem envia é a função avisos-push no Supabase, de hora em hora)
    7. (script) "Lançamento rápido e modo discreto": botão + que lança gasto de qualquer tela
         e o olho no topo que esconde os valores
-   8. (script) "Arrastar e colar boleto": arrastar uma linha para o lado paga ou exclui (com Desfazer);
-        ler o código de boleto ou de Pix copia e cola
+   8. (script) "Colar boleto e Pix": lê o código de boleto ou de Pix copia e cola
   A cada versão publicada, mude o meta "build": é assim que o app avisa "Nova versão disponível".
 -->
 <meta charset="utf-8">
-<meta name="build" content="20261126-230000">
+<meta name="build" content="20261127-010000">
 <script>
 /* paletas: 6 tons cada, do mais escuro ao mais claro + um tom de destaque. O tema inteiro sai daqui. */
 window.FP_PALETAS=[
@@ -1406,15 +1405,8 @@ html.discreto :is(.din,[data-count]){filter:blur(.38em);-webkit-user-select:none
   #btnSair::before{content:"🚪";font-size:1.1rem}
   body.lado-fechado .top:not(:hover) #btnDiscreto{grid-column:auto;width:46px;padding:0}
 }
-/* ===== Arrastar para pagar ou excluir ===== */
-li.sw-pode{touch-action:pan-y}
+/* ===== Colar boleto ===== */
 dialog #toast{position:fixed}
-li.sw-ativo{position:relative;overflow:hidden}
-li.sw-ativo>*{position:relative;z-index:1;transform:translateX(var(--sx,0px));will-change:transform}
-li.sw-ativo::before{content:attr(data-sw-txt);position:absolute;top:0;bottom:0;z-index:0;display:flex;align-items:center;padding:0 18px;color:#fff;font-weight:700;font-size:.92rem;white-space:nowrap;overflow:hidden;width:var(--sw-w,0px);border-radius:inherit}
-li.sw-dir::before{left:0;justify-content:flex-start;background:#1FAF6B}
-li.sw-esq::before{right:0;justify-content:flex-end;background:#E5383B}
-li.sw-pronto::before{filter:brightness(1.12)}
 .bol-linha{display:flex;gap:8px;align-items:center}.bol-box .help{margin:8px 0 0;position:static}.bol-linha input{flex:1;min-width:0}
 .rp-colar{margin:-6px 0 16px;text-align:center}
 .rp-colar .help{margin:8px 0 0}
@@ -2166,6 +2158,7 @@ window.somBrilho = function (grande, aguardar) {
    ficar no front-end: a proteção dos dados é feita pelas regras (RLS) do banco. */
 const SUPABASE_URL = 'https://egkbuwrosoldaknbuwqy.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVna2J1d3Jvc29sZGFrbmJ1d3F5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE1MDkwMzgsImV4cCI6MjEwNzA4NTAzOH0.CbLuMhfq8vXF4Tnnz4HvgfXjrWjbWBGwDh3bMC-w2_U';
+const FUNCAO_AVISOS = 'bright-function';   // fim do endereço (URL) da função de avisos no Supabase: .../functions/v1/bright-function
 /* ===================================== */
 
 const $ = (s, el = document) => el.querySelector(s);
@@ -4639,7 +4632,20 @@ async function forcarSaida() {                 // desloga só este aparelho e vo
    As escolhas (o que avisar, horário, dia do pagamento) ficam no perfil da conta, em user_metadata.avisos.
    Quem decide e envia os avisos é a função, de hora em hora. */
 (function () {
-  const FN = 'avisos-push';
+  // chama a função de avisos pelo endereço configurado; se não achar (404), tenta "avisos-push" e guarda o que funcionou
+  window.fpAvisosInvoke = async function (corpo) {
+    let salvo = null; try { salvo = localStorage.getItem('fp_funcao_avisos'); } catch (e) {}
+    const nomes = [...new Set([salvo, FUNCAO_AVISOS, 'avisos-push'].filter(Boolean))];
+    let r = null;
+    for (const n of nomes) {
+      r = await sb.functions.invoke(n, { body: corpo });
+      const st = r.error && r.error.context && r.error.context.status;
+      if (st === 404) continue;
+      if (!r.error) { try { localStorage.setItem('fp_funcao_avisos', n); } catch (e) {} }
+      return r;
+    }
+    return r;
+  };
   const PADRAO = { venc: true, cobrar: true, orc: true, pag: true, lembrete: true, hora: 21, resumo: true, metas: true, dia_pag: null };
   const temPush = 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
   const ios = /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
@@ -4649,7 +4655,7 @@ async function forcarSaida() {                 // desloga só este aparelho e vo
   const nomeAparelho = () => ios ? (/iPad/.test(navigator.userAgent) || navigator.maxTouchPoints > 1 && !/iPhone/.test(navigator.userAgent) ? 'iPad' : 'iPhone') : /Android/.test(navigator.userAgent) ? 'Android' : 'Computador';
   const deB64u = s => { const t = s.replace(/-/g, '+').replace(/_/g, '/'); const b = atob(t + '='.repeat((4 - t.length % 4) % 4)); return Uint8Array.from(b, c => c.charCodeAt(0)); };
   async function chamar(corpo) {
-    const { data, error } = await sb.functions.invoke(FN, { body: corpo });
+    const { data, error } = await fpAvisosInvoke(corpo);
     if (error) { let m = 'A função de avisos não respondeu. Ela já foi instalada no Supabase?'; try { const j = await error.context.json(); if (j && j.erro) m = j.erro; } catch (e) {} throw new Error(m); }
     return data || {};
   }
@@ -4968,9 +4974,7 @@ async function forcarSaida() {                 // desloga só este aparelho e vo
 </script>
 
 <script>
-/* ============ Arrastar e colar boleto ============
-   Arrastar uma linha para a direita: pagar (ou reabrir). Para a esquerda: excluir.
-   A exclusão espera 5 segundos com "Desfazer" antes de apagar de verdade.
+/* ============ Colar boleto e Pix ============
    lerCodigo(): entende linha digitável de boleto (47 ou 48 números), código de barras (44)
    e Pix copia e cola (texto que começa com 000201). */
 (function () {
@@ -5061,150 +5065,12 @@ async function forcarSaida() {                 // desloga só este aparelho e vo
   $('#rpCodigo').addEventListener('input', e => { const t = e.target.value; if (/^000201/.test(t.trim()) || so(t).length >= 44) aplicarNoRapido(t); });
   $('#fabNovo').addEventListener('click', () => { $('#rpCodigo').hidden = true; $('#rpColarMsg').hidden = true; }, true);
 
-  /* ---------- arrastar para pagar ou excluir ---------- */
-  const PAGA = '[data-cpaga],[data-agpagar],input[data-ccheck]';
-  const APAGA = '[data-cdelf],[data-rm],[data-cdel],[data-del]';
-  const acoes = li => ({ dir: li.querySelector(PAGA), esq: li.querySelector(APAGA) });
-  const rotDir = el => el.matches('input') ? (el.checked ? 'Em aberto' : 'Pago') : (/reabrir/i.test(el.textContent) ? 'Reabrir' : 'Pagar');
-
-  // exclusões esperando o "Desfazer"
-  const pend = new Map(), estilo = document.createElement('style'); document.head.append(estilo);
-  const pintar = () => { estilo.textContent = [...pend.values()].map(p => `li:has(${p.sel}){display:none!important}`).join('\n'); };
-  function apagador(btn) {
-    const q = (a, v) => `[${a}="${CSS.escape(v)}"]`;
-    if (btn.dataset.rm) {
-      const [mod, id] = btn.dataset.rm.split(':');
-      return { sel: q('data-rm', btn.dataset.rm), texto: 'Lançamento excluído', run: async () => {
-        const { error } = await sb.from(MESES[mod].tab).delete().eq('id', id); if (error) throw error;
-        await carregarMes(); if ($('#dlgGrupo').open) renderGrupo();
-      } };
-    }
-    if (btn.dataset.cdelf) {
-      const id = btn.dataset.cdelf;
-      return { sel: q('data-cdelf', id), texto: 'Conta excluída', run: async () => {
-        const fx = contasFat.find(x => x.id === id);
-        const { error } = await sb.from('contas_faturas').delete().eq('id', id); if (error) throw error;
-        if (fx && fx.foto_path) sb.storage.from('contas-fotos').remove([fx.foto_path]);
-        if (faturaEdit === id) { faturaEdit = null; prepararFormConta(); }
-        await carregarContas();
-      } };
-    }
-    if (btn.dataset.cdel) {
-      const id = btn.dataset.cdel, c = cartoes.find(y => y.id === cartaoId), x = c && c.compras_cartao.find(y => y.id === id);
-      const grupo = x && x.parcelas_total > 1 && x.grupo_id ? x.grupo_id : null;
-      return { sel: grupo ? `[data-cdel]:is(${c.compras_cartao.filter(y => y.grupo_id === grupo).map(y => q('data-cdel', y.id)).join(',')})` : q('data-cdel', id), grupo, n: x && x.parcelas_total,
-        texto: grupo ? `Compra em ${x.parcelas_total}x excluída` : 'Compra excluída', run: async () => {
-          const { error } = grupo ? await sb.from('compras_cartao').delete().eq('grupo_id', grupo) : await sb.from('compras_cartao').delete().eq('id', id); if (error) throw error;
-          await carregarCartoes();
-        } };
-    }
-    if (btn.dataset.del) {
-      const id = btn.dataset.del;
-      return { sel: q('data-del', id), texto: 'Lançamento excluído', run: async () => {
-        const { error } = await sb.from('lancamentos').delete().eq('id', id); if (error) throw error;
-        await carregar();
-      } };
-    }
-    return null;
-  }
-  async function confirmar(chave) {
-    const p = pend.get(chave); if (!p) return;
-    clearTimeout(p.timer);
-    try { await p.run(); } catch (e) { toast('Não foi possível excluir. Tente de novo.', true); }
-    pend.delete(chave); pintar();
-  }
-  const confirmarTodos = () => Promise.all([...pend.keys()].map(confirmar));
-  function agendarExclusao(btn) {
-    const a = apagador(btn); if (!a) return false;
-    if (a.grupo && !confirm(`Esta compra foi parcelada em ${a.n}x. Excluir todas as parcelas?`)) return false;
-    confirmarTodos();
-    const chave = a.sel; pend.set(chave, a); pintar();
-    a.timer = setTimeout(() => confirmar(chave), 5000);
-    const t = $('#toast'); t.textContent = '';
-    const sp = document.createElement('span'); sp.textContent = a.texto;
-    const b = document.createElement('button'); b.type = 'button'; b.className = 'toast-acao'; b.textContent = 'Desfazer';
-    b.onclick = () => { clearTimeout(a.timer); pend.delete(chave); pintar(); clearTimeout(toastTimer); t.className = ''; };
-    t.append(sp, b); t.className = 'show com-acao'; clearTimeout(toastTimer); toastTimer = setTimeout(() => { t.className = ''; }, 5000);
-    return true;
-  }
-  document.addEventListener('visibilitychange', () => { if (document.hidden) confirmarTodos(); });
-  addEventListener('pagehide', confirmarTodos);
-
-  // gesto
-  let g = null, engolirClique = false;
-  const marcarLinhas = raiz => (raiz || document).querySelectorAll('li').forEach(li => { const a = acoes(li); li.classList.toggle('sw-pode', !!(a.dir || a.esq)); });
-  new MutationObserver(ms => ms.forEach(m => m.addedNodes.forEach(n => { if (n.nodeType === 1) { if (n.matches('li')) marcarLinhas(n.parentNode); else if (n.querySelector('li')) marcarLinhas(n); } }))).observe(document.body, { childList: true, subtree: true });
-  marcarLinhas();
-
-  document.addEventListener('pointerdown', e => {
-    if (e.pointerType !== 'touch' || g) return;
-    const li = e.target.closest('li.sw-pode'); if (!li || e.target.closest('input,select,textarea,summary')) return;
-    const a = acoes(li); if (!a.dir && !a.esq) return;
-    g = { li, a, x0: e.clientX, y0: e.clientY, dx: 0, on: false, id: e.pointerId, w: li.getBoundingClientRect().width, pronto: false };
-  }, { passive: true });
-  document.addEventListener('pointermove', e => {
-    if (!g || e.pointerId !== g.id) return;
-    let dx = e.clientX - g.x0; const dy = e.clientY - g.y0;
-    if (!g.on) {
-      if (Math.abs(dy) > 12 && Math.abs(dy) > Math.abs(dx)) { g = null; return; }
-      if (Math.abs(dx) < 12) return;
-      if ((dx > 0 && !g.a.dir) || (dx < 0 && !g.a.esq)) { g = null; return; }
-      g.on = true; g.li.classList.add('sw-ativo');
-    }
-    if ((dx > 0 && !g.a.dir) || (dx < 0 && !g.a.esq)) dx = 0;
-    const lim = g.w * .85; dx = Math.max(-lim, Math.min(lim, dx));
-    g.dx = dx;
-    const li = g.li, dir = dx > 0;
-    li.classList.toggle('sw-dir', dir); li.classList.toggle('sw-esq', !dir);
-    li.dataset.swTxt = dir ? rotDir(g.a.dir) : 'Excluir';
-    li.style.setProperty('--sx', dx + 'px'); li.style.setProperty('--sw-w', Math.abs(dx) + 'px');
-    const pronto = Math.abs(dx) > Math.min(120, g.w * .35);
-    if (pronto !== g.pronto) { g.pronto = pronto; li.classList.toggle('sw-pronto', pronto); if (pronto && navigator.vibrate) navigator.vibrate(8); }
-  }, { passive: true });
-  function soltar(e) {
-    if (!g || (e && e.pointerId !== g.id)) return;
-    const { li, a, dx, on, pronto, w } = g; g = null;
-    if (!on) return;
-    setTimeout(() => { engolirClique = true; setTimeout(() => { engolirClique = false; }, 350); }, 0);   // engole o clique que o toque gera ao soltar
-    const limpar = () => { li.classList.remove('sw-ativo', 'sw-dir', 'sw-esq', 'sw-pronto'); li.style.removeProperty('--sx'); li.style.removeProperty('--sw-w'); delete li.dataset.swTxt; };
-    const voltar = () => {
-      if (!animLiberada()) return limpar();
-      const ini = dx, t0 = performance.now();
-      (function f(t) { const p = Math.min(1, (t - t0) / 320), k = 1 - Math.pow(1 - p, 3), v = ini * (1 - k);
-        li.style.setProperty('--sx', v + 'px'); li.style.setProperty('--sw-w', Math.abs(v) + 'px'); if (p < 1) requestAnimationFrame(f); else limpar(); })(t0);
-    };
-    if (!pronto) return voltar();
-    if (dx > 0) {   // pagar / reabrir: usa o mesmo botão da linha
-      const el = a.dir;
-      if (el.matches('input')) { el.checked = !el.checked; el.dispatchEvent(new Event('change', { bubbles: true })); } else el.click();
-      return voltar();
-    }
-    // excluir: a linha sai pela esquerda e some
-    const sair = () => { if (!agendarExclusao(a.esq)) return voltar(); limpar(); };
-    if (!animLiberada()) return sair();
-    const ini = dx, t0 = performance.now();
-    (function f(t) { const p = Math.min(1, (t - t0) / 200), v = ini + (-w - ini) * p;
-      li.style.setProperty('--sx', v + 'px'); li.style.setProperty('--sw-w', Math.abs(v) + 'px'); if (p < 1) requestAnimationFrame(f); else sair(); })(t0);
-  }
-  document.addEventListener('pointerup', soltar);
-  document.addEventListener('pointercancel', e => { if (g && g.on) soltar(e); else g = null; });
-  document.addEventListener('click', e => { if (engolirClique && e.target.closest('li.sw-pode')) { e.preventDefault(); e.stopPropagation(); engolirClique = false; } }, true);
-
   // o aviso de baixo (toast) fica por cima das janelas abertas, para o "Desfazer" poder ser tocado
   const tst = $('#toast');
   const posToast = () => { const ds = [...document.querySelectorAll('dialog[open]')].filter(d => !d._fechando), alvo = ds[ds.length - 1] || document.body; if (tst.parentNode !== alvo) alvo.append(tst); };
   new MutationObserver(() => { if (tst.classList.contains('show')) posToast(); }).observe(tst, { attributes: true, attributeFilter: ['class'] });
   document.addEventListener('close', () => { if (tst.closest('dialog:not([open])')) document.body.append(tst); }, true);
 
-  // dica, uma vez só, na primeira lista que dá para arrastar
-  const dica = () => { try { if (localStorage.getItem('fp_dica_arrastar')) return; } catch (e) { return; }
-    if (!matchMedia('(pointer:coarse)').matches) return;
-    const vis = [...document.querySelectorAll('li.sw-pode')].some(li => li.offsetParent);
-    if (!vis) return;
-    try { localStorage.setItem('fp_dica_arrastar', '1'); } catch (e) {}
-    setTimeout(() => toast('Dica: arraste uma linha para a direita para pagar, ou para a esquerda para excluir'), 600);
-  };
-  document.addEventListener('click', () => setTimeout(dica, 900));
 })();
 </script>
 
@@ -5339,8 +5205,24 @@ async function forcarSaida() {                 // desloga só este aparelho e vo
     return new Promise(res => { const ch = new MessageChannel(), t = setTimeout(() => res('antigo'), 2000); ch.port1.onmessage = e => { clearTimeout(t); res(e.data && e.data.versao ? 'ok' : 'antigo'); }; try { sw.postMessage({ ping: 1 }, [ch.port2]); } catch (e) { clearTimeout(t); res('antigo'); } });
   }
   async function funcaoOk() {
-    try { const { data, error } = await sb.functions.invoke('avisos-push', { body: { acao: 'chave' } }); if (error) { let m = ''; try { const j = await error.context.json(); m = (j && (j.erro || j.message || j.msg)) || ''; } catch (e2) {} return { ok: false, m }; } return { ok: !!(data && data.chave), m: '' }; }
-    catch (e) { return { ok: false, m: String(e && e.message || '') }; }
+    try {
+      const { data, error } = await fpAvisosInvoke({ acao: 'chave' });
+      if (error) {
+        const ctx = error.context, st = ctx && typeof ctx.status === 'number' ? ctx.status : 0; let m = '';
+        try { const t = await ctx.text(); try { const j = JSON.parse(t); m = j.erro || j.message || j.msg || j.error || t; } catch (e3) { m = t; } } catch (e2) { m = error.message || ''; }
+        return { ok: false, st, m: String(m || '').slice(0, 160), nome: error.name || '' };
+      }
+      if (!data || !data.chave) return { ok: false, st: 200, m: 'A função respondeu, mas sem a chave dos avisos.' };
+      return { ok: true };
+    } catch (e) { return { ok: false, st: 0, m: String(e && e.message || ''), nome: e && e.name }; }
+  }
+  function explicaFuncao(fn) {
+    const q = fn.m ? ` Resposta: “${esc(fn.m)}”.` : '';
+    if (!fn.st) return 'O app não conseguiu falar com a função. Isso costuma ser erro no código colado ou a função ainda subindo. No Supabase, abra a função de avisos › Logs e veja se aparece erro em vermelho.' + q;
+    if (fn.st === 404) return `Não achei a função no endereço /functions/v1/${FUNCAO_AVISOS}. Na lista de Edge Functions, confira como termina a URL da função de avisos e me avise.` + q;
+    if (fn.st === 401 || fn.st === 403) return 'O Supabase recusou a chamada. Saia da conta no app e entre de novo.' + q;
+    if (/push_config/i.test(fn.m)) return 'Falta rodar o instalar-avisos.sql no SQL Editor do Supabase.' + q;
+    return `A função deu erro ao rodar (código ${fn.st}). Veja em Logs, na função de avisos do Supabase.` + q;
   }
   async function conferirAvisos() {
     const box = $('#avDiag'), ul = $('#avDiagLista');
@@ -5351,7 +5233,7 @@ async function forcarSaida() {                 // desloga só este aparelho e vo
     const sw = await pingSW();
     itens.push(sw === 'ok' ? linha('ok', 'Arquivo sw.js novo no site', '') : sw === 'antigo' ? linha('nao', 'O sw.js do site ainda é o antigo', 'Troque o sw.js no seu site pelo novo, feche o app de vez e abra de novo.') : linha('nao', 'O sw.js não carregou', 'Confira se o arquivo sw.js está na mesma pasta do index.html no site.'));
     const fn = await funcaoOk();
-    itens.push(fn.ok ? linha('ok', 'Função avisos-push respondendo', '') : linha('nao', 'A função avisos-push não respondeu', (fn.m ? `Resposta: “${esc(fn.m)}”. ` : '') + 'No Supabase, confira se a função existe com esse nome exato e se o SQL de instalação foi rodado.'));
+    itens.push(fn.ok ? linha('ok', 'Função de avisos respondendo no Supabase', '') : linha('nao', 'A função de avisos não respondeu', explicaFuncao(fn)));
     const perm = 'Notification' in window ? Notification.permission : 'sem';
     itens.push(perm === 'granted' ? linha('ok', 'Permissão de avisos concedida', '') : perm === 'denied' ? linha('nao', 'Avisos bloqueados no aparelho', ios ? 'Ajustes › Notificações › Falta Pouco › Permitir Notificações.' : 'Libere nas permissões do site.') : perm === 'sem' ? linha('nao', 'Este navegador não tem avisos', ios ? 'Precisa do iOS 16.4 ou mais novo e do app aberto pelo ícone.' : '') : linha('espera', 'Permissão ainda não pedida', 'Ela aparece quando você liga a chave acima.'));
     ul.innerHTML = itens.join('');
