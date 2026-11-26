@@ -26,7 +26,7 @@
   A cada versão publicada, mude o meta "build": é assim que o app avisa "Nova versão disponível".
 -->
 <meta charset="utf-8">
-<meta name="build" content="20261127-020000">
+<meta name="build" content="20261127-030000">
 <script>
 /* paletas: 6 tons cada, do mais escuro ao mais claro + um tom de destaque. O tema inteiro sai daqui. */
 window.FP_PALETAS=[
@@ -1444,6 +1444,9 @@ body:has(#vistaMeu:not([hidden])) .fab,body:has(#vistaGastos:not([hidden])) .fab
 .pg-prox span{font-size:.85rem;color:var(--muted);font-weight:600}
 .pg-prox strong{font-size:1rem}
 /* conferência dos avisos */
+.av-fn{display:grid;gap:8px;margin:0 0 14px;padding:14px;border-radius:16px;border:1px solid var(--av-line);background:var(--av-bg)}
+.av-fn>*{min-width:0}.av-fn .bol-linha button{flex:none}.av-fn label{font-weight:600;font-size:.92rem}.av-fn small{color:var(--muted);font-size:.82rem;line-height:1.4}
+.av-fn input{flex:1;min-width:0;min-height:42px;padding:8px 12px;border:1.5px solid var(--campo-borda);border-radius:12px;background:var(--campo-bg);color:var(--ink);font:inherit;font-size:.9rem}
 .av-diag ul{list-style:none;margin:0 0 12px;padding:0;border:1px solid var(--av-line);border-radius:16px;background:var(--av-bg);overflow:hidden}
 .av-diag li{display:grid;grid-template-columns:24px 1fr;gap:4px 10px;padding:12px 14px;font-size:.92rem;line-height:1.4}
 .av-diag li+li{border-top:1px solid var(--av-line)}
@@ -2109,7 +2112,10 @@ window.somBrilho = function (grande, aguardar) {
   <div class="av-lista" id="avAparelho">
     <label class="pf-sw"><span><strong>Receber avisos neste aparelho</strong><small id="avAparelhoTxt">Os avisos chegam como os de qualquer app, mesmo com o Falta Pouco fechado.</small></span><input type="checkbox" id="avLigar" role="switch"><i aria-hidden="true"></i></label>
   </div>
-  <div class="av-diag" id="avDiag" hidden><h3 class="av-titulo">Conferência</h3><ul id="avDiagLista"></ul></div>
+  <div class="av-diag" id="avDiag" hidden><h3 class="av-titulo">Conferência</h3><ul id="avDiagLista"></ul>
+    <div class="av-fn" id="avFn" hidden><label for="avFnInput">Endereço da função no Supabase</label>
+      <div class="bol-linha"><input id="avFnInput" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Cole a URL da função"><button type="button" class="btn small" id="avFnTestar">Testar</button></div>
+      <small>Em Edge Functions, copie a URL da função de avisos (coluna URL) e cole aqui. Pode ser a URL inteira ou só o final, como dynamic-api.</small></div></div>
   <h3 class="av-titulo">O que avisar</h3>
   <div class="av-lista" id="avPrefs">
     <label class="pf-sw"><span><strong>Contas e faturas vencendo</strong><small>Alguns dias antes, no dia e no dia seguinte, se não foi paga</small></span><input type="checkbox" data-av="venc" role="switch"><i aria-hidden="true"></i></label>
@@ -2158,7 +2164,7 @@ window.somBrilho = function (grande, aguardar) {
    ficar no front-end: a proteção dos dados é feita pelas regras (RLS) do banco. */
 const SUPABASE_URL = 'https://egkbuwrosoldaknbuwqy.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVna2J1d3Jvc29sZGFrbmJ1d3F5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE1MDkwMzgsImV4cCI6MjEwNzA4NTAzOH0.CbLuMhfq8vXF4Tnnz4HvgfXjrWjbWBGwDh3bMC-w2_U';
-const FUNCAO_AVISOS = 'bright-function';   // fim do endereço (URL) da função de avisos no Supabase: .../functions/v1/bright-function
+const FUNCAO_AVISOS = 'dynamic-api';   // fim do endereço (URL) da função de avisos no Supabase: .../functions/v1/dynamic-api (dá para trocar pela Conferência dos avisos)
 /* ===================================== */
 
 const $ = (s, el = document) => el.querySelector(s);
@@ -4635,7 +4641,7 @@ async function forcarSaida() {                 // desloga só este aparelho e vo
   // chama a função de avisos pelo endereço configurado; se não achar (404), tenta "avisos-push" e guarda o que funcionou
   window.fpAvisosInvoke = async function (corpo) {
     let salvo = null; try { salvo = localStorage.getItem('fp_funcao_avisos'); } catch (e) {}
-    const nomes = [...new Set([salvo, FUNCAO_AVISOS, 'avisos-push'].filter(Boolean))];
+    const nomes = [...new Set([salvo, FUNCAO_AVISOS, 'bright-function', 'avisos-push'].filter(Boolean))];
     let r = null;
     for (const n of nomes) {
       r = await sb.functions.invoke(n, { body: corpo });
@@ -5232,7 +5238,7 @@ async function forcarSaida() {                 // desloga só este aparelho e vo
   }
   function explicaFuncao(fn) {
     const q = fn.m ? ` Resposta: “${esc(fn.m)}”.` : '';
-    if (!fn.st) return 'O Supabase barrou a chamada antes de chegar na função. Abra a função de avisos no Supabase, desligue a opção “Verify JWT” (fica em Details ou Settings) e salve. Se já estiver desligada, veja a aba Logs.' + q;
+    if (!fn.st) return 'O app não achou a função ou o Supabase barrou a chamada. Confira o endereço logo abaixo: ele precisa ser igual ao final da URL da função. Com o endereço certo, se ainda falhar, desligue “Verify JWT” na função e veja a aba Logs.' + q;
     if (fn.st === 404) return `Não achei a função no endereço /functions/v1/${FUNCAO_AVISOS}. Na lista de Edge Functions, confira como termina a URL da função de avisos e me avise.` + q;
     if (fn.st === 401 || fn.st === 403) return 'O Supabase recusou a chamada. Saia da conta no app e entre de novo.' + q;
     if (/push_config/i.test(fn.m)) return 'Falta rodar o instalar-avisos.sql no SQL Editor do Supabase.' + q;
@@ -5251,10 +5257,24 @@ async function forcarSaida() {                 // desloga só este aparelho e vo
     const perm = 'Notification' in window ? Notification.permission : 'sem';
     itens.push(perm === 'granted' ? linha('ok', 'Permissão de avisos concedida', '') : perm === 'denied' ? linha('nao', 'Avisos bloqueados no aparelho', ios ? 'Ajustes › Notificações › Falta Pouco › Permitir Notificações.' : 'Libere nas permissões do site.') : perm === 'sem' ? linha('nao', 'Este navegador não tem avisos', ios ? 'Precisa do iOS 16.4 ou mais novo e do app aberto pelo ícone.' : '') : linha('espera', 'Permissão ainda não pedida', 'Ela aparece quando você liga a chave acima.'));
     ul.innerHTML = itens.join('');
+    const fnBox = $('#avFn'); fnBox.hidden = fn.ok;
+    if (!fn.ok && !$('#avFnInput').value) { let sv = null; try { sv = localStorage.getItem('fp_funcao_avisos'); } catch (e) {} $('#avFnInput').value = sv || FUNCAO_AVISOS; }
     const tudoOk = !ul.querySelector('li.nao'), ligado = $('#avLigar').checked;
     box.hidden = tudoOk && ligado;
   }
   window.conferirAvisos = conferirAvisos;
+  const slugDe = t => { t = String(t || '').trim(); const m = /functions\/v1\/([a-z0-9_-]+)/i.exec(t); const n = m ? m[1] : t.replace(/^\/+|\/+$/g, ''); return /^[a-z0-9][a-z0-9_-]{1,62}$/i.test(n) ? n : null; };
+  $('#avFnTestar').addEventListener('click', async () => {
+    const b = $('#avFnTestar'), n = slugDe($('#avFnInput').value);
+    if (!n) { toast('Não entendi esse endereço. Cole a URL da função.', true); return; }
+    b.disabled = true; b.textContent = 'Testando...';
+    try {
+      try { localStorage.setItem('fp_funcao_avisos', n); } catch (e) {}
+      const fn = await funcaoOk();
+      if (fn.ok) { toast('Função encontrada'); sb.auth.updateUser({ data: { funcao_avisos: n } }).catch(() => {}); }
+      await conferirAvisos();
+    } finally { b.disabled = false; b.textContent = 'Testar'; }
+  });
   const abrirAvisosBase = window.abrirAvisos;
   if (abrirAvisosBase) window.abrirAvisos = async function () { const r = await abrirAvisosBase.apply(this, arguments); conferirAvisos(); return r; };
   $('#pfAvisos').addEventListener('click', () => setTimeout(conferirAvisos, 400));
@@ -5266,6 +5286,7 @@ async function forcarSaida() {                 // desloga só este aparelho e vo
     const r = await entrarPg(session);
     reconciliar();
     lerSalario().then(pintarResumo);
+    try { const fa = session && session.user && session.user.user_metadata && session.user.user_metadata.funcao_avisos; if (fa && !localStorage.getItem('fp_funcao_avisos')) localStorage.setItem('fp_funcao_avisos', fa); } catch (e) {}
     return r;
   };
   const trocarPg = trocarVista;
