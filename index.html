@@ -20,10 +20,12 @@
         foto de perfil, categorias automáticas e Face ID
    6. (script) "Avisos no celular": liga as notificações deste aparelho e guarda o que avisar
         (quem envia é a função avisos-push no Supabase, de hora em hora)
+   7. (script) "Lançamento rápido e modo discreto": botão + que lança gasto de qualquer tela
+        e o olho no topo que esconde os valores
   A cada versão publicada, mude o meta "build": é assim que o app avisa "Nova versão disponível".
 -->
 <meta charset="utf-8">
-<meta name="build" content="20261126-170000">
+<meta name="build" content="20261126-190000">
 <script>
 /* paletas: 6 tons cada, do mais escuro ao mais claro + um tom de destaque. O tema inteiro sai daqui. */
 window.FP_PALETAS=[
@@ -50,7 +52,7 @@ window.FP_PALETAS=[
 })();
 try{var _v=JSON.parse(localStorage.getItem('fp_visual')||'{}'),_r=document.documentElement,_t=localStorage.getItem('tema');
  if(!_t||_t==='auto')_t=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';_r.dataset.tema=_t;
- if(_v.glass)_r.dataset.glass='on';if(_v.anim===false)_r.dataset.anim='off';window.fpPaleta(window.fpPaletaDe(_v))}catch(e){}
+ if(_v.glass)_r.dataset.glass='on';if(localStorage.getItem('fp_discreto')==='1')_r.classList.add('discreto');if(_v.anim===false)_r.dataset.anim='off';window.fpPaleta(window.fpPaletaDe(_v))}catch(e){}
 try{if(localStorage.getItem('fp_trava')&&Object.keys(localStorage).some(function(k){return /^sb-.*-auth-token/.test(k)}))document.documentElement.classList.add('travado')}catch(e){}
 </script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -1362,6 +1364,48 @@ body.lado-fechado .top:not(:hover) #btnSair::before{margin:0}
 .av-nota{padding:12px 14px;margin:0 0 12px;border-radius:14px;background:color-mix(in oklab,var(--v4) 16%,transparent);border:1px solid color-mix(in oklab,var(--v4) 40%,transparent);font-size:.92rem;line-height:1.45}
 .av-nota ol{margin:6px 0 0;padding-left:20px}
 html[data-glass=on] :is(.pf-link,.av-lista){background:var(--gl-field);border-color:var(--gl-field-line)}
+/* ===== Lançamento rápido (botão +) ===== */
+.fab{position:fixed;right:20px;bottom:24px;z-index:58;width:58px;height:58px;border-radius:50%;border:0;display:grid;place-items:center;cursor:pointer;color:#fff;
+  background:linear-gradient(145deg,var(--v4),var(--v3) 55%,color-mix(in oklab,var(--v3) 70%,var(--p1)));
+  box-shadow:0 10px 26px rgba(var(--v3-rgb),.45),0 2px 6px rgba(0,0,0,.25),inset 0 1px 0 rgba(255,255,255,.35);transition:transform .45s var(--mola),box-shadow .2s}
+.fab svg{width:28px;height:28px;fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round}
+.fab:active{transform:scale(.9);transition-duration:.1s}
+.fab:focus-visible{outline:3px solid var(--ink);outline-offset:3px}
+#viewApp[hidden] .fab,body:has(#vistaAdmin:not([hidden])) .fab{display:none}
+@media (max-width:899.98px){.fab{right:16px;bottom:calc(max(10px,env(safe-area-inset-bottom)) + 80px);width:54px;height:54px}}
+.rp-valor{display:flex;align-items:baseline;justify-content:center;gap:8px;margin:2px 0 18px;padding:14px 12px;border-radius:20px;background:color-mix(in oklab,var(--ink) 5%,transparent);cursor:text}
+.rp-valor b{font-size:1.4rem;font-weight:700;color:var(--muted)}
+.rp-valor input{width:7.5ch;min-width:0;border:0;background:none;color:var(--ink);font:inherit;font-size:2.6rem;font-weight:800;letter-spacing:-.02em;font-variant-numeric:tabular-nums;text-align:left;padding:0;outline:0}
+.rp-valor:focus-within{box-shadow:0 0 0 3px rgba(var(--v4-rgb),.5)}
+.rp-grupo{margin:0 0 16px}
+.rp-rot{display:block;font-size:.9rem;font-weight:600;color:var(--muted);margin:0 2px 8px}
+.rp-chips{display:flex;flex-wrap:wrap;gap:8px}
+.rp-chip{border:1px solid color-mix(in oklab,var(--ink) 15%,transparent);background:color-mix(in oklab,var(--ink) 4%,transparent);color:var(--ink);font:inherit;font-weight:600;font-size:.92rem;padding:8px 14px;border-radius:99px;cursor:pointer;transition:transform .4s var(--mola),background .15s,border-color .15s;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rp-chip[aria-pressed=true]{background:var(--v3);border-color:transparent;color:#fff}
+.rp-chip:active{transform:scale(.94)}
+.rp-chip .rp-cor{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:7px;vertical-align:0;background:linear-gradient(135deg,var(--c1),var(--c2))}
+.rp-desc{width:100%;margin-top:10px;min-height:44px;padding:10px 12px;border:1px solid color-mix(in oklab,var(--ink) 15%,transparent);border-radius:12px;background:color-mix(in oklab,var(--ink) 4%,transparent);color:var(--ink);font:inherit}
+.rp-desc[hidden]{display:none}
+.rp-linha{display:flex;align-items:center;flex-wrap:wrap;gap:6px 10px;margin-top:10px;font-size:.92rem;color:var(--muted)}
+.rp-linha[hidden]{display:none}
+.rp-linha select{min-height:40px;padding:6px 10px;border:1px solid color-mix(in oklab,var(--ink) 15%,transparent);border-radius:10px;background:var(--surface);color:var(--ink);font:inherit}
+#toast.com-acao{pointer-events:auto;display:flex;align-items:center;gap:14px;padding:10px 10px 10px 18px;width:max-content}
+.toast-acao{border:0;border-radius:99px;padding:7px 14px;background:rgba(255,255,255,.24);color:#fff;font:inherit;font-weight:700;cursor:pointer}
+@media (max-width:899.98px){#toast{bottom:calc(max(10px,env(safe-area-inset-bottom)) + 146px)}}
+@media (max-width:420px){.top .user{gap:4px}.top .user .btn{padding:6px 7px}.top .user .linkbtn{max-width:72px}}
+/* ===== Modo discreto ===== */
+#btnDiscreto svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;display:block}
+#btnDiscreto .olho-fechado,html.discreto #btnDiscreto .olho-aberto{display:none}
+html.discreto #btnDiscreto .olho-fechado{display:inline}
+html.discreto :is(.din,[data-count]){filter:blur(.38em);-webkit-user-select:none;user-select:none}
+.din,[data-count]{transition:filter .3s}
+@media (min-width:900px){
+  .user{grid-template-columns:repeat(4,minmax(0,1fr))}
+  #btnDiscreto{grid-column:3}
+  #btnSair{grid-column:4;font-size:0;padding:0}
+  #btnSair::before{content:"🚪";font-size:1.1rem}
+  body.lado-fechado .top:not(:hover) #btnDiscreto{grid-column:auto;width:46px;padding:0}
+}
 </style>
 
 
@@ -1599,8 +1643,9 @@ window.somBrilho = function (grande, aguardar) {
       <button class="tab" data-vista="projecao" aria-pressed="false" aria-label="Projeção"><span class="ico"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3.5 17 9 11.5l4 4 7.5-7.5"/><path d="M15 8h5.5v5.5"/></svg></span><span class="lbl"><span class="lg">Projeção</span><span class="sm">Projeção</span></span></button>
       <button class="tab" id="tabAdmin" hidden data-vista="admin" aria-pressed="false" aria-label="Administração"><span class="ico"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 3.5 19.5 6v5.5c0 4.3-3.1 7.7-7.5 9-4.4-1.3-7.5-4.7-7.5-9V6z"/></svg></span><span class="lbl"><span class="lg">Administração</span><span class="sm">Admin</span></span></button>
     </nav>
-    <div class="user"><button class="linkbtn" id="userEmail" type="button" title="Alterar nome"></button><button class="btn ghost small" id="btnAparencia" type="button" aria-label="Aparência" title="Aparência"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 3.5a8.5 8.5 0 1 0 0 17c1 0 1.7-.8 1.7-1.7 0-.4-.2-.8-.4-1.1-.3-.3-.5-.7-.5-1.1 0-.9.8-1.7 1.7-1.7h2a4 4 0 0 0 4-4c0-4.1-3.8-7.4-8.5-7.4z"/><circle cx="7.6" cy="11" r="1.1" class="f"/><circle cx="10" cy="7.3" r="1.1" class="f"/><circle cx="14.4" cy="7.3" r="1.1" class="f"/></svg></button><button class="btn ghost small" id="btnTema" type="button" aria-label="Alternar tema claro/escuro">🌙</button><button class="btn ghost small" id="btnSair">Sair</button></div>
+    <div class="user"><button class="linkbtn" id="userEmail" type="button" title="Alterar nome"></button><button class="btn ghost small" id="btnAparencia" type="button" aria-label="Aparência" title="Aparência"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 3.5a8.5 8.5 0 1 0 0 17c1 0 1.7-.8 1.7-1.7 0-.4-.2-.8-.4-1.1-.3-.3-.5-.7-.5-1.1 0-.9.8-1.7 1.7-1.7h2a4 4 0 0 0 4-4c0-4.1-3.8-7.4-8.5-7.4z"/><circle cx="7.6" cy="11" r="1.1" class="f"/><circle cx="10" cy="7.3" r="1.1" class="f"/><circle cx="14.4" cy="7.3" r="1.1" class="f"/></svg></button><button class="btn ghost small" id="btnTema" type="button" aria-label="Alternar tema claro/escuro">🌙</button><button class="btn ghost small" id="btnDiscreto" type="button" aria-pressed="false" aria-label="Esconder valores" title="Esconder valores"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><g class="olho-aberto"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z"/><circle cx="12" cy="12" r="3"/></g><g class="olho-fechado"><path d="M3 9.5c2 2.6 5 4.5 9 4.5s7-1.9 9-4.5"/><path d="M6.2 12.8 4.6 15.2M10 14l-.6 2.8M14 14l.6 2.8M17.8 12.8l1.6 2.4"/></g></svg></button><button class="btn ghost small" id="btnSair" title="Sair da conta">Sair</button></div>
   </header>
+  <button type="button" class="fab" id="fabNovo" aria-label="Lançar um gasto" title="Lançar um gasto"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 5v14M5 12h14"/></svg></button>
   <main>
     <div id="vistaMeu">
     <div id="saudacao" class="saudacao" aria-live="polite"></div>
@@ -1965,6 +2010,20 @@ window.somBrilho = function (grande, aguardar) {
   <p class="msg" id="pfMsg" role="alert"></p>
   <div class="dlg-foot"><button class="btn ghost" type="button" data-fechar="dlgPerfil">Fechar</button><button class="btn primary" type="button" id="pfSalvar">Salvar nome</button></div>
 </div></dialog>
+
+<!-- janela que sobe de baixo: lançamento rápido (botão +) -->
+<dialog id="dlgRapido" class="sheet" aria-labelledby="rpTitulo"><div class="alca" aria-hidden="true"></div>
+  <form class="dlg" id="formRapido" novalidate>
+    <div class="dlg-head"><h2 id="rpTitulo">Novo gasto</h2><button type="button" class="x" data-fechar="dlgRapido" aria-label="Fechar">×</button></div>
+    <label class="rp-valor"><span class="sr">Valor em reais</span><b aria-hidden="true">R$</b><input id="rpValor" inputmode="numeric" autocomplete="off" enterkeyhint="done" value="0,00"></label>
+    <div class="rp-grupo"><span class="rp-rot" id="rpRotCat">O que foi</span><div class="rp-chips" id="rpCats" role="group" aria-labelledby="rpRotCat"></div><input id="rpDesc" class="rp-desc" maxlength="60" autocomplete="off" placeholder="Ou escreva aqui" aria-labelledby="rpRotCat"></div>
+    <div class="rp-grupo"><span class="rp-rot" id="rpRotForma">Como pagou</span><div class="rp-chips" id="rpFormas" role="radiogroup" aria-labelledby="rpRotForma"></div>
+      <div class="rp-linha" id="rpParcBox" hidden><label for="rpParc">Parcelas</label><select id="rpParc"></select><small id="rpParcTxt"></small></div></div>
+    <div class="rp-grupo"><span class="rp-rot" id="rpRotQuando">Quando</span><div class="rp-chips" id="rpQuando" role="radiogroup" aria-labelledby="rpRotQuando"><button type="button" class="rp-chip" data-q="0" aria-pressed="true">Hoje</button><button type="button" class="rp-chip" data-q="1" aria-pressed="false">Ontem</button><button type="button" class="rp-chip" data-q="outro" aria-pressed="false">Outro dia</button></div><input type="date" id="rpData" class="rp-desc" hidden aria-label="Dia do gasto"></div>
+    <p class="msg" id="rpMsg" role="alert"></p>
+    <div class="dlg-foot"><button type="button" class="btn ghost" data-fechar="dlgRapido">Cancelar</button><button type="submit" class="btn primary" id="rpSalvar">Salvar gasto</button></div>
+  </form>
+</dialog>
 
 <!-- janela: avisos no celular -->
 <dialog id="dlgAvisos" aria-labelledby="avTitulo"><div class="dlg">
@@ -4622,6 +4681,179 @@ async function forcarSaida() {                 // desloga só este aparelho e vo
     setTimeout(() => reinscrever(false), 3000);
     return r;
   };
+})();
+</script>
+
+<script>
+/* ============ Lançamento rápido e modo discreto ============
+   Botão + : lança um gasto de qualquer tela. Lembra a última forma de pagamento e as categorias mais usadas
+   (em localStorage, "fp_rapido"). Pix ou dinheiro vai para "gastos"; cartão vira compra no cartão escolhido.
+   Olho no topo: borra os valores em reais (classe "discreto" no html), guardado em "fp_discreto". */
+(function () {
+  /* ---------- lançamento rápido ---------- */
+  const PADRAO_CATS = ['Mercado', 'Transporte', 'Combustível', 'Lazer', 'Saúde', 'Gás', 'Farmácia', 'Restaurante'];
+  const ler = () => { try { return JSON.parse(localStorage.getItem('fp_rapido') || '{}'); } catch (e) { return {}; } };
+  const gravar = o => { try { localStorage.setItem('fp_rapido', JSON.stringify(o)); } catch (e) {} };
+  let centavos = 0, forma = 'gasto', quando = '0', salvando = false;
+
+  const fmt = c => (c / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const dataQuando = () => quando === 'outro' ? ($('#rpData').value || hojeISO()) : (() => { const d = new Date(); d.setDate(d.getDate() - Number(quando)); return d.toLocaleDateString('sv-SE'); })();
+
+  function categorias() {
+    const h = ler().cats || {}, vistas = new Set(), lista = [];
+    const add = n => { const k = String(n || '').trim().toLowerCase(); if (!k || vistas.has(k)) return; vistas.add(k); lista.push(String(n).trim()); };
+    Object.values(h).sort((a, b) => b.c - a.c || b.t - a.t).forEach(x => add(x.n));
+    (orcs || []).forEach(o => add(o.categoria));
+    PADRAO_CATS.forEach(add);
+    return lista.slice(0, 8);
+  }
+  function pintarCats() {
+    const atual = $('#rpDesc').value.trim().toLowerCase();
+    $('#rpCats').innerHTML = categorias().map(n => `<button type="button" class="rp-chip" data-cat="${esc(n)}" aria-pressed="${n.toLowerCase() === atual}">${esc(n)}</button>`).join('');
+  }
+  function corCartao(c, k) {
+    const tem = c.cor != null && c.cor !== '' && !isNaN(Number(c.cor)), i = tem ? Number(c.cor) : k, par = PALX[tem ? i % PALX.length : i % 4];
+    return `style="--c1:${par[0]};--c2:${par[1]}"`;
+  }
+  function pintarFormas() {
+    const cs = cartoes || [];
+    if (forma !== 'gasto' && !cs.some(c => c.id === forma)) forma = 'gasto';
+    $('#rpFormas').innerHTML = `<button type="button" class="rp-chip" role="radio" data-forma="gasto" aria-pressed="${forma === 'gasto'}" aria-checked="${forma === 'gasto'}">Pix, débito ou dinheiro</button>` +
+      cs.map((c, k) => `<button type="button" class="rp-chip" role="radio" data-forma="${esc(c.id)}" aria-pressed="${forma === c.id}" aria-checked="${forma === c.id}"><i class="rp-cor" ${corCartao(c, k)}></i>${esc(c.nome || 'Cartão')}</button>`).join('');
+    $('#rpParcBox').hidden = forma === 'gasto';
+    pintarParc();
+  }
+  function pintarParc() {
+    const n = Number($('#rpParc').value) || 1;
+    $('#rpParcTxt').textContent = n > 1 && centavos ? `${n}x de ${brl(Math.floor(centavos / n) / 100)}` : '';
+  }
+  function pintarValor() { $('#rpValor').value = fmt(centavos); pintarParc(); }
+
+  function abrirRapido() {
+    const h = ler();
+    centavos = 0; quando = '0'; forma = h.forma || 'gasto';
+    $('#rpDesc').value = ''; $('#rpMsg').textContent = ''; $('#rpData').hidden = true; $('#rpData').value = hojeISO(); $('#rpData').max = hojeISO();
+    $('#rpParc').innerHTML = Array.from({ length: 12 }, (_, i) => `<option value="${i + 1}">${i + 1}x</option>`).join(''); $('#rpParc').value = '1';
+    document.querySelectorAll('#rpQuando [data-q]').forEach(b => b.setAttribute('aria-pressed', b.dataset.q === '0'));
+    pintarValor(); pintarCats(); pintarFormas();
+    const d = $('#dlgRapido'); if (!d.open) d.showModal();
+    const v = $('#rpValor'); v.focus({ preventScroll: true }); v.setSelectionRange(v.value.length, v.value.length);
+    if (!(cartoes || []).length && userId) Promise.resolve(carregarCartoes()).then(() => { if (d.open) pintarFormas(); }).catch(() => {});
+    if (!orcsOk && userId) Promise.resolve(carregarOrcs()).then(() => { if (d.open) pintarCats(); }).catch(() => {});
+  }
+  window.abrirRapido = abrirRapido;
+  $('#fabNovo').addEventListener('click', abrirRapido);
+
+  // valor: digita os números e a vírgula anda sozinha, como no app do banco
+  $('#rpValor').addEventListener('input', e => {
+    const dig = e.target.value.replace(/\D/g, '').replace(/^0+/, '').slice(0, 9);
+    centavos = Number(dig || 0); pintarValor();
+    const v = e.target; v.setSelectionRange(v.value.length, v.value.length);
+  });
+  $('#rpValor').addEventListener('focus', e => setTimeout(() => { const v = e.target; v.setSelectionRange(v.value.length, v.value.length); }, 0));
+  $('#rpValor').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); $('#rpDesc').focus(); } });
+
+  $('#rpCats').addEventListener('click', e => {
+    const b = e.target.closest('[data-cat]'); if (!b) return;
+    $('#rpDesc').value = b.dataset.cat; pintarCats();
+  });
+  $('#rpDesc').addEventListener('input', pintarCats);
+  $('#rpFormas').addEventListener('click', e => { const b = e.target.closest('[data-forma]'); if (b) { forma = b.dataset.forma; pintarFormas(); } });
+  $('#rpParc').addEventListener('change', pintarParc);
+  $('#rpQuando').addEventListener('click', e => {
+    const b = e.target.closest('[data-q]'); if (!b) return;
+    quando = b.dataset.q;
+    document.querySelectorAll('#rpQuando [data-q]').forEach(x => x.setAttribute('aria-pressed', x === b));
+    $('#rpData').hidden = quando !== 'outro';
+    if (quando === 'outro') $('#rpData').focus();
+  });
+
+  async function atualizarDepois(tipo, desc) {
+    try {
+      if (tipo === 'gasto') {
+        if (mesSel === hojeISO().slice(0, 7) || vista === 'gastos' || vista === 'salario') await carregarMes();
+        if (desc) checarOrcamento(desc);
+      } else await carregarCartoes();
+      if (vista === 'plano') carregarPlano();
+    } catch (e) { /* a próxima aba busca de novo */ }
+  }
+  function toastDesfazer(texto, desfazer) {
+    const t = $('#toast'); t.textContent = '';
+    const sp = document.createElement('span'); sp.textContent = texto;
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'toast-acao'; b.textContent = 'Desfazer';
+    b.onclick = async () => { clearTimeout(toastTimer); t.className = ''; b.disabled = true; await desfazer(); };
+    t.append(sp, b); t.className = 'show com-acao';
+    clearTimeout(toastTimer); toastTimer = setTimeout(() => { t.className = ''; }, 6000);
+  }
+
+  $('#formRapido').addEventListener('submit', async e => {
+    e.preventDefault(); if (salvando) return;
+    const msg = t => { $('#rpMsg').textContent = t; }, desc = $('#rpDesc').value.trim().replace(/\s+/g, ' '), valor = centavos / 100, data = dataQuando();
+    msg('');
+    if (!(centavos > 0)) { msg('Digite o valor do gasto.'); $('#rpValor').focus(); return; }
+    if (!desc) { msg('Escolha o que foi ou escreva.'); $('#rpDesc').focus(); return; }
+    if (data > hojeISO()) { msg('O dia não pode ser depois de hoje.'); return; }
+    salvando = true; const btn = $('#rpSalvar'); btn.disabled = true;
+    try {
+      let desfazer, tipo;
+      if (forma === 'gasto') {
+        const { data: row, error } = await sb.from('gastos').insert({ descricao: desc, valor, data }).select('id').single();
+        if (error) return msg('Não foi possível salvar. Confira a internet e tente de novo.');
+        tipo = 'gasto'; desfazer = () => sb.from('gastos').delete().eq('id', row.id);
+      } else {
+        const n = Math.min(12, Math.max(1, Number($('#rpParc').value) || 1)), gid = crypto.randomUUID(), base = Math.floor(valor / n * 100) / 100;
+        const rows = Array.from({ length: n }, (_, i) => ({ cartao_id: forma, valor: i === n - 1 ? Math.round((valor - base * (n - 1)) * 100) / 100 : base, data: addMesISO(data, i), descricao: desc, parcela_num: i + 1, parcelas_total: n, grupo_id: gid }));
+        const { error } = await sb.from('compras_cartao').insert(rows);
+        if (error) return msg('Não foi possível salvar. Confira a internet e tente de novo.');
+        tipo = 'cartao'; desfazer = () => sb.from('compras_cartao').delete().eq('grupo_id', gid);
+      }
+      // lembra a forma de pagamento e conta o uso da categoria
+      const h = ler(), k = desc.toLowerCase(); h.forma = forma; h.cats = h.cats || {};
+      h.cats[k] = { n: desc, c: ((h.cats[k] && h.cats[k].c) || 0) + 1, t: Date.now() };
+      const ks = Object.keys(h.cats); if (ks.length > 40) ks.sort((a, b) => h.cats[a].t - h.cats[b].t).slice(0, ks.length - 40).forEach(x => delete h.cats[x]);
+      gravar(h);
+      $('#dlgRapido').close();
+      const onde = tipo === 'gasto' ? '' : ' no ' + (((cartoes || []).find(c => c.id === forma) || {}).nome || 'cartão');
+      toastDesfazer(`${desc}, ${brl(valor)}${onde}. Salvo.`, async () => {
+        const { error } = await desfazer();
+        if (error) return toast('Não foi possível desfazer. Apague pela aba de gastos.', true);
+        toast('Gasto desfeito'); atualizarDepois(tipo, null);
+      });
+      atualizarDepois(tipo, desc);
+    } finally { salvando = false; btn.disabled = false; }
+  });
+
+  /* ---------- modo discreto ---------- */
+  const root = document.documentElement, RX = /[-−]?\s?R\$\s?[\d.]+(?:,\d{2})?/g;
+  const PULA = 'script,style,textarea,input,select,option,.din,[data-count],#formRapido';
+  function envolver(no) {
+    const txt = no.nodeValue; RX.lastIndex = 0; if (!RX.test(txt)) return;
+    const pai = no.parentElement; if (!pai || pai.closest(PULA)) return;
+    if (pai.namespaceURI === 'http://www.w3.org/2000/svg') { pai.classList.add('din'); return; }
+    const frag = document.createDocumentFragment(); let i = 0; RX.lastIndex = 0; let m;
+    while ((m = RX.exec(txt))) {
+      if (m.index > i) frag.append(txt.slice(i, m.index));
+      const sp = document.createElement('span'); sp.className = 'din'; sp.textContent = m[0]; frag.append(sp); i = m.index + m[0].length;
+    }
+    if (i < txt.length) frag.append(txt.slice(i));
+    no.replaceWith(frag);
+  }
+  function varrer(alvo) {
+    if (!alvo) return;
+    if (alvo.nodeType === 3) return envolver(alvo);
+    if (alvo.nodeType !== 1 || alvo.closest(PULA)) return;
+    const w = document.createTreeWalker(alvo, NodeFilter.SHOW_TEXT, { acceptNode: n => n.nodeValue.includes('R$') ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT });
+    const l = []; while (w.nextNode()) l.push(w.currentNode); l.forEach(envolver);
+  }
+  const obs = new MutationObserver(ms => ms.forEach(m => { if (m.type === 'characterData') envolver(m.target); else m.addedNodes.forEach(varrer); }));
+  function discreto(on, salvar) {
+    root.classList.toggle('discreto', on);
+    const b = $('#btnDiscreto'); b.setAttribute('aria-pressed', on); b.setAttribute('aria-label', on ? 'Mostrar valores' : 'Esconder valores'); b.title = b.getAttribute('aria-label');
+    if (on) { varrer(document.body); obs.observe(document.body, { childList: true, subtree: true, characterData: true }); } else obs.disconnect();
+    if (salvar) { try { localStorage.setItem('fp_discreto', on ? '1' : '0'); } catch (e) {} }
+  }
+  $('#btnDiscreto').addEventListener('click', () => { const on = !root.classList.contains('discreto'); discreto(on, true); toast(on ? 'Valores escondidos' : 'Valores à mostra'); });
+  discreto(root.classList.contains('discreto'), false);
 })();
 </script>
 </body>
