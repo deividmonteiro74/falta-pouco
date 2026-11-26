@@ -26,7 +26,7 @@
   A cada versão publicada, mude o meta "build": é assim que o app avisa "Nova versão disponível".
 -->
 <meta charset="utf-8">
-<meta name="build" content="20261127-010000">
+<meta name="build" content="20261127-020000">
 <script>
 /* paletas: 6 tons cada, do mais escuro ao mais claro + um tom de destaque. O tema inteiro sai daqui. */
 window.FP_PALETAS=[
@@ -4641,11 +4641,25 @@ async function forcarSaida() {                 // desloga só este aparelho e vo
       r = await sb.functions.invoke(n, { body: corpo });
       const st = r.error && r.error.context && r.error.context.status;
       if (st === 404) continue;
+      if (r.error && !st) {   // o navegador não deixou nem chegar: tenta o modo simples (sem pré-teste, login vai no corpo)
+        const r2 = await modoSimples(n, corpo);
+        if (r2) { if (!r2.error) { try { localStorage.setItem('fp_funcao_avisos', n); } catch (e) {} } return r2; }
+        continue;
+      }
       if (!r.error) { try { localStorage.setItem('fp_funcao_avisos', n); } catch (e) {} }
       return r;
     }
     return r;
   };
+  async function modoSimples(n, corpo) {
+    try {
+      const { data: { session } } = await sb.auth.getSession();
+      const res = await fetch(`${SUPABASE_URL}/functions/v1/${n}`, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=UTF-8' }, body: JSON.stringify({ ...corpo, _token: session && session.access_token }) });
+      const txt = await res.text(); let j = null; try { j = JSON.parse(txt); } catch (e) {}
+      if (res.status === 404) return null;
+      return res.ok ? { data: j, error: null } : { data: null, error: { name: 'FunctionsHttpError', message: txt, context: new Response(txt, { status: res.status }) } };
+    } catch (e) { return null; }
+  }
   const PADRAO = { venc: true, cobrar: true, orc: true, pag: true, lembrete: true, hora: 21, resumo: true, metas: true, dia_pag: null };
   const temPush = 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
   const ios = /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
@@ -5218,7 +5232,7 @@ async function forcarSaida() {                 // desloga só este aparelho e vo
   }
   function explicaFuncao(fn) {
     const q = fn.m ? ` Resposta: “${esc(fn.m)}”.` : '';
-    if (!fn.st) return 'O app não conseguiu falar com a função. Isso costuma ser erro no código colado ou a função ainda subindo. No Supabase, abra a função de avisos › Logs e veja se aparece erro em vermelho.' + q;
+    if (!fn.st) return 'O Supabase barrou a chamada antes de chegar na função. Abra a função de avisos no Supabase, desligue a opção “Verify JWT” (fica em Details ou Settings) e salve. Se já estiver desligada, veja a aba Logs.' + q;
     if (fn.st === 404) return `Não achei a função no endereço /functions/v1/${FUNCAO_AVISOS}. Na lista de Edge Functions, confira como termina a URL da função de avisos e me avise.` + q;
     if (fn.st === 401 || fn.st === 403) return 'O Supabase recusou a chamada. Saia da conta no app e entre de novo.' + q;
     if (/push_config/i.test(fn.m)) return 'Falta rodar o instalar-avisos.sql no SQL Editor do Supabase.' + q;
