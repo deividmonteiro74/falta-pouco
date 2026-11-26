@@ -22,10 +22,12 @@
         (quem envia é a função avisos-push no Supabase, de hora em hora)
    7. (script) "Lançamento rápido e modo discreto": botão + que lança gasto de qualquer tela
         e o olho no topo que esconde os valores
+   8. (script) "Arrastar e colar boleto": arrastar uma linha para o lado paga ou exclui (com Desfazer);
+        ler o código de boleto ou de Pix copia e cola
   A cada versão publicada, mude o meta "build": é assim que o app avisa "Nova versão disponível".
 -->
 <meta charset="utf-8">
-<meta name="build" content="20261126-190000">
+<meta name="build" content="20261126-230000">
 <script>
 /* paletas: 6 tons cada, do mais escuro ao mais claro + um tom de destaque. O tema inteiro sai daqui. */
 window.FP_PALETAS=[
@@ -57,8 +59,6 @@ try{if(localStorage.getItem('fp_trava')&&Object.keys(localStorage).some(function
 </script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Falta Pouco: dívidas e metas</title>
-<link rel="preload" as="video" type="video/mp4" href="/abertura_vertical.mp4" media="(orientation: portrait)">
-<link rel="preload" as="video" type="video/mp4" href="/abertura_horizontal.mp4" media="(orientation: landscape)">
 <link rel="manifest" href="/manifest.webmanifest">
 <link rel="icon" type="image/png" sizes="512x512" href="/icon-512.png?v=10">
 <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png?v=10">
@@ -1406,6 +1406,58 @@ html.discreto :is(.din,[data-count]){filter:blur(.38em);-webkit-user-select:none
   #btnSair::before{content:"🚪";font-size:1.1rem}
   body.lado-fechado .top:not(:hover) #btnDiscreto{grid-column:auto;width:46px;padding:0}
 }
+/* ===== Arrastar para pagar ou excluir ===== */
+li.sw-pode{touch-action:pan-y}
+dialog #toast{position:fixed}
+li.sw-ativo{position:relative;overflow:hidden}
+li.sw-ativo>*{position:relative;z-index:1;transform:translateX(var(--sx,0px));will-change:transform}
+li.sw-ativo::before{content:attr(data-sw-txt);position:absolute;top:0;bottom:0;z-index:0;display:flex;align-items:center;padding:0 18px;color:#fff;font-weight:700;font-size:.92rem;white-space:nowrap;overflow:hidden;width:var(--sw-w,0px);border-radius:inherit}
+li.sw-dir::before{left:0;justify-content:flex-start;background:#1FAF6B}
+li.sw-esq::before{right:0;justify-content:flex-end;background:#E5383B}
+li.sw-pronto::before{filter:brightness(1.12)}
+.bol-linha{display:flex;gap:8px;align-items:center}.bol-box .help{margin:8px 0 0;position:static}.bol-linha input{flex:1;min-width:0}
+.rp-colar{margin:-6px 0 16px;text-align:center}
+.rp-colar .help{margin:8px 0 0}
+.rp-colar .rp-desc{margin-top:8px}
+/* ===== Campos e contornos mais visíveis (todos os temas e paletas) ===== */
+html:not([data-tema=dark]){--line:color-mix(in oklab,var(--p4) 42%,#fff);--campo-bg:color-mix(in oklab,var(--p5) 12%,#fff);--campo-borda:color-mix(in oklab,var(--p3) 42%,#fff)}
+html[data-tema=dark]{--line:color-mix(in oklab,var(--v4) 34%,var(--p2));--campo-bg:color-mix(in oklab,var(--p1) 72%,#000);--campo-borda:color-mix(in oklab,var(--v4) 66%,var(--p2))}
+html[data-glass=on]:not([data-tema=dark]){--line:rgba(70,60,160,.24);--gl-field-line:rgba(70,60,160,.36)}
+html[data-glass=on][data-tema=dark]{--line:rgba(255,255,255,.26);--gl-field-line:rgba(255,255,255,.38)}
+html[data-tema] :is(.field input,.field select,.field textarea,.busca input,.caixa-box input:not(:disabled),.dlg textarea,.rp-desc,.av-extra input,.av-extra select,.rp-linha select):not([type=checkbox]):not([type=radio]):not([type=file]):not([type=range]){
+  background:var(--campo-bg);border:1.5px solid var(--campo-borda);color:var(--ink)}
+html[data-glass=on] :is(.field input,.field select,.field textarea,.busca input,.caixa-box input:not(:disabled),.dlg textarea,.rp-desc,.av-extra input,.av-extra select):not([type=checkbox]):not([type=radio]):not([type=file]):not([type=range]){background:var(--gl-field);border-color:var(--gl-field-line)}
+html[data-tema] :is(.field input,.field select,.field textarea,.busca input,.caixa-box input,.dlg textarea,.rp-desc,.av-extra input,.av-extra select,.rp-linha select):focus{border-color:var(--v4);box-shadow:0 0 0 4px rgba(var(--v4-rgb),.28);outline:0}
+html[data-tema] :is(.field input,.field textarea,.rp-desc,.busca input)::placeholder{color:var(--muted);opacity:.85}
+html[data-tema=dark] .field input[type=date]{color-scheme:dark}
+.field.chk input[type=checkbox],.pf-sw input{accent-color:var(--v3)}
+.field input[type=file]{color:var(--muted)}
+html[data-tema] .auth{border:1.5px solid var(--line)}
+html[data-tema] .auth .field span{font-size:.95rem}
+/* botão + só no Início e em Gastos */
+.fab{display:none}
+body:has(#vistaMeu:not([hidden])) .fab,body:has(#vistaGastos:not([hidden])) .fab{display:grid}
+/* aviso de versão nova / atualizada */
+.upd-bar.ok{padding:12px 20px}
+.upd-bar.sai{opacity:0;transform:translate(-50%,10px);transition:opacity .4s,transform .4s}
+@media (max-width:899.98px){.upd-bar{bottom:calc(max(10px,env(safe-area-inset-bottom)) + 84px);max-width:calc(100vw - 24px)}}
+/* dia do pagamento */
+.pag-linha{margin:0 0 16px;--av-bg:var(--surface);--av-line:var(--line)}
+#pgTipos{margin:0 0 16px}
+.pg-op[hidden]{display:none}
+.pg-num{display:flex;align-items:center;gap:10px;margin:0 0 14px;font-weight:600}
+.pg-num input{width:80px;min-height:44px;padding:8px 12px;border:1.5px solid var(--campo-borda);border-radius:12px;background:var(--campo-bg);color:var(--ink);font:inherit;font-size:1.1rem;font-weight:700;text-align:center}
+.pg-num input:focus{border-color:var(--v4);box-shadow:0 0 0 4px rgba(var(--v4-rgb),.28);outline:0}
+.pg-prox{display:grid;gap:4px;margin:14px 0 4px;padding:12px 14px;border-radius:14px;background:color-mix(in oklab,var(--v4) 14%,transparent);border:1px solid color-mix(in oklab,var(--v4) 35%,transparent)}
+.pg-prox span{font-size:.85rem;color:var(--muted);font-weight:600}
+.pg-prox strong{font-size:1rem}
+/* conferência dos avisos */
+.av-diag ul{list-style:none;margin:0 0 12px;padding:0;border:1px solid var(--av-line);border-radius:16px;background:var(--av-bg);overflow:hidden}
+.av-diag li{display:grid;grid-template-columns:24px 1fr;gap:4px 10px;padding:12px 14px;font-size:.92rem;line-height:1.4}
+.av-diag li+li{border-top:1px solid var(--av-line)}
+.av-diag li b{grid-row:span 2;font-size:1rem;line-height:1.4}
+.av-diag li small{grid-column:2;color:var(--muted)}
+.av-diag li.ok b{color:#1FAF6B}.av-diag li.nao b{color:#E5383B}.av-diag li.espera b{color:var(--muted)}
 </style>
 
 
@@ -1585,9 +1637,11 @@ window.somBrilho = function (grande, aguardar) {
     modoQuadros = true;
     try { video.pause(); } catch (e) {}
     intro.classList.add('anim');
+    var quadrosOk = false;
+    setTimeout(function () { if (!quadrosOk) fechar(); }, 3000);   // animação demorando para baixar: entra direto no app
     fetch(nome + '.bin')
       .then(function (r) { if (!r.ok) throw new Error('bin'); return r.arrayBuffer(); })
-      .then(iniciarQuadros)
+      .then(function (b) { if (fechado) return; quadrosOk = true; return iniciarQuadros(b); })
       .catch(fechar);
   }
 
@@ -1602,6 +1656,8 @@ window.somBrilho = function (grande, aguardar) {
   setTimeout(function () { if (!videoTocou) usarQuadros(); }, 1500);   // vídeo não andou: usa os quadros
 
   setTimeout(fechar, 25000);                                    // limite absoluto
+  var t0Intro = Date.now();
+  intro.addEventListener('click', function () { if (Date.now() - t0Intro > 500) fechar(); });   // tocar na abertura pula
 })();
 </script>
 
@@ -1692,6 +1748,7 @@ window.somBrilho = function (grande, aguardar) {
         <div class="acoes"><button class="btn" data-copiar type="button">Copiar do mês anterior</button><button class="btn" data-rel type="button">Relatório do mês</button><button class="btn primary" data-novo="rendas" type="button">Nova entrada</button></div>
       </div>
       <div data-caixa-box></div>
+      <button type="button" class="pf-link pag-linha" id="pagLinha"><span><strong>💰 Dia do pagamento</strong><small id="pagResumo">Toque para escolher</small></span><b aria-hidden="true">›</b></button>
       <div class="hero tres" data-resumo></div>
       <div class="apagar-box" data-apagar></div>
       <div class="chips" id="chips_rendas"></div>
@@ -1874,6 +1931,9 @@ window.somBrilho = function (grande, aguardar) {
     <div class="dlg-head"><div><span class="tag" id="ctTag">Conta</span><h2 id="ctNome"></h2></div><button type="button" class="x" data-fechar="dlgConta" aria-label="Fechar">×</button></div>
     <div id="ctResumo"></div>
     <form class="inline-form" id="formConta" novalidate>
+      <div class="field wide bol-box"><span id="ctBolRot">Código do boleto (opcional)</span>
+        <div class="bol-linha"><input id="ctBoleto" inputmode="numeric" autocomplete="off" placeholder="Cole a linha digitável" aria-labelledby="ctBolRot"><button type="button" class="btn small" id="ctColar">Colar</button></div>
+        <p class="help" id="ctBolMsg">Preenche o valor e, quando o código traz, o vencimento.</p></div>
       <label class="field"><span>Vencimento</span><input name="venc" type="date" required></label>
       <label class="field"><span>Valor (R$, opcional)</span><input name="valor" inputmode="decimal" placeholder="0,00"></label>
       <label class="field" id="campoConsumo"><span id="consumoRot">Consumo (kWh)</span><input name="consumo" inputmode="decimal" placeholder="0"></label>
@@ -2016,6 +2076,7 @@ window.somBrilho = function (grande, aguardar) {
   <form class="dlg" id="formRapido" novalidate>
     <div class="dlg-head"><h2 id="rpTitulo">Novo gasto</h2><button type="button" class="x" data-fechar="dlgRapido" aria-label="Fechar">×</button></div>
     <label class="rp-valor"><span class="sr">Valor em reais</span><b aria-hidden="true">R$</b><input id="rpValor" inputmode="numeric" autocomplete="off" enterkeyhint="done" value="0,00"></label>
+    <div class="rp-colar"><button type="button" class="btn small ghost" id="rpColar">Colar Pix ou boleto</button><p class="help" id="rpColarMsg" hidden></p><input id="rpCodigo" class="rp-desc" hidden autocomplete="off" placeholder="Cole aqui o Pix copia e cola ou o código do boleto" aria-label="Código do Pix ou do boleto"></div>
     <div class="rp-grupo"><span class="rp-rot" id="rpRotCat">O que foi</span><div class="rp-chips" id="rpCats" role="group" aria-labelledby="rpRotCat"></div><input id="rpDesc" class="rp-desc" maxlength="60" autocomplete="off" placeholder="Ou escreva aqui" aria-labelledby="rpRotCat"></div>
     <div class="rp-grupo"><span class="rp-rot" id="rpRotForma">Como pagou</span><div class="rp-chips" id="rpFormas" role="radiogroup" aria-labelledby="rpRotForma"></div>
       <div class="rp-linha" id="rpParcBox" hidden><label for="rpParc">Parcelas</label><select id="rpParc"></select><small id="rpParcTxt"></small></div></div>
@@ -2025,6 +2086,30 @@ window.somBrilho = function (grande, aguardar) {
   </form>
 </dialog>
 
+<!-- janela: dia do pagamento -->
+<dialog id="dlgPag" aria-labelledby="pgTitulo"><div class="dlg">
+  <div class="dlg-head"><h2 id="pgTitulo">Dia do pagamento</h2><button type="button" class="x" data-fechar="dlgPag" aria-label="Fechar">×</button></div>
+  <p class="dica" style="margin-top:0">Usado no aviso do dia do pagamento e na aba Salário.</p>
+  <div class="rp-chips" id="pgTipos" role="radiogroup" aria-label="Como o pagamento cai">
+    <button type="button" class="rp-chip" role="radio" data-pg="util">Dia útil</button>
+    <button type="button" class="rp-chip" role="radio" data-pg="fixo">Dia fixo</button>
+    <button type="button" class="rp-chip" role="radio" data-pg="auto">Automático</button>
+  </div>
+  <div class="pg-op" data-op="util">
+    <label class="pg-num"><input id="pgUtil" type="number" inputmode="numeric" min="1" max="22" value="5"><span>º dia útil do mês</span></label>
+    <div class="av-lista">
+      <label class="pf-sw"><span><strong>Sábado conta como dia útil</strong><small>É a regra da CLT para salário. Desligue se a empresa conta só de segunda a sexta.</small></span><input type="checkbox" id="pgSabado" role="switch" checked><i aria-hidden="true"></i></label>
+      <label class="pf-sw"><span><strong>Feriados do Rio de Janeiro</strong><small>Também pula 20/01 (São Sebastião) e 23/04 (São Jorge)</small></span><input type="checkbox" id="pgRio" role="switch"><i aria-hidden="true"></i></label>
+    </div>
+    <p class="dica">Domingos e feriados nacionais nunca contam, incluindo a Sexta-feira Santa.</p>
+  </div>
+  <div class="pg-op" data-op="fixo"><label class="pg-num"><span>Todo dia</span><input id="pgFixo" type="number" inputmode="numeric" min="1" max="31" value="10"></label><p class="dica">Em mês mais curto, vale o último dia do mês.</p></div>
+  <div class="pg-op" data-op="auto"><p class="dica">Uso o dia do último lançamento chamado “Salário” na aba Salário.</p></div>
+  <div class="pg-prox"><span>Próximos pagamentos</span><strong id="pgProx">...</strong></div>
+  <p class="msg" id="pgMsg" role="alert"></p>
+  <div class="dlg-foot"><button class="btn ghost" type="button" data-fechar="dlgPag">Cancelar</button><button class="btn primary" type="button" id="pgSalvar">Salvar</button></div>
+</div></dialog>
+
 <!-- janela: avisos no celular -->
 <dialog id="dlgAvisos" aria-labelledby="avTitulo"><div class="dlg">
   <div class="dlg-head"><h2 id="avTitulo">Avisos no celular</h2><button type="button" class="x" data-fechar="dlgAvisos" aria-label="Fechar">×</button></div>
@@ -2032,6 +2117,7 @@ window.somBrilho = function (grande, aguardar) {
   <div class="av-lista" id="avAparelho">
     <label class="pf-sw"><span><strong>Receber avisos neste aparelho</strong><small id="avAparelhoTxt">Os avisos chegam como os de qualquer app, mesmo com o Falta Pouco fechado.</small></span><input type="checkbox" id="avLigar" role="switch"><i aria-hidden="true"></i></label>
   </div>
+  <div class="av-diag" id="avDiag" hidden><h3 class="av-titulo">Conferência</h3><ul id="avDiagLista"></ul></div>
   <h3 class="av-titulo">O que avisar</h3>
   <div class="av-lista" id="avPrefs">
     <label class="pf-sw"><span><strong>Contas e faturas vencendo</strong><small>Alguns dias antes, no dia e no dia seguinte, se não foi paga</small></span><input type="checkbox" data-av="venc" role="switch"><i aria-hidden="true"></i></label>
@@ -2039,7 +2125,7 @@ window.somBrilho = function (grande, aguardar) {
     <label class="pf-sw"><span><strong>Orçamento perto do limite</strong><small>Quando uma categoria chega a 80% e quando passa do teto</small></span><input type="checkbox" data-av="orc" role="switch"><i aria-hidden="true"></i></label>
     <div class="av-item">
       <label class="pf-sw"><span><strong>Dia do pagamento</strong><small>Quanto vence entre contas e faturas até o próximo salário</small></span><input type="checkbox" data-av="pag" role="switch"><i aria-hidden="true"></i></label>
-      <div class="av-extra" data-se="pag"><label for="avDiaPag">Cai no dia</label><input id="avDiaPag" type="number" inputmode="numeric" min="1" max="31" placeholder="auto"><small id="avDiaPagDica">Em branco, uso o dia do último salário lançado.</small></div>
+      <div class="av-extra" data-se="pag"><span id="avPagResumo">Automático</span><button type="button" class="btn small" id="avPagAlterar">Alterar</button></div>
     </div>
     <div class="av-item">
       <label class="pf-sw"><span><strong>Lembrete de anotar os gastos</strong><small>Só nos dias em que nada foi lançado</small></span><input type="checkbox" data-av="lembrete" role="switch"><i aria-hidden="true"></i></label>
@@ -2194,8 +2280,7 @@ async function entrar(session) {
   emailUser = session.user.email;
   if (window.vemDoLogin) { window.vemDoLogin = false; boasVindas(perfilNome); }
   $('#userEmail').textContent = perfilNome || emailUser; $('#userEmail').dataset.ini = ((perfilNome || emailUser || '?').trim()[0] || '?').toUpperCase();
-  await checarAdmin();
-  await carregar();
+  await Promise.all([checarAdmin(), carregar()]);
   carregarCartoes(); carregarContas(); verificarFechamento();
 }
 
@@ -3958,6 +4043,7 @@ function aplicaTema(t, suave) {
     const m = document.querySelector('meta[name=theme-color]'); if (m) m.content = real === 'light' ? '#ffffff' : getComputedStyle(document.documentElement).getPropertyValue('--p1').trim();
   };
   try { localStorage.setItem('tema', t); } catch (e) {}
+  if (window.fpSyncVisual) window.fpSyncVisual();
   suave && real !== document.documentElement.dataset.tema ? trocaSuave(troca) : troca();
 }
 // troca de cor ou de tema com um esmaecer da tela inteira (só quando as animações estão ligadas)
@@ -3991,40 +4077,60 @@ function instalaInvalidador() {   // qualquer inclusão, edição ou exclusão i
   sb.from = t => { const q = orig(t); ['insert', 'update', 'delete', 'upsert'].forEach(m => { const f = q[m] && q[m].bind(q); if (f) q[m] = (...a) => { Object.keys(_carga).forEach(k => delete _carga[k]); return f(...a); }; }); return q; };
 }
 
-/* ---------- atualização sem fechar o app ----------
-   De tempos em tempos confere se há uma versão nova publicada. Se houver, avisa e atualiza sozinho
-   quando não há nada sendo digitado; o login e a aba atual são mantidos. */
+/* ---------- atualização automática ----------
+   Confere a cada minuto (e sempre que o app volta para a tela) se há uma versão nova publicada.
+   Se houver, recarrega sozinho assim que nada estiver sendo digitado nem houver janela aberta,
+   e mostra "App atualizado" depois. O login e a aba atual são mantidos. */
 (function () {
   const atual = (document.querySelector('meta[name="build"]') || {}).content;
-  let avisou = false, tempo = null;
+  let achou = null, tempo = null;
   const ocupado = () => !!document.querySelector('dialog[open]') || /^(INPUT|TEXTAREA|SELECT)$/.test((document.activeElement || {}).tagName || '');
-  function aplicar() { try { sessionStorage.setItem('fp_vista', typeof vista === 'string' ? vista : ''); } catch { /* sem sessionStorage */ } location.reload(); }
-  function aviso() {
-    if (avisou) return; avisou = true;
+  const quando = b => { const m = /^(\d{4})(\d{2})(\d{2})-(\d{2})(\d{2})/.exec(b || ''); return m ? `${m[3]}/${m[2]} às ${m[4]}:${m[5]}` : ''; };
+  function aplicar() {
+    try { sessionStorage.setItem('fp_vista', typeof vista === 'string' ? vista : ''); sessionStorage.setItem('fp_atualizou', achou || ''); } catch (e) { /* sem sessionStorage */ }
+    location.reload();
+  }
+  function encontrou(nova) {
+    if (achou) return; achou = nova;
+    if (!ocupado()) return aplicar();
     const b = document.createElement('div'); b.className = 'upd-bar'; b.setAttribute('role', 'status');
-    b.innerHTML = '<span>✨ Nova versão disponível</span><button type="button" class="btn small go">Atualizar agora</button>';
+    b.innerHTML = '<span>✨ Versão nova pronta. Atualiza quando você terminar.</span><button type="button" class="btn small go">Atualizar agora</button>';
     b.querySelector('button').onclick = aplicar; document.body.appendChild(b);
-    tempo = setInterval(() => { if (!ocupado()) { clearInterval(tempo); aplicar(); } }, 4000);   // aplica sozinho quando for seguro
+    tempo = setInterval(() => { if (!ocupado()) { clearInterval(tempo); aplicar(); } }, 3000);
   }
   async function conferir() {
-    if (!atual || avisou || document.hidden) return;
+    if (!atual || achou || document.hidden) return;
+    try { const reg = navigator.serviceWorker && await navigator.serviceWorker.getRegistration(); if (reg) reg.update().catch(() => {}); } catch (e) {}
     try {
-      const r = await fetch('/?_v=' + Date.now(), { cache: 'no-store' }); if (!r.ok) return;
+      const r = await fetch(location.pathname + '?_v=' + Date.now(), { cache: 'no-store' }); if (!r.ok) return;
       const m = (await r.text()).match(/<meta name="build" content="([^"]+)"/);
-      if (m && m[1] !== atual) aviso();
-    } catch { /* sem internet: tenta depois */ }
+      if (m && m[1] !== atual) encontrou(m[1]);
+    } catch (e) { /* sem internet: tenta depois */ }
   }
-  setInterval(conferir, 45000);
+  setInterval(conferir, 60000);
+  setTimeout(conferir, 4000);
   document.addEventListener('visibilitychange', () => { if (!document.hidden) conferir(); });
   addEventListener('focus', conferir);
-  // depois de atualizar, volta para a aba em que você estava
-  addEventListener('load', () => { let v = null; try { v = sessionStorage.getItem('fp_vista'); sessionStorage.removeItem('fp_vista'); } catch { /* ignore */ } if (!v) return; let n = 0; const t = setInterval(() => { if (typeof userId !== 'undefined' && userId) { clearInterval(t); try { trocarVista(v); } catch { /* ignore */ } } else if (++n > 40) clearInterval(t); }, 250); });
+  // um service worker novo assumiu: recarrega uma vez para pegar a página nova
+  if ('serviceWorker' in navigator) {
+    const tinha = !!navigator.serviceWorker.controller;
+    navigator.serviceWorker.addEventListener('controllerchange', () => { if (tinha && !achou) { achou = 'sw'; if (!ocupado()) aplicar(); else encontrou('sw'); } });
+  }
+  addEventListener('load', () => {
+    let v = null, at = null; try { v = sessionStorage.getItem('fp_vista'); at = sessionStorage.getItem('fp_atualizou'); sessionStorage.removeItem('fp_vista'); sessionStorage.removeItem('fp_atualizou'); } catch (e) { /* ignore */ }
+    if (at !== null) {
+      const b = document.createElement('div'); b.className = 'upd-bar ok'; b.setAttribute('role', 'status');
+      b.innerHTML = `<span>✨ App atualizado${quando(atual) ? ' · versão de ' + quando(atual) : ''}</span>`;
+      document.body.appendChild(b); setTimeout(() => { b.classList.add('sai'); setTimeout(() => b.remove(), 500); }, 4500);
+    }
+    if (!v) return; let n = 0; const t = setInterval(() => { if (typeof userId !== 'undefined' && userId && !$('#viewApp').hidden) { clearInterval(t); if (v !== 'meu') trocarVista(v); } else if (++n > 40) clearInterval(t); }, 250);
+  });
 })();
 /* ---------- aparência: tema, paleta, vidro e animações (guardados neste aparelho) ---------- */
 (function () {
   let v = {}; try { v = JSON.parse(localStorage.getItem('fp_visual') || '{}'); } catch { v = {}; }
   if (v.cor) { delete v.cor; }   // cor antiga (antes das paletas): volta para a paleta padrão
-  const salva = () => { try { localStorage.setItem('fp_visual', JSON.stringify(v)); } catch { /* sem armazenamento */ } };
+  const salva = () => { try { localStorage.setItem('fp_visual', JSON.stringify(v)); } catch { /* sem armazenamento */ } if (window.fpSyncVisual) window.fpSyncVisual(); };
   const root = document.documentElement;
   const pilha = c => `<span class="pal-pilha" aria-hidden="true">${c.map((x, k) => `<i style="--c:${x};--k:${k}"></i>`).join('')}</span>`;
   function pinta() {
@@ -4037,7 +4143,9 @@ function instalaInvalidador() {   // qualquer inclusão, edição ou exclusão i
   }
   const aplicaVisual = () => { v.glass ? root.dataset.glass = 'on' : delete root.dataset.glass; v.anim === false ? root.dataset.anim = 'off' : delete root.dataset.anim; };
   const aplicaCor = suave => (suave ? trocaSuave : f => f())(() => fpPaleta(fpPaletaDe(v)));
-  aplicaVisual(); salva();
+  try { localStorage.setItem('fp_visual', JSON.stringify(v)); } catch (e) {} aplicaVisual();
+  // usado pela sincronização entre aparelhos (aparência guardada no perfil da conta)
+  window.fpVisual = { get: () => JSON.parse(JSON.stringify(v)), aplicar(novo, suave) { v = novo || {}; try { localStorage.setItem('fp_visual', JSON.stringify(v)); } catch (e) {} aplicaVisual(); aplicaCor(suave); } };
   $('#btnAparencia').addEventListener('click', () => { pinta(); $('#dlgAparencia').showModal(); });
   $('#apGlass').addEventListener('change', e => { v.glass = e.target.checked; salva(); aplicaVisual(); });
   $('#apAnim').addEventListener('change', e => { v.anim = e.target.checked; salva(); aplicaVisual(); });
@@ -4570,7 +4678,7 @@ async function forcarSaida() {                 // desloga só este aparelho e vo
   function pintarPrefs() {
     document.querySelectorAll('#avPrefs [data-av]').forEach(i => { i.checked = prefs[i.dataset.av] !== false; });
     $('#avHora').value = String(prefs.hora || 21);
-    $('#avDiaPag').value = prefs.dia_pag ? String(prefs.dia_pag) : '';
+    if (window.fpPag) $('#avPagResumo').textContent = fpPag.resumoCurto(prefs);
     document.querySelectorAll('#avPrefs [data-se]').forEach(x => { x.hidden = prefs[x.dataset.se] === false; });
   }
   async function pintarAparelho() {
@@ -4641,10 +4749,12 @@ async function forcarSaida() {                 // desloga só este aparelho e vo
     const t = e.target;
     if (t.dataset.av) prefs[t.dataset.av] = t.checked;
     if (t.id === 'avHora') prefs.hora = Number(t.value) || 21;
-    if (t.id === 'avDiaPag') { const n = parseInt(t.value, 10); prefs.dia_pag = n >= 1 && n <= 31 ? n : null; t.value = prefs.dia_pag || ''; }
     document.querySelectorAll('#avPrefs [data-se]').forEach(x => { x.hidden = prefs[x.dataset.se] === false; });
     salvarPrefs();
   });
+
+  $('#avPagAlterar').addEventListener('click', () => window.abrirPag && abrirPag());
+  document.addEventListener('fp-pag', e => { Object.assign(prefs, e.detail || {}); pintarPrefs(); });
 
   $('#avTeste').addEventListener('click', async () => {
     const b = $('#avTeste'), rot = b.textContent; b.disabled = true; b.textContent = 'Enviando...'; $('#avMsg').textContent = '';
@@ -4854,6 +4964,416 @@ async function forcarSaida() {                 // desloga só este aparelho e vo
   }
   $('#btnDiscreto').addEventListener('click', () => { const on = !root.classList.contains('discreto'); discreto(on, true); toast(on ? 'Valores escondidos' : 'Valores à mostra'); });
   discreto(root.classList.contains('discreto'), false);
+})();
+</script>
+
+<script>
+/* ============ Arrastar e colar boleto ============
+   Arrastar uma linha para a direita: pagar (ou reabrir). Para a esquerda: excluir.
+   A exclusão espera 5 segundos com "Desfazer" antes de apagar de verdade.
+   lerCodigo(): entende linha digitável de boleto (47 ou 48 números), código de barras (44)
+   e Pix copia e cola (texto que começa com 000201). */
+(function () {
+  /* ---------- leitura de boleto e Pix ---------- */
+  const so = t => String(t || '').replace(/\D/g, '');
+  function mod10(n) { let s = 0, m = 2; for (let i = n.length - 1; i >= 0; i--) { let p = Number(n[i]) * m; s += p > 9 ? p - 9 : p; m = m === 2 ? 1 : 2; } return (10 - s % 10) % 10; }
+  function mod11Banco(n) { let s = 0, m = 2; for (let i = n.length - 1; i >= 0; i--) { s += Number(n[i]) * m; m = m === 9 ? 2 : m + 1; } const r = 11 - s % 11; return r === 0 || r === 10 || r === 11 ? 1 : r; }
+  function mod11Arrec(n) { let s = 0, m = 2; for (let i = n.length - 1; i >= 0; i--) { s += Number(n[i]) * m; m = m === 9 ? 2 : m + 1; } const r = s % 11; return r === 0 || r === 1 ? 0 : 11 - r; }
+  const somaDiasISO = (iso, n) => { const d = new Date(iso + 'T12:00:00Z'); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); };
+  function vencFator(f) {
+    if (!f) return null;
+    // o fator chegou a 9999 em 21/02/2025 e recomeçou em 1000 no dia seguinte
+    const novo = somaDiasISO('2025-02-22', f - 1000), velho = somaDiasISO('1997-10-07', f);
+    return Math.abs(new Date(novo) - Date.now()) < Math.abs(new Date(velho) - Date.now()) ? novo : velho;
+  }
+  function pixTLV(t) {
+    const o = {}; let i = 0;
+    while (i + 4 <= t.length) { const id = t.slice(i, i + 2), n = Number(t.slice(i + 2, i + 4)); if (!(n >= 0)) break; o[id] = t.slice(i + 4, i + 4 + n); i += 4 + n; }
+    return o;
+  }
+  function lerCodigo(txt) {
+    const bruto = String(txt || '').trim();
+    if (/^000201/.test(bruto)) {   // Pix copia e cola
+      const t = pixTLV(bruto), v = Number(t['54']);
+      return { tipo: 'pix', valor: v > 0 ? Math.round(v * 100) : 0, nome: (t['59'] || '').trim(), cidade: (t['60'] || '').trim() };
+    }
+    let d = so(bruto); if (d.length < 44) return null;
+    let barras, linha = false;
+    if (d.length === 47) { barras = d.slice(0, 4) + d[32] + d.slice(33, 47) + d.slice(4, 9) + d.slice(10, 20) + d.slice(21, 31); linha = true; }
+    else if (d.length === 48 && d[0] === '8') { barras = d.slice(0, 11) + d.slice(12, 23) + d.slice(24, 35) + d.slice(36, 47); linha = true; }
+    else if (d.length === 44) barras = d;
+    else return null;
+    if (barras[0] === '8') {   // contas de consumo e tributos
+      const ref = barras[2], efetivo = ref === '6' || ref === '8', dv = Number(barras[3]), resto = barras.slice(0, 3) + barras.slice(4);
+      const ok = (ref === '6' || ref === '7') ? mod10(resto) === dv : mod11Arrec(resto) === dv;
+      const seg = { '1': 'prefeitura', '2': 'agua', '3': 'luz', '4': 'internet', '5': 'governo', '6': 'outros', '7': 'multa', '9': 'outros' }[barras[1]] || 'outros';
+      let venc = null; const y = barras.slice(19, 27);   // muitas concessionárias põem AAAAMMDD aqui
+      if (/^20\d{2}(0[1-9]|1[0-2])(0[1-9]|[12]\d|3[01])$/.test(y)) { const iso = `${y.slice(0, 4)}-${y.slice(4, 6)}-${y.slice(6, 8)}`; if (Math.abs(new Date(iso) - Date.now()) < 400 * 86400000) venc = iso; }
+      return { tipo: 'conta', valor: efetivo ? Number(barras.slice(4, 15)) : 0, venc, segmento: seg, ok, linha };
+    }
+    const ok = mod11Banco(barras.slice(0, 4) + barras.slice(5)) === Number(barras[4]);
+    return { tipo: 'boleto', valor: Number(barras.slice(9, 19)), venc: vencFator(Number(barras.slice(5, 9))), ok, linha };
+  }
+  window.lerCodigo = lerCodigo;
+  async function lerAreaTransferencia() { try { return navigator.clipboard && navigator.clipboard.readText ? await navigator.clipboard.readText() : ''; } catch (e) { return ''; } }
+  const NOME_SEG = { luz: 'energia', agua: 'água', internet: 'telefone ou internet', prefeitura: 'prefeitura', governo: 'governo', multa: 'multa de trânsito', outros: 'outro serviço' };
+
+  // contas da casa: colar código do boleto
+  function aplicarBoletoConta(txt) {
+    const f = $('#formConta'), msg = $('#ctBolMsg'), r = lerCodigo(txt);
+    if (!r || r.tipo === 'pix') { msg.textContent = so(txt).length ? 'Não reconheci esse código. Confira se copiou a linha inteira.' : 'Preenche o valor e, quando o código traz, o vencimento.'; return; }
+    const partes = [];
+    if (r.valor > 0) { f.valor.value = (r.valor / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2 }); partes.push('valor'); }
+    if (r.venc) { f.venc.value = r.venc; partes.push('vencimento'); }
+    let t = partes.length ? `Preenchi ${partes.join(' e ')} pelo código.` : 'O código não traz valor nem vencimento. Preencha à mão.';
+    if (r.tipo === 'conta' && contaTipo && r.segmento !== contaTipo && ['luz', 'agua', 'internet'].includes(r.segmento)) t += ` Esse boleto parece ser de ${NOME_SEG[r.segmento]}.`;
+    if (!r.ok) t += ' Algum número pode estar errado; confira o valor.';
+    msg.textContent = t;
+  }
+  $('#ctBoleto').addEventListener('input', e => { if (so(e.target.value).length >= 44) aplicarBoletoConta(e.target.value); });
+  $('#ctColar').addEventListener('click', async () => {
+    const t = await lerAreaTransferencia();
+    if (!t) { $('#ctBoleto').focus(); $('#ctBolMsg').textContent = 'Toque e segure no campo e escolha Colar.'; return; }
+    $('#ctBoleto').value = t.trim(); aplicarBoletoConta(t);
+  });
+  $('#formConta').addEventListener('reset', () => { $('#ctBoleto').value = ''; $('#ctBolMsg').textContent = 'Preenche o valor e, quando o código traz, o vencimento.'; });
+
+  // lançamento rápido: colar Pix ou boleto
+  function aplicarNoRapido(txt) {
+    const r = lerCodigo(txt), msg = $('#rpColarMsg'); msg.hidden = false;
+    if (!r) { msg.textContent = 'Não reconheci. Cole o Pix copia e cola ou a linha do boleto.'; return false; }
+    const v = $('#rpValor'), desc = $('#rpDesc');
+    if (r.valor > 0) { v.value = String(r.valor); v.dispatchEvent(new Event('input')); }
+    if (r.tipo === 'pix') { if (r.nome && !desc.value) desc.value = r.nome.toLowerCase().split(/\s+/).filter(Boolean).map(w => w.length > 2 || /^[a-zà-ú]$/.test(w) === false ? w[0].toUpperCase() + w.slice(1) : w).join(' '); }
+    else if (!desc.value) desc.value = r.tipo === 'conta' ? ({ luz: 'Luz', agua: 'Água', internet: 'Internet' }[r.segmento] || 'Boleto') : 'Boleto';
+    desc.dispatchEvent(new Event('input'));
+    const pg = $('#rpFormas [data-forma=gasto]'); if (pg) pg.click();
+    msg.textContent = r.valor > 0 ? (r.tipo === 'pix' ? 'Valor e nome tirados do Pix.' : 'Valor tirado do boleto.') + (r.ok === false ? ' Confira o valor.' : '') : 'Esse código não traz valor. Digite acima.';
+    $('#rpCodigo').hidden = true;
+    return true;
+  }
+  $('#rpColar').addEventListener('click', async () => {
+    const t = await lerAreaTransferencia();
+    if (t && aplicarNoRapido(t)) return;
+    const c = $('#rpCodigo'); c.hidden = false; c.value = ''; c.focus();
+    const msg = $('#rpColarMsg'); msg.hidden = false; msg.textContent = 'Toque e segure no campo e escolha Colar.';
+  });
+  $('#rpCodigo').addEventListener('input', e => { const t = e.target.value; if (/^000201/.test(t.trim()) || so(t).length >= 44) aplicarNoRapido(t); });
+  $('#fabNovo').addEventListener('click', () => { $('#rpCodigo').hidden = true; $('#rpColarMsg').hidden = true; }, true);
+
+  /* ---------- arrastar para pagar ou excluir ---------- */
+  const PAGA = '[data-cpaga],[data-agpagar],input[data-ccheck]';
+  const APAGA = '[data-cdelf],[data-rm],[data-cdel],[data-del]';
+  const acoes = li => ({ dir: li.querySelector(PAGA), esq: li.querySelector(APAGA) });
+  const rotDir = el => el.matches('input') ? (el.checked ? 'Em aberto' : 'Pago') : (/reabrir/i.test(el.textContent) ? 'Reabrir' : 'Pagar');
+
+  // exclusões esperando o "Desfazer"
+  const pend = new Map(), estilo = document.createElement('style'); document.head.append(estilo);
+  const pintar = () => { estilo.textContent = [...pend.values()].map(p => `li:has(${p.sel}){display:none!important}`).join('\n'); };
+  function apagador(btn) {
+    const q = (a, v) => `[${a}="${CSS.escape(v)}"]`;
+    if (btn.dataset.rm) {
+      const [mod, id] = btn.dataset.rm.split(':');
+      return { sel: q('data-rm', btn.dataset.rm), texto: 'Lançamento excluído', run: async () => {
+        const { error } = await sb.from(MESES[mod].tab).delete().eq('id', id); if (error) throw error;
+        await carregarMes(); if ($('#dlgGrupo').open) renderGrupo();
+      } };
+    }
+    if (btn.dataset.cdelf) {
+      const id = btn.dataset.cdelf;
+      return { sel: q('data-cdelf', id), texto: 'Conta excluída', run: async () => {
+        const fx = contasFat.find(x => x.id === id);
+        const { error } = await sb.from('contas_faturas').delete().eq('id', id); if (error) throw error;
+        if (fx && fx.foto_path) sb.storage.from('contas-fotos').remove([fx.foto_path]);
+        if (faturaEdit === id) { faturaEdit = null; prepararFormConta(); }
+        await carregarContas();
+      } };
+    }
+    if (btn.dataset.cdel) {
+      const id = btn.dataset.cdel, c = cartoes.find(y => y.id === cartaoId), x = c && c.compras_cartao.find(y => y.id === id);
+      const grupo = x && x.parcelas_total > 1 && x.grupo_id ? x.grupo_id : null;
+      return { sel: grupo ? `[data-cdel]:is(${c.compras_cartao.filter(y => y.grupo_id === grupo).map(y => q('data-cdel', y.id)).join(',')})` : q('data-cdel', id), grupo, n: x && x.parcelas_total,
+        texto: grupo ? `Compra em ${x.parcelas_total}x excluída` : 'Compra excluída', run: async () => {
+          const { error } = grupo ? await sb.from('compras_cartao').delete().eq('grupo_id', grupo) : await sb.from('compras_cartao').delete().eq('id', id); if (error) throw error;
+          await carregarCartoes();
+        } };
+    }
+    if (btn.dataset.del) {
+      const id = btn.dataset.del;
+      return { sel: q('data-del', id), texto: 'Lançamento excluído', run: async () => {
+        const { error } = await sb.from('lancamentos').delete().eq('id', id); if (error) throw error;
+        await carregar();
+      } };
+    }
+    return null;
+  }
+  async function confirmar(chave) {
+    const p = pend.get(chave); if (!p) return;
+    clearTimeout(p.timer);
+    try { await p.run(); } catch (e) { toast('Não foi possível excluir. Tente de novo.', true); }
+    pend.delete(chave); pintar();
+  }
+  const confirmarTodos = () => Promise.all([...pend.keys()].map(confirmar));
+  function agendarExclusao(btn) {
+    const a = apagador(btn); if (!a) return false;
+    if (a.grupo && !confirm(`Esta compra foi parcelada em ${a.n}x. Excluir todas as parcelas?`)) return false;
+    confirmarTodos();
+    const chave = a.sel; pend.set(chave, a); pintar();
+    a.timer = setTimeout(() => confirmar(chave), 5000);
+    const t = $('#toast'); t.textContent = '';
+    const sp = document.createElement('span'); sp.textContent = a.texto;
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'toast-acao'; b.textContent = 'Desfazer';
+    b.onclick = () => { clearTimeout(a.timer); pend.delete(chave); pintar(); clearTimeout(toastTimer); t.className = ''; };
+    t.append(sp, b); t.className = 'show com-acao'; clearTimeout(toastTimer); toastTimer = setTimeout(() => { t.className = ''; }, 5000);
+    return true;
+  }
+  document.addEventListener('visibilitychange', () => { if (document.hidden) confirmarTodos(); });
+  addEventListener('pagehide', confirmarTodos);
+
+  // gesto
+  let g = null, engolirClique = false;
+  const marcarLinhas = raiz => (raiz || document).querySelectorAll('li').forEach(li => { const a = acoes(li); li.classList.toggle('sw-pode', !!(a.dir || a.esq)); });
+  new MutationObserver(ms => ms.forEach(m => m.addedNodes.forEach(n => { if (n.nodeType === 1) { if (n.matches('li')) marcarLinhas(n.parentNode); else if (n.querySelector('li')) marcarLinhas(n); } }))).observe(document.body, { childList: true, subtree: true });
+  marcarLinhas();
+
+  document.addEventListener('pointerdown', e => {
+    if (e.pointerType !== 'touch' || g) return;
+    const li = e.target.closest('li.sw-pode'); if (!li || e.target.closest('input,select,textarea,summary')) return;
+    const a = acoes(li); if (!a.dir && !a.esq) return;
+    g = { li, a, x0: e.clientX, y0: e.clientY, dx: 0, on: false, id: e.pointerId, w: li.getBoundingClientRect().width, pronto: false };
+  }, { passive: true });
+  document.addEventListener('pointermove', e => {
+    if (!g || e.pointerId !== g.id) return;
+    let dx = e.clientX - g.x0; const dy = e.clientY - g.y0;
+    if (!g.on) {
+      if (Math.abs(dy) > 12 && Math.abs(dy) > Math.abs(dx)) { g = null; return; }
+      if (Math.abs(dx) < 12) return;
+      if ((dx > 0 && !g.a.dir) || (dx < 0 && !g.a.esq)) { g = null; return; }
+      g.on = true; g.li.classList.add('sw-ativo');
+    }
+    if ((dx > 0 && !g.a.dir) || (dx < 0 && !g.a.esq)) dx = 0;
+    const lim = g.w * .85; dx = Math.max(-lim, Math.min(lim, dx));
+    g.dx = dx;
+    const li = g.li, dir = dx > 0;
+    li.classList.toggle('sw-dir', dir); li.classList.toggle('sw-esq', !dir);
+    li.dataset.swTxt = dir ? rotDir(g.a.dir) : 'Excluir';
+    li.style.setProperty('--sx', dx + 'px'); li.style.setProperty('--sw-w', Math.abs(dx) + 'px');
+    const pronto = Math.abs(dx) > Math.min(120, g.w * .35);
+    if (pronto !== g.pronto) { g.pronto = pronto; li.classList.toggle('sw-pronto', pronto); if (pronto && navigator.vibrate) navigator.vibrate(8); }
+  }, { passive: true });
+  function soltar(e) {
+    if (!g || (e && e.pointerId !== g.id)) return;
+    const { li, a, dx, on, pronto, w } = g; g = null;
+    if (!on) return;
+    setTimeout(() => { engolirClique = true; setTimeout(() => { engolirClique = false; }, 350); }, 0);   // engole o clique que o toque gera ao soltar
+    const limpar = () => { li.classList.remove('sw-ativo', 'sw-dir', 'sw-esq', 'sw-pronto'); li.style.removeProperty('--sx'); li.style.removeProperty('--sw-w'); delete li.dataset.swTxt; };
+    const voltar = () => {
+      if (!animLiberada()) return limpar();
+      const ini = dx, t0 = performance.now();
+      (function f(t) { const p = Math.min(1, (t - t0) / 320), k = 1 - Math.pow(1 - p, 3), v = ini * (1 - k);
+        li.style.setProperty('--sx', v + 'px'); li.style.setProperty('--sw-w', Math.abs(v) + 'px'); if (p < 1) requestAnimationFrame(f); else limpar(); })(t0);
+    };
+    if (!pronto) return voltar();
+    if (dx > 0) {   // pagar / reabrir: usa o mesmo botão da linha
+      const el = a.dir;
+      if (el.matches('input')) { el.checked = !el.checked; el.dispatchEvent(new Event('change', { bubbles: true })); } else el.click();
+      return voltar();
+    }
+    // excluir: a linha sai pela esquerda e some
+    const sair = () => { if (!agendarExclusao(a.esq)) return voltar(); limpar(); };
+    if (!animLiberada()) return sair();
+    const ini = dx, t0 = performance.now();
+    (function f(t) { const p = Math.min(1, (t - t0) / 200), v = ini + (-w - ini) * p;
+      li.style.setProperty('--sx', v + 'px'); li.style.setProperty('--sw-w', Math.abs(v) + 'px'); if (p < 1) requestAnimationFrame(f); else sair(); })(t0);
+  }
+  document.addEventListener('pointerup', soltar);
+  document.addEventListener('pointercancel', e => { if (g && g.on) soltar(e); else g = null; });
+  document.addEventListener('click', e => { if (engolirClique && e.target.closest('li.sw-pode')) { e.preventDefault(); e.stopPropagation(); engolirClique = false; } }, true);
+
+  // o aviso de baixo (toast) fica por cima das janelas abertas, para o "Desfazer" poder ser tocado
+  const tst = $('#toast');
+  const posToast = () => { const ds = [...document.querySelectorAll('dialog[open]')].filter(d => !d._fechando), alvo = ds[ds.length - 1] || document.body; if (tst.parentNode !== alvo) alvo.append(tst); };
+  new MutationObserver(() => { if (tst.classList.contains('show')) posToast(); }).observe(tst, { attributes: true, attributeFilter: ['class'] });
+  document.addEventListener('close', () => { if (tst.closest('dialog:not([open])')) document.body.append(tst); }, true);
+
+  // dica, uma vez só, na primeira lista que dá para arrastar
+  const dica = () => { try { if (localStorage.getItem('fp_dica_arrastar')) return; } catch (e) { return; }
+    if (!matchMedia('(pointer:coarse)').matches) return;
+    const vis = [...document.querySelectorAll('li.sw-pode')].some(li => li.offsetParent);
+    if (!vis) return;
+    try { localStorage.setItem('fp_dica_arrastar', '1'); } catch (e) {}
+    setTimeout(() => toast('Dica: arraste uma linha para a direita para pagar, ou para a esquerda para excluir'), 600);
+  };
+  document.addEventListener('click', () => setTimeout(dica, 900));
+})();
+</script>
+
+<script>
+/* ============ Dia do pagamento, aparência em todos os aparelhos e conferência dos avisos ============ */
+(function () {
+  /* ---------- dia do pagamento: dia útil, dia fixo ou automático ----------
+     Regra guardada no perfil (user_metadata.avisos): pag_tipo 'util' | 'fixo' | 'auto', dia_pag, pag_sabado, pag_rio.
+     A mesma conta é feita na função avisos-push do Supabase. */
+  const pad = n => String(n).padStart(2, '0');
+  const isoDe = (y, m, d) => `${y}-${pad(m + 1)}-${pad(d)}`;
+  function pascoa(y) {   // algoritmo de Meeus/Jones/Butcher
+    const a = y % 19, b = Math.floor(y / 100), c = y % 100, d = Math.floor(b / 4), e = b % 4, f = Math.floor((b + 8) / 25), g = Math.floor((b - f + 1) / 3),
+      h = (19 * a + b - d - g + 15) % 30, i = Math.floor(c / 4), k = c % 4, l = (32 + 2 * e + 2 * i - h - k) % 7, m = Math.floor((a + 11 * h + 22 * l) / 451),
+      mes = Math.floor((h + l - 7 * m + 114) / 31), dia = ((h + l - 7 * m + 114) % 31) + 1;
+    return new Date(Date.UTC(y, mes - 1, dia));
+  }
+  function feriados(y, rio) {
+    const f = new Set(['01-01', '04-21', '05-01', '09-07', '10-12', '11-02', '11-15', '11-20', '12-25'].map(x => `${y}-${x}`));
+    const sexta = pascoa(y); sexta.setUTCDate(sexta.getUTCDate() - 2); f.add(sexta.toISOString().slice(0, 10));
+    if (rio) { f.add(`${y}-01-20`); f.add(`${y}-04-23`); }
+    return f;
+  }
+  function regraDe(p) {
+    p = p || {};
+    const tipo = p.pag_tipo || (Number(p.dia_pag) >= 1 ? 'fixo' : 'auto');
+    return { tipo, dia: Number(p.dia_pag) || (tipo === 'util' ? 5 : 10), sabado: p.pag_sabado !== false, rio: !!p.pag_rio };
+  }
+  function dataNoMes(r, y, m, salarioISO) {   // m: 0 a 11
+    const ult = new Date(Date.UTC(y, m + 1, 0)).getUTCDate();
+    if (r.tipo === 'fixo') return isoDe(y, m, Math.min(r.dia, ult));
+    if (r.tipo === 'auto') { const d = salarioISO ? Number(salarioISO.slice(8, 10)) : 0; return d ? isoDe(y, m, Math.min(d, ult)) : null; }
+    const fer = feriados(y, r.rio); let n = 0;
+    for (let d = 1; d <= ult; d++) {
+      const iso = isoDe(y, m, d), dow = new Date(Date.UTC(y, m, d)).getUTCDay();
+      if (dow === 0 || (dow === 6 && !r.sabado) || fer.has(iso)) continue;
+      if (++n === r.dia) return iso;
+    }
+    return isoDe(y, m, ult);
+  }
+  function proximos(r, desdeISO, qtd, salarioISO) {
+    const [y, m] = desdeISO.split('-').map(Number), out = [];
+    for (let k = 0; out.length < qtd && k < 24; k++) { const yy = y + Math.floor((m - 1 + k) / 12), mm = (m - 1 + k) % 12, d = dataNoMes(r, yy, mm, salarioISO); if (d && d >= desdeISO) out.push(d); }
+    return out;
+  }
+  const DIAS = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'];
+  const fmtCurto = iso => { const [y, m, d] = iso.split('-').map(Number); return `${DIAS[new Date(Date.UTC(y, m - 1, d)).getUTCDay()]}, ${pad(d)}/${pad(m)}`; };
+  let salarioISO = null;
+  const nomeRegra = r => r.tipo === 'util' ? `${r.dia}º dia útil` : r.tipo === 'fixo' ? `Todo dia ${r.dia}` : (salarioISO ? `Automático (dia ${Number(salarioISO.slice(8, 10))})` : 'Automático');
+  function resumoCurto(p) {
+    const r = regraDe(p), prox = proximos(r, hojeISO(), 1, salarioISO)[0];
+    return prox ? `${nomeRegra(r)} · próximo ${fmtCurto(prox)}` : (r.tipo === 'auto' ? 'Automático: lance um “Salário” para eu saber o dia' : nomeRegra(r));
+  }
+  window.fpPag = { regraDe, dataNoMes, proximos, feriados, resumoCurto };
+
+  async function lerAvisos() { try { const { data } = await sb.auth.getUser(); return (data && data.user && data.user.user_metadata && data.user.user_metadata.avisos) || {}; } catch (e) { return {}; } }
+  async function lerSalario() {
+    try { const { data } = await sb.from('rendas').select('data').eq('user_id', userId).ilike('descricao', 'sal%').order('data', { ascending: false }).limit(1); salarioISO = data && data[0] ? data[0].data : null; } catch (e) {}
+  }
+  async function pintarResumo() { if (!userId) return; const p = await lerAvisos(); $('#pagResumo').textContent = resumoCurto(p); }
+
+  let rasc = null;
+  function pintarDlg() {
+    document.querySelectorAll('#pgTipos [data-pg]').forEach(b => { const on = b.dataset.pg === rasc.tipo; b.setAttribute('aria-pressed', on); b.setAttribute('aria-checked', on); });
+    document.querySelectorAll('#dlgPag .pg-op').forEach(x => { x.hidden = x.dataset.op !== rasc.tipo; });
+    const lista = proximos(rasc, hojeISO(), 3, salarioISO);
+    $('#pgProx').textContent = lista.length ? lista.map(fmtCurto).join('  ·  ') : 'Lance um “Salário” na aba Salário para eu descobrir o dia.';
+  }
+  async function abrirPag() {
+    $('#pgMsg').textContent = '';
+    await lerSalario();
+    rasc = regraDe(await lerAvisos());
+    $('#pgUtil').value = rasc.tipo === 'util' ? rasc.dia : 5; $('#pgFixo').value = rasc.tipo === 'fixo' ? rasc.dia : (salarioISO ? Number(salarioISO.slice(8, 10)) : 10);
+    $('#pgSabado').checked = rasc.sabado; $('#pgRio').checked = rasc.rio;
+    pintarDlg(); const d = $('#dlgPag'); if (!d.open) d.showModal();
+  }
+  window.abrirPag = abrirPag;
+  $('#pagLinha').addEventListener('click', abrirPag);
+  $('#pgTipos').addEventListener('click', e => { const b = e.target.closest('[data-pg]'); if (!b) return; rasc.tipo = b.dataset.pg; rasc.dia = rasc.tipo === 'util' ? (Number($('#pgUtil').value) || 5) : (Number($('#pgFixo').value) || 10); pintarDlg(); });
+  $('#dlgPag').addEventListener('input', e => {
+    if (e.target.id === 'pgUtil') rasc.dia = Math.min(22, Math.max(1, Number(e.target.value) || 1));
+    if (e.target.id === 'pgFixo') rasc.dia = Math.min(31, Math.max(1, Number(e.target.value) || 1));
+    if (e.target.id === 'pgSabado') rasc.sabado = e.target.checked;
+    if (e.target.id === 'pgRio') rasc.rio = e.target.checked;
+    pintarDlg();
+  });
+  $('#pgSalvar').addEventListener('click', async () => {
+    const b = $('#pgSalvar'); b.disabled = true;
+    try {
+      const atual = await lerAvisos();
+      const patch = { pag_tipo: rasc.tipo, dia_pag: rasc.tipo === 'auto' ? null : rasc.dia, pag_sabado: rasc.sabado, pag_rio: rasc.rio };
+      const { error } = await sb.auth.updateUser({ data: { avisos: { ...atual, ...patch } } });
+      if (error) { $('#pgMsg').textContent = 'Não foi possível salvar. Tente de novo.'; return; }
+      document.dispatchEvent(new CustomEvent('fp-pag', { detail: patch }));
+      $('#dlgPag').close(); toast('Dia do pagamento salvo'); pintarResumo();
+    } finally { b.disabled = false; }
+  });
+
+  /* ---------- aparência igual em todos os aparelhos ----------
+     Tema, paleta, vidro e animações vão para o perfil da conta (user_metadata.visual, com a hora da mudança).
+     Ao entrar, vale a mudança mais recente: a deste aparelho ou a que veio de outro. */
+  let liberado = false, aplicandoRemoto = false, tSync = null;
+  const localT = () => Number(localStorage.getItem('fp_visual_t') || 0);
+  function pacote(t) { return { v: window.fpVisual ? fpVisual.get() : {}, tema: (typeof temaEscolha === 'string' ? temaEscolha : localStorage.getItem('tema')) || 'auto', t }; }
+  window.fpSyncVisual = function () {
+    if (aplicandoRemoto) return;
+    try { localStorage.setItem('fp_visual_t', String(Date.now())); } catch (e) {}
+    if (!liberado || !userId) return;
+    clearTimeout(tSync); tSync = setTimeout(() => { sb.auth.updateUser({ data: { visual: pacote(localT()) } }).catch(() => {}); }, 900);
+  };
+  async function reconciliar() {
+    let remoto = null;
+    try { const { data } = await sb.auth.getUser(); remoto = data && data.user && data.user.user_metadata && data.user.user_metadata.visual; } catch (e) {}
+    const lt = localT();
+    if (remoto && remoto.v && Number(remoto.t) > lt) {
+      aplicandoRemoto = true;
+      try { if (window.fpVisual) fpVisual.aplicar(remoto.v, true); if (remoto.tema) aplicaTema(remoto.tema, true); localStorage.setItem('fp_visual_t', String(remoto.t)); }
+      finally { aplicandoRemoto = false; }
+    } else if (!remoto || lt > Number(remoto.t || 0)) {
+      try { await sb.auth.updateUser({ data: { visual: pacote(lt || 1) } }); } catch (e) {}
+    }
+    liberado = true;
+  }
+
+  /* ---------- conferência dos avisos ---------- */
+  const ios = /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  const instalado = () => matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+  async function pingSW() {
+    if (!('serviceWorker' in navigator)) return 'sem';
+    let reg = null; try { reg = await navigator.serviceWorker.getRegistration(); } catch (e) { return 'sem'; }
+    const sw = reg && (reg.active || reg.waiting || reg.installing); if (!sw) return 'sem';
+    return new Promise(res => { const ch = new MessageChannel(), t = setTimeout(() => res('antigo'), 2000); ch.port1.onmessage = e => { clearTimeout(t); res(e.data && e.data.versao ? 'ok' : 'antigo'); }; try { sw.postMessage({ ping: 1 }, [ch.port2]); } catch (e) { clearTimeout(t); res('antigo'); } });
+  }
+  async function funcaoOk() {
+    try { const { data, error } = await sb.functions.invoke('avisos-push', { body: { acao: 'chave' } }); if (error) { let m = ''; try { const j = await error.context.json(); m = (j && (j.erro || j.message || j.msg)) || ''; } catch (e2) {} return { ok: false, m }; } return { ok: !!(data && data.chave), m: '' }; }
+    catch (e) { return { ok: false, m: String(e && e.message || '') }; }
+  }
+  async function conferirAvisos() {
+    const box = $('#avDiag'), ul = $('#avDiagLista');
+    const linha = (est, t, d) => `<li class="${est}"><b aria-hidden="true">${est === 'ok' ? '✓' : est === 'nao' ? '✕' : '•'}</b><span>${t}</span>${d ? `<small>${d}</small>` : ''}</li>`;
+    ul.innerHTML = linha('espera', 'Conferindo...', ''); box.hidden = false;
+    const itens = [];
+    if (ios) itens.push(instalado() ? linha('ok', 'App aberto pelo ícone da tela de início', '') : linha('nao', 'App aberto pelo Safari', 'No iPhone os avisos só funcionam pelo ícone. Safari › Compartilhar › Adicionar à Tela de Início, e abra por lá.'));
+    const sw = await pingSW();
+    itens.push(sw === 'ok' ? linha('ok', 'Arquivo sw.js novo no site', '') : sw === 'antigo' ? linha('nao', 'O sw.js do site ainda é o antigo', 'Troque o sw.js no seu site pelo novo, feche o app de vez e abra de novo.') : linha('nao', 'O sw.js não carregou', 'Confira se o arquivo sw.js está na mesma pasta do index.html no site.'));
+    const fn = await funcaoOk();
+    itens.push(fn.ok ? linha('ok', 'Função avisos-push respondendo', '') : linha('nao', 'A função avisos-push não respondeu', (fn.m ? `Resposta: “${esc(fn.m)}”. ` : '') + 'No Supabase, confira se a função existe com esse nome exato e se o SQL de instalação foi rodado.'));
+    const perm = 'Notification' in window ? Notification.permission : 'sem';
+    itens.push(perm === 'granted' ? linha('ok', 'Permissão de avisos concedida', '') : perm === 'denied' ? linha('nao', 'Avisos bloqueados no aparelho', ios ? 'Ajustes › Notificações › Falta Pouco › Permitir Notificações.' : 'Libere nas permissões do site.') : perm === 'sem' ? linha('nao', 'Este navegador não tem avisos', ios ? 'Precisa do iOS 16.4 ou mais novo e do app aberto pelo ícone.' : '') : linha('espera', 'Permissão ainda não pedida', 'Ela aparece quando você liga a chave acima.'));
+    ul.innerHTML = itens.join('');
+    const tudoOk = !ul.querySelector('li.nao'), ligado = $('#avLigar').checked;
+    box.hidden = tudoOk && ligado;
+  }
+  window.conferirAvisos = conferirAvisos;
+  const abrirAvisosBase = window.abrirAvisos;
+  if (abrirAvisosBase) window.abrirAvisos = async function () { const r = await abrirAvisosBase.apply(this, arguments); conferirAvisos(); return r; };
+  $('#pfAvisos').addEventListener('click', () => setTimeout(conferirAvisos, 400));
+  $('#avLigar').addEventListener('change', () => setTimeout(conferirAvisos, 1500));
+
+  /* ---------- ao entrar ---------- */
+  const entrarPg = entrar;
+  entrar = async function (session) {
+    const r = await entrarPg(session);
+    reconciliar();
+    lerSalario().then(pintarResumo);
+    return r;
+  };
+  const trocarPg = trocarVista;
+  trocarVista = function (v) { trocarPg(v); if (v === 'salario') lerSalario().then(pintarResumo); };
 })();
 </script>
 </body>
