@@ -18,10 +18,12 @@
         (funções render..., carregar..., "calendário (agenda do mês)", "números que rolam")
    5. (script) "Extras": transições de página, janelas animadas, gestos do calendário,
         foto de perfil, categorias automáticas e Face ID
+   6. (script) "Avisos no celular": liga as notificações deste aparelho e guarda o que avisar
+        (quem envia é a função avisos-push no Supabase, de hora em hora)
   A cada versão publicada, mude o meta "build": é assim que o app avisa "Nova versão disponível".
 -->
 <meta charset="utf-8">
-<meta name="build" content="20261126-130000">
+<meta name="build" content="20261126-170000">
 <script>
 /* paletas: 6 tons cada, do mais escuro ao mais claro + um tom de destaque. O tema inteiro sai daqui. */
 window.FP_PALETAS=[
@@ -907,7 +909,7 @@ html .btn:active,html .chip-btn:active{transform:scale(.94);transition-duration:
 html .cal .dia:active{transform:scale(.9);transition-duration:.1s}
 
 /* troca de página: a atual sai, a nova entra deslizando (direção segue a ordem das abas) */
-main{view-transition-name:conteudo}
+html.vt-carteira main{view-transition-name:conteudo}
 ::view-transition-old(root){display:none}
 ::view-transition-new(root){animation:none}
 ::view-transition-group(conteudo){animation:none}
@@ -1039,8 +1041,8 @@ html.vt-carteira #vistaCartoes .toolbar{view-transition-name:cart-topo}
 ::view-transition-group(cart-topo){animation:none;z-index:60}
 ::view-transition-old(cart-topo){display:none}
 ::view-transition-new(cart-topo){animation:none}
-html.vt-carteira::view-transition-old(conteudo){animation:wFade .2s ease-in both}
-html.vt-carteira::view-transition-new(conteudo){animation:wDetIn .55s var(--mola) .1s both}
+html.vt-carteira::view-transition-old(conteudo){display:none}
+html.vt-carteira::view-transition-new(conteudo){animation:wDetIn .5s var(--mola) both;height:auto;object-fit:none;object-position:top}
 @keyframes wFade{to{opacity:0}}
 @keyframes wDetIn{from{opacity:0;transform:translateY(26px)}}
 @keyframes wSai{to{opacity:0;transform:translateY(150px) scale(.95)}}
@@ -1342,6 +1344,24 @@ body.lado-fechado .top:not(:hover) #btnSair::before{margin:0}
   #navAdmin .tab[aria-pressed="true"]{gap:5px;padding:0 9px;font-size:.78rem}
   #navAdmin .tab .ico svg{width:21px;height:21px}
 }
+/* ===== Avisos no celular ===== */
+#dlgAvisos,#dlgPerfil{--av-bg:color-mix(in oklab,var(--ink) 5%,transparent);--av-line:color-mix(in oklab,var(--ink) 13%,transparent)}
+.pf-link{display:flex;align-items:center;justify-content:space-between;gap:14px;width:100%;margin:0 0 14px;padding:14px 16px;border-radius:16px;border:1px solid var(--av-line);background:var(--av-bg);color:var(--ink);text-align:left;font:inherit;cursor:pointer}
+.pf-link span{display:grid;gap:2px}.pf-link small{color:var(--muted);font-size:.85rem}
+.pf-link b{font-size:1.5rem;font-weight:400;color:var(--muted);line-height:1}
+.pf-link:focus-visible{outline:3px solid var(--acc1);outline-offset:2px}
+.av-lista{border:1px solid var(--av-line);border-radius:16px;background:var(--av-bg);overflow:hidden;margin:0 0 12px}
+.av-lista .pf-sw{border:0;border-radius:0;background:none}
+.av-lista.av-lista>*+*{border-top:1px solid var(--av-line)}
+.av-lista.off{opacity:.55}
+.av-titulo{font-size:.9rem;font-weight:600;color:var(--muted);margin:18px 6px 8px}
+.av-extra{display:flex;align-items:center;flex-wrap:wrap;gap:6px 10px;padding:0 16px 14px;font-size:.9rem;color:var(--muted)}
+.av-extra[hidden]{display:none}
+.av-extra input,.av-extra select{width:84px;min-height:40px;padding:8px 10px;border:1px solid var(--av-line);border-radius:10px;background:var(--av-bg);color:var(--ink);font:inherit}
+.av-extra small{flex-basis:100%;font-size:.8rem}
+.av-nota{padding:12px 14px;margin:0 0 12px;border-radius:14px;background:color-mix(in oklab,var(--v4) 16%,transparent);border:1px solid color-mix(in oklab,var(--v4) 40%,transparent);font-size:.92rem;line-height:1.45}
+.av-nota ol{margin:6px 0 0;padding-left:20px}
+html[data-glass=on] :is(.pf-link,.av-lista){background:var(--gl-field);border-color:var(--gl-field-line)}
 </style>
 
 
@@ -1940,9 +1960,38 @@ window.somBrilho = function (grande, aguardar) {
   <div class="pf-seg" id="pfSeg" hidden>
     <label class="pf-sw"><span><strong>🔒 Pedir Face ID ou digital</strong><small>Ao abrir o app e depois de 5 minutos fora dele.</small></span><input type="checkbox" id="pfTrava" role="switch"><i aria-hidden="true"></i></label>
   </div>
+  <button type="button" class="pf-link" id="pfAvisos"><span><strong>🔔 Avisos no celular</strong><small id="pfAvisosEstado">Vencimentos, orçamento, metas e lembretes</small></span><b aria-hidden="true">›</b></button>
   <p class="dica" id="pfSegNao" hidden>Este aparelho ou navegador não tem Face ID nem digital disponíveis para sites.</p>
   <p class="msg" id="pfMsg" role="alert"></p>
   <div class="dlg-foot"><button class="btn ghost" type="button" data-fechar="dlgPerfil">Fechar</button><button class="btn primary" type="button" id="pfSalvar">Salvar nome</button></div>
+</div></dialog>
+
+<!-- janela: avisos no celular -->
+<dialog id="dlgAvisos" aria-labelledby="avTitulo"><div class="dlg">
+  <div class="dlg-head"><h2 id="avTitulo">Avisos no celular</h2><button type="button" class="x" data-fechar="dlgAvisos" aria-label="Fechar">×</button></div>
+  <div class="av-nota" id="avNota" hidden></div>
+  <div class="av-lista" id="avAparelho">
+    <label class="pf-sw"><span><strong>Receber avisos neste aparelho</strong><small id="avAparelhoTxt">Os avisos chegam como os de qualquer app, mesmo com o Falta Pouco fechado.</small></span><input type="checkbox" id="avLigar" role="switch"><i aria-hidden="true"></i></label>
+  </div>
+  <h3 class="av-titulo">O que avisar</h3>
+  <div class="av-lista" id="avPrefs">
+    <label class="pf-sw"><span><strong>Contas e faturas vencendo</strong><small>Alguns dias antes, no dia e no dia seguinte, se não foi paga</small></span><input type="checkbox" data-av="venc" role="switch"><i aria-hidden="true"></i></label>
+    <label class="pf-sw"><span><strong>Quem te deve no cartão</strong><small>Junto com o aviso da fatura, quanto cada pessoa ainda não te pagou</small></span><input type="checkbox" data-av="cobrar" role="switch"><i aria-hidden="true"></i></label>
+    <label class="pf-sw"><span><strong>Orçamento perto do limite</strong><small>Quando uma categoria chega a 80% e quando passa do teto</small></span><input type="checkbox" data-av="orc" role="switch"><i aria-hidden="true"></i></label>
+    <div class="av-item">
+      <label class="pf-sw"><span><strong>Dia do pagamento</strong><small>Quanto vence entre contas e faturas até o próximo salário</small></span><input type="checkbox" data-av="pag" role="switch"><i aria-hidden="true"></i></label>
+      <div class="av-extra" data-se="pag"><label for="avDiaPag">Cai no dia</label><input id="avDiaPag" type="number" inputmode="numeric" min="1" max="31" placeholder="auto"><small id="avDiaPagDica">Em branco, uso o dia do último salário lançado.</small></div>
+    </div>
+    <div class="av-item">
+      <label class="pf-sw"><span><strong>Lembrete de anotar os gastos</strong><small>Só nos dias em que nada foi lançado</small></span><input type="checkbox" data-av="lembrete" role="switch"><i aria-hidden="true"></i></label>
+      <div class="av-extra" data-se="lembrete"><label for="avHora">Horário</label><select id="avHora"><option value="18">18h</option><option value="19">19h</option><option value="20">20h</option><option value="21">21h</option><option value="22">22h</option></select></div>
+    </div>
+    <label class="pf-sw"><span><strong>Resumo da semana</strong><small>Domingo à noite, quanto saiu e o que mais pesou</small></span><input type="checkbox" data-av="resumo" role="switch"><i aria-hidden="true"></i></label>
+    <label class="pf-sw"><span><strong>Metas e dívidas</strong><small>Meta em 50%, 75% e concluída; dívida quitada</small></span><input type="checkbox" data-av="metas" role="switch"><i aria-hidden="true"></i></label>
+  </div>
+  <p class="dica">Essas escolhas valem para todos os aparelhos em que você liga os avisos. Nada chega entre 23h e 8h.</p>
+  <p class="msg" id="avMsg" role="alert"></p>
+  <div class="dlg-foot"><button class="btn ghost" type="button" data-fechar="dlgAvisos">Fechar</button><button class="btn primary" type="button" id="avTeste" disabled>Testar aviso</button></div>
 </div></dialog>
 
 <!-- janela que sobe de baixo: pagamentos do dia (calendário, no celular) -->
@@ -4007,10 +4056,14 @@ async function forcarSaida() {                 // desloga só este aparelho e vo
   const trocarOrig = trocarVista;
   trocarVista = function (v) {
     const ant = vista;
-    const fim = () => { trocarOrig(v); requestAnimationFrame(cascataVisiveis); };
-    if (!animOk() || !document.startViewTransition || v === ant || document.querySelector('dialog[open]') || $('#viewApp').hidden) return fim();
-    root.style.setProperty('--vt-dir', ORDEM.indexOf(v) < ORDEM.indexOf(ant) ? -1 : 1);
-    try { const t = document.startViewTransition(fim); t.ready.catch(() => {}); t.finished.catch(() => {}); } catch (e) { fim(); }
+    trocarOrig(v); requestAnimationFrame(cascataVisiveis);
+    // a página antiga some na hora e a nova entra deslizando pelo lado da aba escolhida.
+    // (antes usava a transição que "fotografa" a tela, e o Safari do iPhone esticava a foto e piscava em branco)
+    if (!animOk() || v === ant || $('#viewApp').hidden) return;
+    const sec = { meu: 'vistaMeu', cartoes: 'vistaCartoes', contas: 'vistaContas', gastos: 'vistaGastos', salario: 'vistaSalario', plano: 'vistaPlano', projecao: 'vistaProj', admin: 'vistaAdmin' }[v]; const el = sec && document.getElementById(sec); if (!el) return;
+    const dir = ORDEM.indexOf(v) < ORDEM.indexOf(ant) ? -1 : 1;
+    el.getAnimations().forEach(a => a.cancel());
+    el.animate([{ opacity: 0, transform: `translateX(${dir * 28}px)` }, { opacity: 1, transform: 'none' }], { duration: 420, easing: MOLA });
   };
 
   /* ---------- carteira: cartão levanta e inclina sob o mouse (computador) ---------- */
@@ -4412,5 +4465,164 @@ async function forcarSaida() {                 // desloga só este aparelho e vo
 })();
 </script>
 
+
+<script>
+/* ============ Avisos no celular ============
+   O aparelho se inscreve (Web Push) e manda a inscrição para a função "avisos-push" do Supabase.
+   As escolhas (o que avisar, horário, dia do pagamento) ficam no perfil da conta, em user_metadata.avisos.
+   Quem decide e envia os avisos é a função, de hora em hora. */
+(function () {
+  const FN = 'avisos-push';
+  const PADRAO = { venc: true, cobrar: true, orc: true, pag: true, lembrete: true, hora: 21, resumo: true, metas: true, dia_pag: null };
+  const temPush = 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
+  const ios = /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  const instalado = () => matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+  let chave = null, reg = null, prefs = { ...PADRAO }, salvarT = null;
+
+  const nomeAparelho = () => ios ? (/iPad/.test(navigator.userAgent) || navigator.maxTouchPoints > 1 && !/iPhone/.test(navigator.userAgent) ? 'iPad' : 'iPhone') : /Android/.test(navigator.userAgent) ? 'Android' : 'Computador';
+  const deB64u = s => { const t = s.replace(/-/g, '+').replace(/_/g, '/'); const b = atob(t + '='.repeat((4 - t.length % 4) % 4)); return Uint8Array.from(b, c => c.charCodeAt(0)); };
+  async function chamar(corpo) {
+    const { data, error } = await sb.functions.invoke(FN, { body: corpo });
+    if (error) { let m = 'A função de avisos não respondeu. Ela já foi instalada no Supabase?'; try { const j = await error.context.json(); if (j && j.erro) m = j.erro; } catch (e) {} throw new Error(m); }
+    return data || {};
+  }
+  async function registro() {
+    if (reg) return reg;
+    reg = await Promise.race([navigator.serviceWorker.ready, new Promise(r => setTimeout(() => r(null), 4000))]);
+    return reg;
+  }
+  async function inscricaoAtual() { const r = await registro(); return r ? r.pushManager.getSubscription() : null; }
+  async function lerPrefs() {
+    try { const { data } = await sb.auth.getUser(); prefs = { ...PADRAO, ...((data && data.user && data.user.user_metadata && data.user.user_metadata.avisos) || {}) }; } catch (e) {}
+    return prefs;
+  }
+  function salvarPrefs() {
+    clearTimeout(salvarT);
+    salvarT = setTimeout(async () => {
+      let fuso = 'America/Sao_Paulo'; try { fuso = Intl.DateTimeFormat().resolvedOptions().timeZone || fuso; } catch (e) {}
+      prefs.fuso = fuso;
+      const { error } = await sb.auth.updateUser({ data: { avisos: prefs } });
+      if (error) $('#avMsg').textContent = 'Não foi possível salvar as escolhas. Tente de novo.';
+      else { $('#avMsg').textContent = ''; atualizaResumoPerfil(); }
+    }, 500);
+  }
+
+  function nota(html) { const n = $('#avNota'); n.innerHTML = html || ''; n.hidden = !html; }
+  function pintarPrefs() {
+    document.querySelectorAll('#avPrefs [data-av]').forEach(i => { i.checked = prefs[i.dataset.av] !== false; });
+    $('#avHora').value = String(prefs.hora || 21);
+    $('#avDiaPag').value = prefs.dia_pag ? String(prefs.dia_pag) : '';
+    document.querySelectorAll('#avPrefs [data-se]').forEach(x => { x.hidden = prefs[x.dataset.se] === false; });
+  }
+  async function pintarAparelho() {
+    const lig = $('#avLigar'), txt = $('#avAparelhoTxt'), teste = $('#avTeste');
+    lig.disabled = false; teste.disabled = true; nota('');
+    if (!temPush) {
+      lig.checked = false; lig.disabled = true;
+      if (ios && !instalado()) nota('No iPhone, os avisos só funcionam com o app instalado na tela de início.<ol><li>No Safari, toque em Compartilhar.</li><li>Escolha “Adicionar à Tela de Início”.</li><li>Abra o Falta Pouco pelo ícone novo e volte aqui.</li></ol>');
+      else txt.textContent = 'Este navegador não recebe avisos. No iPhone, precisa do iOS 16.4 ou mais novo.';
+      return;
+    }
+    if (Notification.permission === 'denied') {
+      lig.checked = false; lig.disabled = true;
+      nota(ios ? 'Os avisos estão bloqueados para o Falta Pouco. Libere em Ajustes › Notificações › Falta Pouco e volte aqui.' : 'Os avisos estão bloqueados neste navegador. Libere nas permissões do site (o cadeado ao lado do endereço) e volte aqui.');
+      return;
+    }
+    const sub = await inscricaoAtual();
+    lig.checked = !!sub && Notification.permission === 'granted'; teste.disabled = !lig.checked;
+    txt.textContent = lig.checked ? 'Ligado neste ' + nomeAparelho() + '.' : 'Os avisos chegam como os de qualquer app, mesmo com o Falta Pouco fechado.';
+  }
+  async function atualizaResumoPerfil() {
+    const el = $('#pfAvisosEstado'); if (!el) return;
+    let lig = false; try { lig = temPush && Notification.permission === 'granted' && !!(await inscricaoAtual()); } catch (e) {}
+    el.textContent = lig ? 'Ligados neste aparelho' : 'Vencimentos, orçamento, metas e lembretes';
+  }
+
+  async function abrirAvisos() {
+    $('#avMsg').textContent = '';
+    pintarPrefs();
+    const d = $('#dlgAvisos'); if (!d.open) d.showModal();
+    await Promise.all([lerPrefs().then(pintarPrefs), pintarAparelho()]);
+    if (temPush && !chave) chamar({ acao: 'chave' }).then(r => { chave = r.chave || null; }).catch(e => { $('#avMsg').textContent = e.message; });
+  }
+  window.abrirAvisos = abrirAvisos;
+
+  $('#pfAvisos').addEventListener('click', () => { const p = $('#dlgPerfil'); if (p.open) p.close(); abrirAvisos(); });
+  const abrirPerfilAv = $('#userEmail').onclick;
+  $('#userEmail').onclick = function (e) { const r = abrirPerfilAv && abrirPerfilAv.call(this, e); atualizaResumoPerfil(); return r; };
+
+  // liga e desliga neste aparelho
+  $('#avLigar').addEventListener('change', async e => {
+    const lig = e.target, msg = $('#avMsg'); msg.textContent = '';
+    if (lig.checked) {
+      if (!chave || !reg) { lig.checked = false; msg.textContent = 'Ainda carregando. Tente de novo em alguns segundos.'; if (!chave) chamar({ acao: 'chave' }).then(r => { chave = r.chave; }).catch(er => { msg.textContent = er.message; }); registro(); return; }
+      lig.disabled = true;
+      try {
+        // pede a permissão aqui mesmo, no toque: o iPhone só mostra o pedido assim
+        const sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: deB64u(chave) });
+        await chamar({ acao: 'inscrever', inscricao: sub.toJSON(), nome: nomeAparelho() });
+        try { localStorage.setItem('fp_push_dia', hojeStr()); } catch (er) {}
+        toast('Avisos ligados neste aparelho');
+      } catch (err) {
+        lig.checked = false;
+        msg.textContent = Notification.permission === 'denied' ? 'Você não permitiu os avisos. Dá para liberar depois nos ajustes do aparelho.' : (err && err.message) || 'Não foi possível ligar os avisos.';
+      } finally { lig.disabled = false; pintarAparelho(); atualizaResumoPerfil(); }
+    } else {
+      lig.disabled = true;
+      try {
+        const sub = await inscricaoAtual();
+        if (sub) { chamar({ acao: 'cancelar', endpoint: sub.endpoint }).catch(() => {}); await sub.unsubscribe(); }
+        toast('Avisos desligados neste aparelho');
+      } finally { lig.disabled = false; pintarAparelho(); atualizaResumoPerfil(); }
+    }
+  });
+
+  // o que avisar
+  $('#avPrefs').addEventListener('change', e => {
+    const t = e.target;
+    if (t.dataset.av) prefs[t.dataset.av] = t.checked;
+    if (t.id === 'avHora') prefs.hora = Number(t.value) || 21;
+    if (t.id === 'avDiaPag') { const n = parseInt(t.value, 10); prefs.dia_pag = n >= 1 && n <= 31 ? n : null; t.value = prefs.dia_pag || ''; }
+    document.querySelectorAll('#avPrefs [data-se]').forEach(x => { x.hidden = prefs[x.dataset.se] === false; });
+    salvarPrefs();
+  });
+
+  $('#avTeste').addEventListener('click', async () => {
+    const b = $('#avTeste'), rot = b.textContent; b.disabled = true; b.textContent = 'Enviando...'; $('#avMsg').textContent = '';
+    try { const sub = await inscricaoAtual(); const r = await chamar({ acao: 'teste', endpoint: sub && sub.endpoint }); toast(r.mensagem || 'Aviso de teste enviado'); }
+    catch (err) { $('#avMsg').textContent = err.message; }
+    finally { b.textContent = rot; b.disabled = false; }
+  });
+
+  // tocar no aviso abre a aba certa
+  const VISTAS = ['meu', 'cartoes', 'contas', 'gastos', 'salario', 'plano', 'projecao'];
+  function abrirAba(v) { if (VISTAS.includes(v) && userId && !$('#viewApp').hidden) trocarVista(v); }
+  if (temPush) navigator.serviceWorker.addEventListener('message', e => {
+    const d = e.data || {};
+    if (d.abrir) abrirAba(d.abrir);
+    if (d.reinscrever) reinscrever(true);
+  });
+  // reenvia a inscrição uma vez por dia (se o navegador trocou a chave, o servidor fica sabendo)
+  async function reinscrever(forcar) {
+    if (!temPush || Notification.permission !== 'granted') return;
+    try {
+      if (!forcar && localStorage.getItem('fp_push_dia') === hojeStr()) return;
+      let sub = await inscricaoAtual();
+      if (!sub && forcar) { if (!chave) chave = (await chamar({ acao: 'chave' })).chave; sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: deB64u(chave) }); }
+      if (!sub) return;
+      await chamar({ acao: 'inscrever', inscricao: sub.toJSON(), nome: nomeAparelho() });
+      localStorage.setItem('fp_push_dia', hojeStr());
+    } catch (e) { /* tenta de novo outro dia */ }
+  }
+  const entrarAv = entrar;
+  entrar = async function (session) {
+    const r = await entrarAv(session);
+    const q = new URLSearchParams(location.search), v = q.get('abrir');
+    if (v) { history.replaceState(null, '', location.pathname); abrirAba(v); }
+    setTimeout(() => reinscrever(false), 3000);
+    return r;
+  };
+})();
+</script>
 </body>
 </html>
